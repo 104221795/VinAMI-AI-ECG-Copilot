@@ -38,6 +38,12 @@ Create the 5-superclass multi-label manifest:
 python src/prepare_ptbxl_superclass_manifest.py --ptbxl-root data/ptb-xl --output data/ptbxl_superclass_manifest.csv
 ```
 
+Analyze and visualize the dataset before training:
+
+```bash
+python src/analyze_ptbxl_dataset.py --ptbxl-root data/ptb-xl --manifest data/ptbxl_superclass_manifest.csv --outdir reports/ptbxl_eda
+```
+
 Generate a small CWT image set first:
 
 ```bash
@@ -65,4 +71,3 @@ PTB-XL recommended split:
 - fold 10: test
 
 Do not random-split images, because that can cause patient/record leakage.
-
