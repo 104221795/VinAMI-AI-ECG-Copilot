@@ -1,0 +1,11 @@
+numpy
+pandas
+scipy
+matplotlib
+pywavelets
+wfdb
+scikit-learn
+tqdm
+torch
+torchvision
+
