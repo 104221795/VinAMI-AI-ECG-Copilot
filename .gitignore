@@ -1,0 +1,42 @@
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Jupyter and editor state
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.edge-headless/
+
+# Streamlit local state and logs
+.streamlit/secrets.toml
+*.log
+streamlit_stdout.log
+streamlit_stderr.log
+
+# Generated ECG data, checkpoints, and experiment artifacts
+VinStroke_ECG_artifacts/
+data/
+models/
+reports/
+manifests/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Temporary Office files
+~$*.docx
+~$*.xlsx
+~$*.pptx

@@ -1,0 +1,13 @@
+streamlit
+torch
+torchvision
+timm
+numpy
+pandas
+matplotlib
+Pillow
+opencv-python-headless
+scipy
+pywavelets
+tabulate
+
