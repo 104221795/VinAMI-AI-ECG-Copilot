@@ -1,0 +1,29 @@
+{
+  "definition_id": "vinami-acs-demo-workflow",
+  "version": "1.0.0",
+  "notice": "Demonstration workflow — not for clinical use.",
+  "transitions": [
+    {"name": "start-triage", "command_type": "start_triage", "from_state": "NEW", "to_state": "TRIAGE_IN_PROGRESS", "guards": [], "effects": []},
+    {"name": "await-ecg", "command_type": "complete_triage", "from_state": "TRIAGE_IN_PROGRESS", "to_state": "AWAITING_ECG", "guards": [], "effects": ["create_ecg_review_task"]},
+    {"name": "review-acceptable-ecg", "command_type": "record_ecg", "from_state": "AWAITING_ECG", "to_state": "ECG_UNDER_REVIEW", "guards": ["ecg_quality_acceptable"], "effects": []},
+    {"name": "escalate-poor-ecg", "command_type": "record_ecg", "from_state": "AWAITING_ECG", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["ecg_quality_not_acceptable"], "effects": ["raise_poor_ecg_quality_alert", "create_physician_review_task"]},
+    {"name": "await-troponin", "command_type": "request_troponin", "from_state": "ECG_UNDER_REVIEW", "to_state": "AWAITING_TROPONIN", "guards": [], "effects": ["create_troponin_task", "schedule_troponin_due"]},
+    {"name": "escalate-conflicting-signals", "command_type": "record_troponin", "from_state": "AWAITING_TROPONIN", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["troponin_available", "conflicting_signals"], "effects": ["raise_conflicting_signals_alert", "create_physician_review_task"]},
+    {"name": "escalate-rising-troponin", "command_type": "record_troponin", "from_state": "AWAITING_TROPONIN", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["troponin_rising"], "effects": ["raise_rising_troponin_alert", "create_physician_review_task", "create_repeat_ecg_task", "schedule_repeat_ecg_due"]},
+    {"name": "escalate-overdue-repeat-ecg", "command_type": "repeat_ecg_due", "from_state": "PHYSICIAN_REVIEW_REQUIRED", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["repeat_ecg_overdue"], "effects": ["raise_repeat_ecg_overdue_alert", "create_physician_review_task"]},
+    {"name": "observe-after-troponin", "command_type": "record_troponin", "from_state": "AWAITING_TROPONIN", "to_state": "OBSERVATION", "guards": ["troponin_available", "not_troponin_rising", "no_conflicting_signals"], "effects": []},
+    {"name": "escalate-overdue-troponin", "command_type": "timer_due", "from_state": "AWAITING_TROPONIN", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["missing_troponin_after_due"], "effects": ["raise_missing_troponin_alert", "create_physician_review_task"]},
+    {"name": "request-demo-pathway-review", "command_type": "select_demo_pathway", "from_state": "OBSERVATION", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": ["troponin_available", "no_conflicting_signals"], "effects": ["create_physician_review_task"]},
+    {"name": "select-pathway-after-physician-review", "command_type": "record_physician_decision", "from_state": "PHYSICIAN_REVIEW_REQUIRED", "to_state": "PATHWAY_SELECTED", "guards": [], "effects": []},
+    {"name": "request-transfer", "command_type": "request_transfer", "from_state": "PATHWAY_SELECTED", "to_state": "TRANSFER_IN_PROGRESS", "guards": [], "effects": ["create_transfer_task"]},
+    {"name": "request-cath-lab-review", "command_type": "request_cath_lab_review", "from_state": "PATHWAY_SELECTED", "to_state": "CATH_LAB_REVIEW", "guards": [], "effects": ["create_cath_lab_review_task"]},
+    {"name": "prepare-discharge-review", "command_type": "prepare_discharge_review", "from_state": "PATHWAY_SELECTED", "to_state": "DISCHARGE_REVIEW", "guards": [], "effects": []},
+    {"name": "close-after-review", "command_type": "close_case", "from_state": "DISCHARGE_REVIEW", "to_state": "CLOSED", "guards": ["no_unresolved_critical_alerts"], "effects": []},
+    {"name": "compensate-observation", "command_type": "compensate", "from_state": "OBSERVATION", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": [], "effects": ["raise_compensation_review_alert", "create_physician_review_task"]},
+    {"name": "compensate-pathway", "command_type": "compensate", "from_state": "PATHWAY_SELECTED", "to_state": "PHYSICIAN_REVIEW_REQUIRED", "guards": [], "effects": ["raise_compensation_review_alert", "create_physician_review_task"]},
+    {"name": "cancel-new", "command_type": "cancel", "from_state": "NEW", "to_state": "CANCELLED", "guards": [], "effects": []},
+    {"name": "cancel-triage", "command_type": "cancel", "from_state": "TRIAGE_IN_PROGRESS", "to_state": "CANCELLED", "guards": [], "effects": []},
+    {"name": "cancel-observation", "command_type": "cancel", "from_state": "OBSERVATION", "to_state": "CANCELLED", "guards": [], "effects": []},
+    {"name": "cancel-review", "command_type": "cancel", "from_state": "PHYSICIAN_REVIEW_REQUIRED", "to_state": "CANCELLED", "guards": [], "effects": []}
+  ]
+}

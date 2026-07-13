@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vinami-acs"
+version = "0.1.0"
+description = "VinAMI ACS Operating System research and engineering MVP scaffold"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "uvicorn[standard]>=0.30,<1.0",
+  "pydantic-settings>=2.6,<3.0",
+  "SQLAlchemy>=2.0,<3.0",
+  "psycopg[binary]>=3.2,<4.0",
+  "alembic>=1.14,<2.0",
+  "structlog>=24.4,<26.0",
+  "prometheus-client>=0.21,<1.0",
+  "redis>=5.2,<7.0",
+  "streamlit>=1.40,<2.0",
+  "httpx>=0.28,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9.0",
+  "pytest-cov>=6.0,<7.0",
+  "ruff>=0.8,<1.0",
+  "mypy>=1.13,<2.0",
+  "pre-commit>=4.0,<5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["vinami*"]
+
+[tool.setuptools.package-data]
+"vinami.workflow.definitions" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "apps", "tests", "scripts"]
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+files = [
+  "src",
+  "apps/api",
+  "apps/worker",
+  "apps/dashboard/main.py",
+  "apps/dashboard/state/session.py",
+  "scripts",
+]
+mypy_path = ["apps/dashboard"]
+strict = true
+warn_unused_configs = true
+exclude = ["migrations"]
+
+[[tool.mypy.overrides]]
+module = ["streamlit", "structlog", "prometheus_client", "redis", "redis.*"]
+ignore_missing_imports = true

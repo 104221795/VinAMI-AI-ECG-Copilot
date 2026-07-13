@@ -1,0 +1,104 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vinami_acs}
+      POSTGRES_USER: ${POSTGRES_USER:-vinami}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vinami}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    command: ["sh", "-c", "alembic upgrade head && alembic check"]
+    environment:
+      VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
+      VINAMI_LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    command: uvicorn apps.api.main:create_app --factory --host 0.0.0.0 --port 8000
+    environment:
+      VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
+      VINAMI_REDIS_URL: redis://redis:6379/0
+      VINAMI_LOG_LEVEL: INFO
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    command: streamlit run apps/dashboard/main.py --server.address 0.0.0.0 --server.port 8501
+    environment:
+      VINAMI_DASHBOARD_API_BASE_URL: http://api:8000
+      VINAMI_DASHBOARD_DEMO_MODE: ${VINAMI_DASHBOARD_DEMO_MODE:-false}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    command: python -m apps.worker.main
+    environment:
+      VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
+      VINAMI_REDIS_URL: redis://redis:6379/0
+      VINAMI_LOG_LEVEL: INFO
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+
+volumes:
+  postgres_data:

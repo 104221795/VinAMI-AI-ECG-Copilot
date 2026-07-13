@@ -1,0 +1,65 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Python environments and bytecode
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test, type-check, lint, and coverage caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Packaging and generated build output
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Editors and operating-system files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Notebook state and runtime logs
+.ipynb_checkpoints/
+*.log
+logs/
+
+# Local infrastructure state
+postgres_data/
+redis_data/
+.docker/
+
+# Local model, experiment, and generated clinical-data artifacts
+artifacts/
+checkpoints/
+data/
+models/
+outputs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Temporary Office files
+~$*.docx
+~$*.xlsx
+~$*.pptx
