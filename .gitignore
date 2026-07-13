@@ -31,6 +31,7 @@ data/
 models/
 reports/
 manifests/
+nhoimaucotim.pdf
 *.pt
 *.pth
 *.ckpt
