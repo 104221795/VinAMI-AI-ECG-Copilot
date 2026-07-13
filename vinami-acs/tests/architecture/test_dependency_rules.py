@@ -129,6 +129,16 @@ def test_r1_application_handlers_do_not_import_delivery_or_model_runtimes() -> N
     )
 
 
+def test_identity_contracts_and_policy_do_not_import_http_or_token_sdks() -> None:
+    """Token verification remains in an adapter, outside domain, ports, and application policy."""
+    files = [
+        *python_files(SOURCE_ROOT / "identity" / "domain"),
+        *python_files(SOURCE_ROOT / "identity" / "ports"),
+        *python_files(SOURCE_ROOT / "identity" / "application"),
+    ]
+    assert_no_imports(files, {"fastapi", "jwt", "sqlalchemy", "streamlit"})
+
+
 def test_domain_does_not_import_another_context_domain() -> None:
     """Context domains communicate through IDs, events, and shared value objects only."""
     violations: list[str] = []

@@ -83,6 +83,14 @@ class TimelineAuditProjectionHandler:
                         if event.metadata.get("actor_role") is not None
                         else None
                     ),
+                    identity_subject=_optional_string(event.metadata.get("identity_subject")),
+                    actor_roles=_string_list(event.metadata.get("actor_roles")),
+                    applied_permission=_optional_string(event.metadata.get("applied_permission")),
+                    identity_provider=_optional_string(event.metadata.get("identity_provider")),
+                    authentication_method=_optional_string(
+                        event.metadata.get("authentication_method")
+                    ),
+                    session_reference=_optional_string(event.metadata.get("session_reference")),
                     request_source=str(event.metadata.get("request_source", "internal")),
                     prior_version=_integer(event.payload.get("prior_version"))
                     or max(event.aggregate_version - 1, 0),
@@ -259,6 +267,16 @@ def _event_title(event_type: str) -> str:
 
 def _integer(value: object) -> int | None:
     return value if isinstance(value, int) else None
+
+
+def _optional_string(value: object) -> str | None:
+    return str(value) if value is not None else None
+
+
+def _string_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
 
 
 def registered_handler_names(registry: HandlerRegistry, event_types: Iterable[str]) -> set[str]:

@@ -31,6 +31,12 @@ class AuditReadRecord:
     audit_id: UUID
     actor_id: UUID | None
     actor_role: str | None
+    identity_subject: str | None
+    actor_roles: tuple[str, ...]
+    applied_permission: str | None
+    identity_provider: str | None
+    authentication_method: str | None
+    session_reference: str | None
     action: str
     resource_type: str
     resource_id: UUID

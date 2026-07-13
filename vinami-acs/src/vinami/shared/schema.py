@@ -1,6 +1,6 @@
 """Single source of truth for runtime schema readiness."""
 
-EXPECTED_ALEMBIC_HEAD = "d4c8a91e7b32"
+EXPECTED_ALEMBIC_HEAD = "f19c7a42d8e1"
 
 CRITICAL_TABLES = frozenset(
     {

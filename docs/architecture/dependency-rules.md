@@ -31,3 +31,12 @@ tests -> any layer through public contracts
 | `delivery/api/routers/` | SQLAlchemy session, concrete provider, clinical rule implementation |
 | Clinical Reasoning | any model library, checkpoint access, guideline threshold literals not supplied by a reviewed demonstration ruleset |
 
+## Identity and Access
+
+- Domain, identity ports, and application authorization policy do not import FastAPI,
+  SQLAlchemy, or token-verification SDKs.
+- JWT/JWKS parsing is confined to the OIDC infrastructure adapter.
+- API adapters construct `ActorContext` from `VerifiedIdentity`; client actor/role headers
+  are not authoritative.
+- Lifecycle routers declare application permissions and do not implement role matrices.
+- Authentication data never crosses into clinical aggregates as credentials or raw claims.

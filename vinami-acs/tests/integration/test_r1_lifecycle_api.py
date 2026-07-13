@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from vinami.audit.adapters.persistence import OutboxEventRecord
 from vinami.clinical_case.adapters.persistence import ClinicalCaseRecord
-from vinami.identity.adapters.persistence import ClinicalUserRecord
+from vinami.identity.adapters.development import DEVELOPMENT_IDENTITIES
 from vinami.identity.domain.model import ClinicalRole
 from vinami.shared.config import Settings
 from vinami.shared.events.contracts import OutboxStatus
@@ -27,30 +27,21 @@ NOW = datetime(2026, 7, 13, 8, 0, tzinfo=UTC)
 
 
 def _settings() -> Settings:
-    return Settings(database_url=os.environ["VINAMI_DATABASE_URL"])
+    return Settings(database_url=os.environ["VINAMI_DATABASE_URL"], identity_mode="development")
 
 
 def _actor(
     postgres_session_factory: sessionmaker[Session], role: ClinicalRole = ClinicalRole.NURSE
 ) -> UUID:
-    actor_id = uuid4()
-    with postgres_session_factory() as session:
-        session.add(
-            ClinicalUserRecord(
-                id=actor_id,
-                display_name="R1 Development Actor",
-                role=role,
-                team_id=None,
-            )
-        )
-        session.commit()
-    return actor_id
+    _ = postgres_session_factory
+    return DEVELOPMENT_IDENTITIES[role.value].actor_id
 
 
 def _headers(actor_id: UUID, key: str, correlation_id: UUID | None = None) -> dict[str, str]:
     return {
         "X-Actor-ID": str(actor_id),
-        "X-Actor-Role": "nurse",
+        "X-Actor-Role": "administrator",
+        "X-Development-Identity": "nurse",
         "X-Correlation-ID": str(correlation_id or uuid4()),
         "X-Request-Source": "pytest-r1",
         "Idempotency-Key": key,
@@ -109,13 +100,22 @@ def test_all_nine_endpoints_use_persisted_state_and_projections(
 
         patient_get = client.get(
             f"/api/v1/patients/{patient['patient_id']}",
-            headers={"X-Correlation-ID": str(correlation_id)},
+            headers={
+                "X-Correlation-ID": str(correlation_id),
+                "X-Development-Identity": "nurse",
+            },
         )
-        encounter_get = client.get(f"/api/v1/encounters/{encounter['encounter_id']}")
-        case_get = client.get(f"/api/v1/clinical-cases/{clinical_case['case_id']}")
+        read_headers = {"X-Development-Identity": "nurse"}
+        encounter_get = client.get(
+            f"/api/v1/encounters/{encounter['encounter_id']}", headers=read_headers
+        )
+        case_get = client.get(
+            f"/api/v1/clinical-cases/{clinical_case['case_id']}", headers=read_headers
+        )
         case_list = client.get(
             "/api/v1/clinical-cases",
             params={"priority": "urgent", "location": "Emergency Department"},
+            headers=read_headers,
         )
 
         assert patient_get.status_code == encounter_get.status_code == case_get.status_code == 200
@@ -129,8 +129,14 @@ def test_all_nine_endpoints_use_persisted_state_and_projections(
 
         dispatch = client.app.state.container.event_dispatcher().dispatch_pending()
         assert dispatch.dead_lettered == 0
-        timeline = client.get(f"/api/v1/clinical-cases/{clinical_case['case_id']}/timeline")
-        audit = client.get(f"/api/v1/clinical-cases/{clinical_case['case_id']}/audit")
+        timeline = client.get(
+            f"/api/v1/clinical-cases/{clinical_case['case_id']}/timeline",
+            headers=read_headers,
+        )
+        audit = client.get(
+            f"/api/v1/clinical-cases/{clinical_case['case_id']}/audit",
+            headers={"X-Development-Identity": "auditor"},
+        )
 
         assert [item["event_type"] for item in timeline.json()] == [
             "PatientRegistered.v1",
@@ -193,7 +199,7 @@ def test_api_problem_contract_and_active_case_conflict(
 ) -> None:
     actor_id = _actor(postgres_session_factory)
     with TestClient(create_app(_settings())) as client:
-        missing_headers = client.post(
+        missing_identity = client.post(
             "/api/v1/patients", json={"patient_reference": f"SYN-{uuid4()}"}
         )
         validation = client.post(
@@ -216,14 +222,17 @@ def test_api_problem_contract_and_active_case_conflict(
                 "priority": "critical",
             },
         )
-        not_found = client.get(f"/api/v1/clinical-cases/{uuid4()}")
+        not_found = client.get(
+            f"/api/v1/clinical-cases/{uuid4()}",
+            headers={"X-Development-Identity": "nurse"},
+        )
 
-    assert missing_headers.status_code == 400
+    assert missing_identity.status_code == 401
     assert validation.status_code == 422
     assert missing_parent.status_code == 404
     assert duplicate_case.status_code == 409
     assert not_found.status_code == 404
-    for response in (missing_headers, validation, missing_parent, duplicate_case, not_found):
+    for response in (missing_identity, validation, missing_parent, duplicate_case, not_found):
         assert set(response.json()) == {
             "type",
             "title",

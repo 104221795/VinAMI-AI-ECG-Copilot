@@ -103,7 +103,7 @@ def test_production_composition_root_loads_complete_mapping_registry(
     """Production composition, not fixture import order, resolves every critical mapping."""
     metadata = initialize_mappings()
     database_url = postgres_session_factory.kw["bind"].url.render_as_string(hide_password=False)
-    settings = Settings(database_url=database_url)
+    settings = Settings(database_url=database_url, identity_mode="development")
     container = AppContainer.create(settings)
     try:
         assert {

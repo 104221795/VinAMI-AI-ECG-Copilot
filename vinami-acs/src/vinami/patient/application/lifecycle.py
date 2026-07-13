@@ -354,7 +354,7 @@ def _event_context(actor: ActorContext) -> EventContext:
         correlation_id=actor.correlation_id,
         causation_id=actor.causation_id,
         actor_id=actor.actor_id,
-        metadata={"actor_role": actor.actor_role, "request_source": actor.request_source},
+        metadata=actor.audit_metadata(),
     )
 
 

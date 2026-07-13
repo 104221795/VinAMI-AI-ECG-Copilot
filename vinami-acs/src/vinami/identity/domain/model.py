@@ -10,10 +10,18 @@ from vinami.shared.domain import require_text
 
 
 class ClinicalRole(StrEnum):
-    """Placeholder role classification; it is not an authorization implementation."""
+    """Clinical platform roles mapped from a verified external identity."""
 
     PHYSICIAN = "physician"
     NURSE = "nurse"
+    TECHNICIAN = "technician"
+    CARE_COORDINATOR = "care_coordinator"
+    ADMINISTRATOR = "administrator"
+    AUDITOR = "auditor"
+    SYSTEM_SERVICE = "system_service"
+    READ_ONLY_REVIEWER = "read_only_reviewer"
+
+    # Retained for persisted pre-R1.5 actor references only.
     COORDINATOR = "coordinator"
     SYSTEM = "system"
 

@@ -9,7 +9,13 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from apps.api.http import CommandHeaders, ProblemDetail, command_headers
+from apps.api.http import (
+    AuthorizedIdentity,
+    CommandHeaders,
+    ProblemDetail,
+    authorize_for,
+    command_headers_for,
+)
 from vinami.clinical_case.application.lifecycle import (
     ClinicalCaseDTO,
     ClinicalCasePageDTO,
@@ -24,6 +30,7 @@ from vinami.clinical_case.application.lifecycle import (
 )
 from vinami.clinical_case.domain.model import CaseStatus, ClinicalPriority
 from vinami.clinical_case.ports.read_models import AuditReadRecord, TimelineReadRecord
+from vinami.identity.domain.security import Permission
 from vinami.patient.application.lifecycle import (
     EncounterDTO,
     GetEncounter,
@@ -44,7 +51,9 @@ from vinami.shared.domain import utc_now
 
 router = APIRouter(prefix="/api/v1")
 ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
-    400: {"model": ProblemDetail, "description": "Missing or malformed command context"},
+    400: {"model": ProblemDetail, "description": "Malformed command context"},
+    401: {"model": ProblemDetail, "description": "Missing or invalid verified identity"},
+    403: {"model": ProblemDetail, "description": "Verified identity lacks permission"},
     404: {"model": ProblemDetail, "description": "Resource not found"},
     409: {"model": ProblemDetail, "description": "Lifecycle or idempotency conflict"},
     422: {"model": ProblemDetail, "description": "Request validation failed"},
@@ -228,6 +237,12 @@ class AuditEntryResponse(BaseModel):
     audit_id: UUID
     actor_id: UUID | None
     actor_role: str | None
+    identity_subject: str | None
+    actor_roles: tuple[str, ...]
+    applied_permission: str | None
+    identity_provider: str | None
+    authentication_method: str | None
+    session_reference: str | None
     action: str
     resource_type: str
     resource_id: UUID
@@ -254,7 +269,20 @@ def _case_unit_of_work(container: AppContainer) -> ClinicalCaseUnitOfWorkFactory
 
 
 ContainerDependency = Annotated[AppContainer, Depends(_container)]
-CommandDependency = Annotated[CommandHeaders, Depends(command_headers)]
+PatientCreateCommand = Annotated[
+    CommandHeaders, Depends(command_headers_for(Permission.PATIENT_CREATE))
+]
+EncounterCreateCommand = Annotated[
+    CommandHeaders, Depends(command_headers_for(Permission.ENCOUNTER_CREATE))
+]
+CaseCreateCommand = Annotated[
+    CommandHeaders, Depends(command_headers_for(Permission.CLINICAL_CASE_CREATE))
+]
+PatientRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.PATIENT_READ))]
+EncounterRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.ENCOUNTER_READ))]
+CaseRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.CLINICAL_CASE_READ))]
+TimelineRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.TIMELINE_READ))]
+AuditRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.AUDIT_READ))]
 
 
 @router.post(
@@ -267,7 +295,7 @@ CommandDependency = Annotated[CommandHeaders, Depends(command_headers)]
     responses=ERROR_RESPONSES,
 )
 def register_patient(
-    body: RegisterPatientRequest, headers: CommandDependency, container: ContainerDependency
+    body: RegisterPatientRequest, headers: PatientCreateCommand, container: ContainerDependency
 ) -> PatientResponse:
     summary = body.safe_demographic_summary
     result = RegisterPatientHandler(_patient_unit_of_work(container)).execute(
@@ -292,7 +320,9 @@ def register_patient(
     summary="Get a Patient",
     responses={404: ERROR_RESPONSES[404]},
 )
-def get_patient(patient_id: UUID, container: ContainerDependency) -> PatientResponse:
+def get_patient(
+    patient_id: UUID, _authorization: PatientRead, container: ContainerDependency
+) -> PatientResponse:
     return _patient_response(
         PatientQueryHandler(_patient_unit_of_work(container)).get_patient(GetPatient(patient_id))
     )
@@ -308,7 +338,7 @@ def get_patient(patient_id: UUID, container: ContainerDependency) -> PatientResp
     responses=ERROR_RESPONSES,
 )
 def start_encounter(
-    body: StartEncounterRequest, headers: CommandDependency, container: ContainerDependency
+    body: StartEncounterRequest, headers: EncounterCreateCommand, container: ContainerDependency
 ) -> EncounterResponse:
     result = StartEncounterHandler(_patient_unit_of_work(container)).execute(
         StartEncounter(
@@ -331,7 +361,9 @@ def start_encounter(
     summary="Get an Encounter",
     responses={404: ERROR_RESPONSES[404]},
 )
-def get_encounter(encounter_id: UUID, container: ContainerDependency) -> EncounterResponse:
+def get_encounter(
+    encounter_id: UUID, _authorization: EncounterRead, container: ContainerDependency
+) -> EncounterResponse:
     return _encounter_response(
         PatientQueryHandler(_patient_unit_of_work(container)).get_encounter(
             GetEncounter(encounter_id)
@@ -349,7 +381,7 @@ def get_encounter(encounter_id: UUID, container: ContainerDependency) -> Encount
     responses=ERROR_RESPONSES,
 )
 def open_clinical_case(
-    body: OpenClinicalCaseRequest, headers: CommandDependency, container: ContainerDependency
+    body: OpenClinicalCaseRequest, headers: CaseCreateCommand, container: ContainerDependency
 ) -> ClinicalCaseResponse:
     result = OpenClinicalCaseHandler(_case_unit_of_work(container)).execute(
         OpenClinicalCase(
@@ -373,6 +405,7 @@ def open_clinical_case(
 )
 def list_clinical_cases(
     container: ContainerDependency,
+    _authorization: CaseRead,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 25,
     case_status: Annotated[CaseStatus | None, Query(alias="status")] = None,
@@ -398,7 +431,9 @@ def list_clinical_cases(
     summary="Get a Clinical Case",
     responses={404: ERROR_RESPONSES[404]},
 )
-def get_clinical_case(case_id: UUID, container: ContainerDependency) -> ClinicalCaseResponse:
+def get_clinical_case(
+    case_id: UUID, _authorization: CaseRead, container: ContainerDependency
+) -> ClinicalCaseResponse:
     return _case_response(
         ClinicalCaseQueryHandler(_case_unit_of_work(container)).get(GetClinicalCase(case_id))
     )
@@ -411,7 +446,9 @@ def get_clinical_case(case_id: UUID, container: ContainerDependency) -> Clinical
     summary="Get the persisted Clinical Case lifecycle timeline",
     responses={404: ERROR_RESPONSES[404]},
 )
-def get_case_timeline(case_id: UUID, container: ContainerDependency) -> list[TimelineEventResponse]:
+def get_case_timeline(
+    case_id: UUID, _authorization: TimelineRead, container: ContainerDependency
+) -> list[TimelineEventResponse]:
     records = ClinicalCaseQueryHandler(_case_unit_of_work(container)).timeline(case_id)
     return [_timeline_response(record) for record in records]
 
@@ -423,7 +460,9 @@ def get_case_timeline(case_id: UUID, container: ContainerDependency) -> list[Tim
     summary="Get immutable Patient, Encounter, and Case audit entries",
     responses={404: ERROR_RESPONSES[404]},
 )
-def get_case_audit(case_id: UUID, container: ContainerDependency) -> list[AuditEntryResponse]:
+def get_case_audit(
+    case_id: UUID, _authorization: AuditRead, container: ContainerDependency
+) -> list[AuditEntryResponse]:
     records = ClinicalCaseQueryHandler(_case_unit_of_work(container)).audit(case_id)
     return [_audit_response(record) for record in records]
 
@@ -510,6 +549,12 @@ def _audit_response(value: AuditReadRecord) -> AuditEntryResponse:
         audit_id=value.audit_id,
         actor_id=value.actor_id,
         actor_role=value.actor_role,
+        identity_subject=value.identity_subject,
+        actor_roles=value.actor_roles,
+        applied_permission=value.applied_permission,
+        identity_provider=value.identity_provider,
+        authentication_method=value.authentication_method,
+        session_reference=value.session_reference,
         action=value.action,
         resource_type=value.resource_type,
         resource_id=value.resource_id,

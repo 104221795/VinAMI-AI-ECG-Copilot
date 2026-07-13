@@ -28,6 +28,12 @@ class AuditEntry:
     causation_id: UUID | None
     outcome: str
     request_source: str = "internal"
+    identity_subject: str | None = None
+    actor_roles: tuple[str, ...] = ()
+    applied_permission: str | None = None
+    identity_provider: str | None = None
+    authentication_method: str | None = None
+    session_reference: str | None = None
     payload: dict[str, Any] = field(default_factory=dict)
     id: UUID = field(default_factory=uuid4)
 

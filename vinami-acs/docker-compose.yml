@@ -31,6 +31,7 @@ services:
     environment:
       VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
       VINAMI_LOG_LEVEL: INFO
+      VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,6 +46,7 @@ services:
       VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
       VINAMI_REDIS_URL: redis://redis:6379/0
       VINAMI_LOG_LEVEL: INFO
+      VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -82,6 +84,7 @@ services:
       VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
       VINAMI_REDIS_URL: redis://redis:6379/0
       VINAMI_LOG_LEVEL: INFO
+      VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
     depends_on:
       migrate:
         condition: service_completed_successfully

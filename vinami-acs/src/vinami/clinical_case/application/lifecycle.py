@@ -203,10 +203,7 @@ class OpenClinicalCaseHandler:
                     correlation_id=command.actor.correlation_id,
                     causation_id=command.actor.causation_id,
                     actor_id=command.actor.actor_id,
-                    metadata={
-                        "actor_role": command.actor.actor_role,
-                        "request_source": command.actor.request_source,
-                    },
+                    metadata=command.actor.audit_metadata(),
                 ),
             )
             response = _case_dto(clinical_case)

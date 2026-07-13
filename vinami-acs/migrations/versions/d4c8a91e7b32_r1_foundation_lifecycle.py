@@ -203,5 +203,9 @@ def downgrade() -> None:
     op.drop_index("ix_patients_updated_at", table_name="patients")
     for column in ("version", "updated_at", "age_band"):
         op.drop_column("patients", column)
+    op.execute(
+        "UPDATE patients SET given_name=COALESCE(given_name, 'Legacy'), "
+        "family_name=COALESCE(family_name, 'Patient')"
+    )
     op.alter_column("patients", "family_name", existing_type=sa.String(160), nullable=False)
     op.alter_column("patients", "given_name", existing_type=sa.String(160), nullable=False)

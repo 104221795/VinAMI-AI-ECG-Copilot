@@ -7,13 +7,16 @@ from contextlib import asynccontextmanager
 from time import perf_counter
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, HTTPException, Query, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from apps.api.http import audit_request_outcome, authorize_for
 from apps.api.lifecycle import router as lifecycle_router
+from vinami.identity.domain.security import Permission
+from vinami.identity.ports.errors import AuthenticationFailedError, AuthorizationDeniedError
 from vinami.shared.application_errors import (
     ActorContextError,
     ResourceConflictError,
@@ -22,7 +25,7 @@ from vinami.shared.application_errors import (
 from vinami.shared.config import Settings
 from vinami.shared.container import AppContainer
 from vinami.shared.database import SchemaNotReadyError
-from vinami.shared.domain import DomainInvariantError
+from vinami.shared.domain import DomainInvariantError, OptimisticConcurrencyError
 from vinami.shared.logging import log_event
 
 
@@ -79,6 +82,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "https://vinami.example/problems/actor-context",
         )
 
+    @app.exception_handler(AuthenticationFailedError)
+    async def authentication_problem(
+        request: Request, _: AuthenticationFailedError
+    ) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_401_UNAUTHORIZED,
+            "Authentication required",
+            "A valid identity from the configured provider is required.",
+            "https://vinami.example/problems/authentication",
+            extra_headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    @app.exception_handler(AuthorizationDeniedError)
+    async def authorization_problem(request: Request, _: AuthorizationDeniedError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_403_FORBIDDEN,
+            "Permission denied",
+            "The verified identity cannot perform this operation.",
+            "https://vinami.example/problems/authorization",
+        )
+
     @app.exception_handler(ResourceNotFoundError)
     async def not_found_problem(request: Request, error: ResourceNotFoundError) -> JSONResponse:
         return _problem(
@@ -91,6 +117,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(ResourceConflictError)
     async def conflict_problem(request: Request, error: ResourceConflictError) -> JSONResponse:
+        audit_request_outcome(request, "domain_rejection", "request:domain_rejected")
         return _problem(
             request,
             status.HTTP_409_CONFLICT,
@@ -99,8 +126,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "https://vinami.example/problems/conflict",
         )
 
+    @app.exception_handler(OptimisticConcurrencyError)
+    async def concurrency_problem(
+        request: Request, error: OptimisticConcurrencyError
+    ) -> JSONResponse:
+        audit_request_outcome(request, "concurrency_conflict", "request:concurrency_conflict")
+        return _problem(
+            request,
+            status.HTTP_409_CONFLICT,
+            "Concurrency conflict",
+            str(error),
+            "https://vinami.example/problems/concurrency",
+        )
+
     @app.exception_handler(DomainInvariantError)
     async def invariant_problem(request: Request, error: DomainInvariantError) -> JSONResponse:
+        audit_request_outcome(request, "domain_rejection", "request:domain_rejected")
         return _problem(
             request,
             status.HTTP_400_BAD_REQUEST,
@@ -111,6 +152,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(IntegrityError)
     async def integrity_problem(request: Request, _: IntegrityError) -> JSONResponse:
+        audit_request_outcome(request, "concurrency_conflict", "request:persistence_conflict")
         return _problem(
             request,
             status.HTTP_409_CONFLICT,
@@ -188,7 +230,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "total": 0,
             }
 
-        app.get(f"/api/v1/{resource}", tags=[resource], name=f"list_{resource}")(list_resource)
+        app.get(
+            f"/api/v1/{resource}",
+            tags=[resource],
+            name=f"list_{resource}",
+            dependencies=[Depends(authorize_for(Permission.SYSTEM_READ))],
+        )(list_resource)
 
     @app.get("/health", tags=["platform"])
     def health() -> dict[str, str]:
@@ -196,7 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "healthy", "service": "vinami-acs-api"}
 
     @app.get("/ready", tags=["platform"], response_model=None)
-    def readiness() -> Response | dict[str, str]:
+    def readiness() -> Response | dict[str, object]:
         """Return readiness only when the configured database accepts a probe."""
         try:
             container.database.probe_readiness()
@@ -210,10 +257,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "reason": type(error).__name__,
                 },
             )
+        identity_health = container.identity_provider.health()
+        provider_info = container.identity_provider.get_provider_info()
+        if not identity_health.healthy:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "status": "not_ready",
+                    "dependency": "identity_provider",
+                    "identity_mode": identity_health.mode,
+                },
+            )
         return {
             "status": "ready",
             "dependency": "postgresql_schema",
             "revision": container.settings.expected_schema_revision,
+            "identity": {
+                "mode": identity_health.mode,
+                "status": identity_health.status,
+                "provider": provider_info.name,
+                "development_only": provider_info.development_only,
+            },
         }
 
     @app.get("/metrics", include_in_schema=False)
@@ -225,7 +289,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def _problem(
-    request: Request, status_code: int, title: str, detail: str, problem_type: str
+    request: Request,
+    status_code: int,
+    title: str,
+    detail: str,
+    problem_type: str,
+    extra_headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     """Build one safe RFC 7807 document and preserve the request correlation identifier."""
     correlation = getattr(request.state, "correlation_id", None) or str(uuid4())
@@ -240,5 +309,5 @@ def _problem(
             "instance": request.url.path,
             "correlation_id": correlation,
         },
-        headers={"X-Correlation-ID": correlation},
+        headers={"X-Correlation-ID": correlation, **(extra_headers or {})},
     )

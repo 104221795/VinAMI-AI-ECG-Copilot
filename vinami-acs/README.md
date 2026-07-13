@@ -51,6 +51,22 @@ make seed        # Validate platform seed prerequisites; creates no clinical rec
 make down        # Stop the Compose stack
 ```
 
+## Identity Modes
+
+The API requires an explicit identity provider mode. Local Compose uses deterministic
+synthetic identities:
+
+```text
+VINAMI_IDENTITY_MODE=development
+X-Development-Identity: nurse
+```
+
+Only predefined fixture names are accepted; caller-supplied actor IDs and roles are not
+authoritative. OIDC mode uses `Authorization: Bearer` and requires issuer, audience, JWKS
+URL, allowed algorithms, and claim mappings shown in `.env.example`. Development identity
+mode is prohibited for a production environment. See
+`docs/recovery/r1-5/identity-architecture.md` for boundaries and limitations.
+
 ## Safety and Delivery Rules
 
 - ECG alone can never rule out AMI.
