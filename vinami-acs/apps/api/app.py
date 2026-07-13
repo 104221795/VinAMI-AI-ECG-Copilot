@@ -5,16 +5,24 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from time import perf_counter
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from apps.api.lifecycle import router as lifecycle_router
+from vinami.shared.application_errors import (
+    ActorContextError,
+    ResourceConflictError,
+    ResourceNotFoundError,
+)
 from vinami.shared.config import Settings
 from vinami.shared.container import AppContainer
 from vinami.shared.database import SchemaNotReadyError
+from vinami.shared.domain import DomainInvariantError
 from vinami.shared.logging import log_event
 
 
@@ -41,23 +49,105 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.container = container
 
     @app.exception_handler(HTTPException)
-    async def problem_response(_: Request, error: HTTPException) -> JSONResponse:
+    async def problem_response(request: Request, error: HTTPException) -> JSONResponse:
         """Return RFC 7807-style errors without exposing implementation details."""
-        return JSONResponse(
-            status_code=error.status_code,
-            content={
-                "type": "about:blank",
-                "title": "Request failed",
-                "status": error.status_code,
-                "detail": str(error.detail),
-            },
+        return _problem(
+            request,
+            error.status_code,
+            "Request failed",
+            str(error.detail),
+            "https://vinami.example/problems/http-request",
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_problem(request: Request, _: RequestValidationError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Request validation failed",
+            "The request does not satisfy the documented API contract.",
+            "https://vinami.example/problems/validation",
+        )
+
+    @app.exception_handler(ActorContextError)
+    async def actor_problem(request: Request, error: ActorContextError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid command context",
+            str(error),
+            "https://vinami.example/problems/actor-context",
+        )
+
+    @app.exception_handler(ResourceNotFoundError)
+    async def not_found_problem(request: Request, error: ResourceNotFoundError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_404_NOT_FOUND,
+            "Resource not found",
+            str(error),
+            "https://vinami.example/problems/not-found",
+        )
+
+    @app.exception_handler(ResourceConflictError)
+    async def conflict_problem(request: Request, error: ResourceConflictError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_409_CONFLICT,
+            "Resource conflict",
+            str(error),
+            "https://vinami.example/problems/conflict",
+        )
+
+    @app.exception_handler(DomainInvariantError)
+    async def invariant_problem(request: Request, error: DomainInvariantError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_400_BAD_REQUEST,
+            "Invalid lifecycle command",
+            str(error),
+            "https://vinami.example/problems/domain-invariant",
+        )
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_problem(request: Request, _: IntegrityError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_409_CONFLICT,
+            "Persistence conflict",
+            "The request conflicts with an existing persisted resource.",
+            "https://vinami.example/problems/persistence-conflict",
+        )
+
+    @app.exception_handler(SQLAlchemyError)
+    async def persistence_problem(request: Request, _: SQLAlchemyError) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            "Persistence failure",
+            "The operation could not be completed.",
+            "https://vinami.example/problems/persistence",
         )
 
     @app.middleware("http")
     async def record_http_metrics(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        correlation_id = request.headers.get("X-Correlation-ID", str(uuid4()))
+        supplied_correlation = request.headers.get("X-Correlation-ID")
+        try:
+            correlation_id = (
+                str(UUID(supplied_correlation)) if supplied_correlation else str(uuid4())
+            )
+        except ValueError:
+            correlation_id = str(uuid4())
+            request.state.correlation_id = correlation_id
+            return _problem(
+                request,
+                status.HTTP_400_BAD_REQUEST,
+                "Invalid correlation identifier",
+                "X-Correlation-ID must contain a UUID.",
+                "https://vinami.example/problems/correlation-id",
+            )
         request.state.correlation_id = correlation_id
         started_at = perf_counter()
         response = await call_next(request)
@@ -68,10 +158,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return response
 
+    app.include_router(lifecycle_router)
+
     resources = (
-        "patients",
-        "encounters",
-        "clinical-cases",
         "triage",
         "vitals",
         "ecg-studies",
@@ -81,8 +170,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "workflows",
         "tasks",
         "alerts",
-        "timeline",
-        "audit",
         "model-registry",
     )
     for resource in resources:
@@ -135,3 +222,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return Response(content=container.metrics.render(), media_type=CONTENT_TYPE_LATEST)
 
     return app
+
+
+def _problem(
+    request: Request, status_code: int, title: str, detail: str, problem_type: str
+) -> JSONResponse:
+    """Build one safe RFC 7807 document and preserve the request correlation identifier."""
+    correlation = getattr(request.state, "correlation_id", None) or str(uuid4())
+    return JSONResponse(
+        status_code=status_code,
+        media_type="application/problem+json",
+        content={
+            "type": problem_type,
+            "title": title,
+            "status": status_code,
+            "detail": detail,
+            "instance": request.url.path,
+            "correlation_id": correlation,
+        },
+        headers={"X-Correlation-ID": correlation},
+    )

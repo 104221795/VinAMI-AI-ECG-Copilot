@@ -27,6 +27,7 @@ class AuditLogRecord(Base):
         ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
     )
     actor_role: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    request_source: Mapped[str] = mapped_column(String(160), nullable=False, default="internal")
     prior_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     resulting_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reason: Mapped[str | None] = mapped_column(String(2000), nullable=True)

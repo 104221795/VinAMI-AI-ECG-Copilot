@@ -5,10 +5,22 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+    select,
+    text,
+)
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from vinami.clinical_case.domain.model import CaseStatus, ClinicalCase, ClinicalPriority
+from vinami.clinical_case.ports.repository import ClinicalCaseListRecord
+from vinami.patient.adapters.persistence import EncounterRecord
 from vinami.shared.persistence import Base, UTCDateTime, UUIDType
 
 
@@ -18,6 +30,12 @@ class ClinicalCaseRecord(Base):
     __tablename__ = "clinical_cases"
     __table_args__ = (
         UniqueConstraint("closure_command_id", name="uq_clinical_case_closure_command"),
+        Index(
+            "uq_clinical_cases_active_encounter",
+            "encounter_id",
+            unique=True,
+            postgresql_where=text("status IN ('OPEN', 'UNDER_REVIEW')"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
@@ -32,6 +50,7 @@ class ClinicalCaseRecord(Base):
         Enum(CaseStatus, name="case_status"), nullable=False, index=True
     )
     opened_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
     closed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     closure_reason: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     closed_by: Mapped[UUID | None] = mapped_column(
@@ -71,6 +90,7 @@ def case_to_record(case: ClinicalCase) -> ClinicalCaseRecord:
         priority=case.priority,
         status=case.status,
         opened_at=case.opened_at,
+        updated_at=case.updated_at or case.opened_at,
         closed_at=case.closed_at,
         closure_reason=case.closure_reason,
         closed_by=case.closed_by,
@@ -91,6 +111,7 @@ def case_from_record(record: ClinicalCaseRecord) -> ClinicalCase:
         priority=record.priority,
         status=record.status,
         opened_at=record.opened_at,
+        updated_at=record.updated_at,
         version=record.version,
         closed_at=record.closed_at,
         closure_reason=record.closure_reason,
@@ -127,6 +148,7 @@ class SQLAlchemyClinicalCaseRepository:
             raise ValueError(f"clinical case {case.id} does not exist")
         record.priority = case.priority
         record.status = case.status
+        record.updated_at = case.updated_at or case.opened_at
         record.closed_at = case.closed_at
         record.closure_reason = case.closure_reason
         record.closed_by = case.closed_by
@@ -135,3 +157,49 @@ class SQLAlchemyClinicalCaseRepository:
         record.closure_decision_id = case.closure_decision_id
         record.disposition_outcome_id = case.disposition_outcome_id
         record.version = case.version
+
+    def get_active_for_encounter(self, encounter_id: UUID) -> ClinicalCase | None:
+        """Return the single non-closed case allowed for an encounter."""
+        record = self._session.scalar(
+            select(ClinicalCaseRecord).where(
+                ClinicalCaseRecord.encounter_id == encounter_id,
+                ClinicalCaseRecord.status.in_((CaseStatus.OPEN, CaseStatus.UNDER_REVIEW)),
+            )
+        )
+        return case_from_record(record) if record is not None else None
+
+    def list_active(
+        self,
+        *,
+        offset: int,
+        limit: int,
+        status: str | None,
+        priority: str | None,
+        location: str | None,
+    ) -> tuple[list[ClinicalCaseListRecord], int]:
+        """Read an explicitly ordered active-case page with parent encounter location."""
+        filters = [ClinicalCaseRecord.status != CaseStatus.CLOSED]
+        if status is not None:
+            filters.append(ClinicalCaseRecord.status == CaseStatus(status))
+        if priority is not None:
+            filters.append(ClinicalCaseRecord.priority == ClinicalPriority(priority))
+        if location is not None:
+            filters.append(EncounterRecord.location == location)
+        base = (
+            select(ClinicalCaseRecord, EncounterRecord.location)
+            .join(EncounterRecord, EncounterRecord.id == ClinicalCaseRecord.encounter_id)
+            .where(*filters)
+        )
+        total = (
+            self._session.scalar(select(func.count()).select_from(base.order_by(None).subquery()))
+            or 0
+        )
+        rows = self._session.execute(
+            base.order_by(ClinicalCaseRecord.updated_at.desc(), ClinicalCaseRecord.id.desc())
+            .offset(offset)
+            .limit(limit)
+        ).all()
+        return (
+            [ClinicalCaseListRecord(case_from_record(row[0]), str(row[1])) for row in rows],
+            total,
+        )

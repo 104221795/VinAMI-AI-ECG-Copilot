@@ -8,11 +8,14 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from vinami.audit.adapters.persistence import AuditLogRecord
+from vinami.audit.adapters.persistence import AuditLogRecord, OutboxEventRecord
+from vinami.clinical_case.adapters.persistence import ClinicalCaseRecord
 from vinami.ecg.adapters.persistence import ECGStudyRecord
+from vinami.patient.adapters.persistence import EncounterRecord
+from vinami.shared.domain import utc_now
 from vinami.shared.events.contracts import EventEnvelope
 from vinami.timeline.adapters.persistence import TimelineEventRecord
 
@@ -80,6 +83,7 @@ class TimelineAuditProjectionHandler:
                         if event.metadata.get("actor_role") is not None
                         else None
                     ),
+                    request_source=str(event.metadata.get("request_source", "internal")),
                     prior_version=_integer(event.payload.get("prior_version"))
                     or max(event.aggregate_version - 1, 0),
                     resulting_version=_integer(event.payload.get("resulting_version"))
@@ -107,7 +111,8 @@ class TimelineAuditProjectionHandler:
             return
         timeline_exists = session.scalar(
             select(TimelineEventRecord.id).where(
-                TimelineEventRecord.source_event_id == event.event_id
+                TimelineEventRecord.case_id == case_id,
+                TimelineEventRecord.source_event_id == event.event_id,
             )
         )
         if timeline_exists is None:
@@ -115,7 +120,13 @@ class TimelineAuditProjectionHandler:
                 TimelineEventRecord(
                     case_id=case_id,
                     event_type=event.event_type,
+                    title=_event_title(event.event_type),
                     occurred_at=event.occurred_at,
+                    recorded_at=utc_now(),
+                    source="transactional_outbox",
+                    actor_id=event.actor_id,
+                    correlation_id=event.correlation_id,
+                    causation_id=event.causation_id,
                     payload={
                         "event_version": event.event_version,
                         "correlation_id": str(event.correlation_id),
@@ -126,6 +137,8 @@ class TimelineAuditProjectionHandler:
                     source_event_id=event.event_id,
                 )
             )
+        if event.event_type == "ClinicalCaseOpened.v1":
+            _project_case_ancestors(case_id, event, session)
 
 
 def build_default_handler_registry() -> HandlerRegistry:
@@ -181,6 +194,67 @@ def _case_id(event: EventEnvelope, session: Session) -> UUID | None:
             return None
         return study.case_id if study is not None else None
     return None
+
+
+def _project_case_ancestors(case_id: UUID, event: EventEnvelope, session: Session) -> None:
+    """Persist Patient and Encounter lifecycle events into a newly opened case timeline."""
+    case_record = session.get(ClinicalCaseRecord, case_id)
+    if case_record is None:
+        return
+    encounter = session.get(EncounterRecord, case_record.encounter_id)
+    if encounter is None:
+        return
+    ancestor_events = session.scalars(
+        select(OutboxEventRecord)
+        .where(
+            or_(
+                (OutboxEventRecord.event_type == "PatientRegistered.v1")
+                & (OutboxEventRecord.aggregate_id == encounter.patient_id),
+                (OutboxEventRecord.event_type == "EncounterStarted.v1")
+                & (OutboxEventRecord.aggregate_id == encounter.id),
+            )
+        )
+        .order_by(OutboxEventRecord.occurred_at, OutboxEventRecord.event_id)
+    ).all()
+    for ancestor in ancestor_events:
+        exists = session.scalar(
+            select(TimelineEventRecord.id).where(
+                TimelineEventRecord.case_id == case_id,
+                TimelineEventRecord.source_event_id == ancestor.event_id,
+            )
+        )
+        if exists is not None:
+            continue
+        session.add(
+            TimelineEventRecord(
+                case_id=case_id,
+                event_type=ancestor.event_type,
+                title=_event_title(ancestor.event_type),
+                occurred_at=ancestor.occurred_at,
+                recorded_at=utc_now(),
+                source="transactional_outbox",
+                actor_id=ancestor.actor_id,
+                correlation_id=ancestor.correlation_id,
+                causation_id=ancestor.causation_id,
+                payload={
+                    "event_version": ancestor.event_version,
+                    "correlation_id": str(ancestor.correlation_id),
+                    "causation_id": (str(ancestor.causation_id) if ancestor.causation_id else None),
+                    "payload": ancestor.payload,
+                    "metadata": ancestor.metadata_document,
+                },
+                source_event_id=ancestor.event_id,
+            )
+        )
+
+
+def _event_title(event_type: str) -> str:
+    return {
+        "PatientRegistered.v1": "Patient registered",
+        "EncounterStarted.v1": "Encounter started",
+        "ClinicalCaseOpened.v1": "Suspected ACS case opened",
+        "CaseClosed.v1": "Clinical case closed",
+    }.get(event_type, event_type.removesuffix(".v1"))
 
 
 def _integer(value: object) -> int | None:

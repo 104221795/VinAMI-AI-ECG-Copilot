@@ -12,6 +12,9 @@ from vinami.alerts.adapters.persistence import SQLAlchemyAlertRepository
 from vinami.audit.adapters.persistence import OutboxEventRecord
 from vinami.clinical_case.adapters.closure import SQLAlchemyCaseClosureEvidenceRepository
 from vinami.clinical_case.adapters.persistence import SQLAlchemyClinicalCaseRepository
+from vinami.clinical_case.adapters.read_models import (
+    SQLAlchemyClinicalLifecycleReadRepository,
+)
 from vinami.ecg.adapters.persistence import SQLAlchemyECGStudyRepository
 from vinami.identity.adapters.authorization import SQLAlchemyActorAuthorizationRepository
 from vinami.model_registry.adapters.persistence import SQLAlchemyModelRegistryRepository
@@ -21,6 +24,7 @@ from vinami.patient.adapters.persistence import (
 )
 from vinami.shared.domain import AggregateRoot, OptimisticConcurrencyError
 from vinami.shared.events.contracts import EventEnvelope
+from vinami.shared.idempotency_persistence import SQLAlchemyIdempotencyRepository
 from vinami.troponin.adapters.persistence import SQLAlchemyTroponinTimelineRepository
 from vinami.workflow.adapters.decision_persistence import (
     SQLAlchemyPhysicianDecisionRepository,
@@ -58,6 +62,7 @@ class SQLAlchemyUnitOfWork:
         self.patients = SQLAlchemyPatientRepository(self._session)
         self.encounters = SQLAlchemyEncounterRepository(self._session)
         self.cases = SQLAlchemyClinicalCaseRepository(self._session)
+        self.lifecycle_reads = SQLAlchemyClinicalLifecycleReadRepository(self._session)
         self.closure_evidence = SQLAlchemyCaseClosureEvidenceRepository(self._session)
         self.ecg_studies = SQLAlchemyECGStudyRepository(self._session)
         self.troponin_timelines = SQLAlchemyTroponinTimelineRepository(self._session)
@@ -67,6 +72,7 @@ class SQLAlchemyUnitOfWork:
         self.models = SQLAlchemyModelRegistryRepository(self._session)
         self.physician_decisions = SQLAlchemyPhysicianDecisionRepository(self._session)
         self.actors = SQLAlchemyActorAuthorizationRepository(self._session)
+        self.idempotency = SQLAlchemyIdempotencyRepository(self._session)
         return self
 
     def __exit__(self, exception_type: object, exception: object, traceback: object) -> None:

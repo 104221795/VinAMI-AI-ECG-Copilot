@@ -18,6 +18,7 @@ def metadata() -> MetaData:
     from vinami.model_registry.adapters import persistence as model_persistence
     from vinami.patient.adapters import persistence as patient_persistence
     from vinami.reasoning.adapters import persistence as reasoning_persistence
+    from vinami.shared import idempotency_persistence
     from vinami.timeline.adapters import persistence as timeline_persistence
     from vinami.triage.adapters import persistence as triage_persistence
     from vinami.troponin.adapters import persistence as troponin_persistence
@@ -33,6 +34,7 @@ def metadata() -> MetaData:
         model_persistence,
         patient_persistence,
         reasoning_persistence,
+        idempotency_persistence,
         timeline_persistence,
         triage_persistence,
         troponin_persistence,

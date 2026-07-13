@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import Date, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Date, Enum, ForeignKey, Integer, String, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from vinami.patient.domain.model import (
@@ -30,11 +30,14 @@ class PatientRecord(Base):
     id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
     identifier_system: Mapped[str] = mapped_column(String(100), nullable=False)
     identifier_value: Mapped[str] = mapped_column(String(120), nullable=False)
-    given_name: Mapped[str] = mapped_column(String(160), nullable=False)
-    family_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    given_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    family_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     sex_at_birth: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    age_band: Mapped[str | None] = mapped_column(String(40), nullable=True)
     registered_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
 
 class EncounterRecord(Base):
@@ -56,6 +59,9 @@ class EncounterRecord(Base):
     started_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
     ended_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     external_reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
 
 def patient_to_record(patient: Patient) -> PatientRecord:
@@ -64,11 +70,14 @@ def patient_to_record(patient: Patient) -> PatientRecord:
         id=patient.id,
         identifier_system=patient.identifier.system,
         identifier_value=patient.identifier.value,
-        given_name=patient.name.given_name,
-        family_name=patient.name.family_name,
+        given_name=patient.name.given_name if patient.name else None,
+        family_name=patient.name.family_name if patient.name else None,
         date_of_birth=patient.demographics.date_of_birth,
         sex_at_birth=patient.demographics.sex_at_birth,
+        age_band=patient.demographics.age_band,
         registered_at=patient.registered_at,
+        updated_at=patient.updated_at,
+        version=patient.version,
     )
 
 
@@ -77,9 +86,15 @@ def patient_from_record(record: PatientRecord) -> Patient:
     return Patient(
         id=record.id,
         identifier=PatientIdentifier(record.identifier_system, record.identifier_value),
-        name=PersonName(record.given_name, record.family_name),
-        demographics=Demographics(record.date_of_birth, record.sex_at_birth),
+        name=(
+            PersonName(record.given_name, record.family_name)
+            if record.given_name is not None and record.family_name is not None
+            else None
+        ),
+        demographics=Demographics(record.date_of_birth, record.sex_at_birth, record.age_band),
         registered_at=record.registered_at,
+        updated_at=record.updated_at,
+        version=record.version,
     )
 
 
@@ -93,6 +108,9 @@ def encounter_to_record(encounter: Encounter) -> EncounterRecord:
         started_at=encounter.started_at,
         ended_at=encounter.ended_at,
         external_reference=encounter.external_reference,
+        created_at=encounter.created_at,
+        updated_at=encounter.updated_at,
+        version=encounter.version,
     )
 
 
@@ -106,6 +124,9 @@ def encounter_from_record(record: EncounterRecord) -> Encounter:
         started_at=record.started_at,
         ended_at=record.ended_at,
         external_reference=record.external_reference,
+        created_at=record.created_at,
+        updated_at=record.updated_at,
+        version=record.version,
     )
 
 
@@ -125,6 +146,16 @@ class SQLAlchemyPatientRepository:
     def get(self, patient_id: UUID) -> Patient | None:
         """Retrieve a patient aggregate by UUID."""
         record = self._session.get(PatientRecord, patient_id)
+        return patient_from_record(record) if record is not None else None
+
+    def get_by_reference(self, system: str, value: str) -> Patient | None:
+        """Retrieve a patient by the database-enforced reference scope."""
+        record = self._session.scalar(
+            select(PatientRecord).where(
+                PatientRecord.identifier_system == system,
+                PatientRecord.identifier_value == value,
+            )
+        )
         return patient_from_record(record) if record is not None else None
 
 

@@ -78,6 +78,7 @@ class ClinicalCase(AggregateRoot):
     status: CaseStatus
     opened_at: datetime
     version: int = 1
+    updated_at: datetime | None = None
     closed_at: datetime | None = None
     closure_reason: str | None = None
     closed_by: UUID | None = None
@@ -94,15 +95,20 @@ class ClinicalCase(AggregateRoot):
         priority: ClinicalPriority,
         opened_at: datetime | None = None,
         case_id: UUID | None = None,
+        context: EventContext | None = None,
     ) -> ClinicalCase:
         """Open a case for one encounter and emit a lifecycle event."""
+        if encounter_id.int == 0:
+            raise DomainInvariantError("encounter_id must not be the nil UUID")
+        timestamp = require_utc(opened_at or utc_now(), "opened_at")
         case = cls(
             id=case_id or uuid4(),
             encounter_id=encounter_id,
             opening_reason=require_text(opening_reason, "opening_reason"),
             priority=priority,
             status=CaseStatus.OPEN,
-            opened_at=require_utc(opened_at or utc_now(), "opened_at"),
+            opened_at=timestamp,
+            updated_at=timestamp,
         )
         case._record_event(
             "ClinicalCaseOpened.v1",
@@ -111,7 +117,10 @@ class ClinicalCase(AggregateRoot):
                 "case_id": str(case.id),
                 "encounter_id": str(encounter_id),
                 "opening_reason": case.opening_reason,
+                "priority": case.priority.value,
+                "resulting_version": case.version,
             },
+            context,
         )
         return case
 
@@ -122,6 +131,7 @@ class ClinicalCase(AggregateRoot):
             raise DomainInvariantError("only an open case can enter review")
         self.status = CaseStatus.UNDER_REVIEW
         self.version += 1
+        self.updated_at = utc_now()
 
     def close(self, authorization: CaseClosureAuthorization) -> bool:
         """Close only with coordinated workflow, physician, alert, task, and outcome authority."""
@@ -144,6 +154,7 @@ class ClinicalCase(AggregateRoot):
         self.closure_decision_id = authorization.physician_decision_id
         self.disposition_outcome_id = authorization.disposition_outcome_id
         self.closed_at = authorization.occurred_at
+        self.updated_at = authorization.occurred_at
         self.version += 1
         self._record_event(
             "CaseClosed.v1",

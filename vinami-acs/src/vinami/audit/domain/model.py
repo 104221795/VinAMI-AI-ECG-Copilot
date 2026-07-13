@@ -27,6 +27,7 @@ class AuditEntry:
     correlation_id: UUID
     causation_id: UUID | None
     outcome: str
+    request_source: str = "internal"
     payload: dict[str, Any] = field(default_factory=dict)
     id: UUID = field(default_factory=uuid4)
 
@@ -37,6 +38,9 @@ class AuditEntry:
         )
         object.__setattr__(self, "action", require_text(self.action, "audit action"))
         object.__setattr__(self, "outcome", require_text(self.outcome, "audit outcome"))
+        object.__setattr__(
+            self, "request_source", require_text(self.request_source, "request_source")
+        )
         object.__setattr__(self, "occurred_at", require_utc(self.occurred_at, "occurred_at"))
 
 

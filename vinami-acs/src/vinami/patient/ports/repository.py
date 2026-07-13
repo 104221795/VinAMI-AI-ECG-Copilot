@@ -17,6 +17,9 @@ class PatientRepository(Protocol):
     def get(self, patient_id: UUID) -> Patient | None:
         """Return one patient or ``None`` when the local record does not exist."""
 
+    def get_by_reference(self, system: str, value: str) -> Patient | None:
+        """Return a patient by its explicitly scoped unique reference."""
+
 
 class EncounterRepository(Protocol):
     """Store and retrieve encounter aggregates for known patients."""

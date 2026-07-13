@@ -18,6 +18,7 @@ def test_initial_migration_downgrades_and_upgrades(postgres_session_factory: obj
     config = Config(str(PROJECT_ROOT / "alembic.ini"))
     command.downgrade(config, "base")
     command.upgrade(config, "head")
+    command.check(config)
     engine = create_engine(os.environ["VINAMI_DATABASE_URL"])
     try:
         tables = set(inspect(engine).get_table_names())
@@ -30,6 +31,7 @@ def test_initial_migration_downgrades_and_upgrades(postgres_session_factory: obj
             "workflow_due_timers",
             "workflow_command_receipts",
             "physician_decisions",
+            "command_idempotency",
             "ecg_studies",
             "lab_results",
         } <= tables

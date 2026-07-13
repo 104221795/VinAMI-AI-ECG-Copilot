@@ -107,6 +107,28 @@ def test_workflow_does_not_import_model_implementations() -> None:
     )
 
 
+def test_api_routers_do_not_import_orm_sessions_or_infrastructure_records() -> None:
+    """R1 delivery code may call handlers but cannot become a second persistence layer."""
+    assert_no_imports(
+        [PROJECT_ROOT / "apps" / "api" / "lifecycle.py"],
+        {"sqlalchemy"},
+        ("vinami.shared.database",),
+        (".adapters",),
+    )
+
+
+def test_r1_application_handlers_do_not_import_delivery_or_model_runtimes() -> None:
+    """The lifecycle application path remains transport and AI implementation independent."""
+    files = [
+        SOURCE_ROOT / "patient" / "application" / "lifecycle.py",
+        SOURCE_ROOT / "clinical_case" / "application" / "lifecycle.py",
+    ]
+    assert_no_imports(
+        files,
+        {"fastapi", "streamlit", "sqlalchemy", "torch", "timm", "onnxruntime"},
+    )
+
+
 def test_domain_does_not_import_another_context_domain() -> None:
     """Context domains communicate through IDs, events, and shared value objects only."""
     violations: list[str] = []
