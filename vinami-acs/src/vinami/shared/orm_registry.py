@@ -14,6 +14,7 @@ def metadata() -> MetaData:
     from vinami.audit.adapters import persistence as audit_persistence
     from vinami.clinical_case.adapters import persistence as case_persistence
     from vinami.ecg.adapters import persistence as ecg_persistence
+    from vinami.ecg.adapters import r3_persistence as ecg_r3_persistence
     from vinami.identity.adapters import persistence as identity_persistence
     from vinami.model_registry.adapters import persistence as model_persistence
     from vinami.patient.adapters import persistence as patient_persistence
@@ -30,6 +31,7 @@ def metadata() -> MetaData:
         audit_persistence,
         case_persistence,
         ecg_persistence,
+        ecg_r3_persistence,
         identity_persistence,
         model_persistence,
         patient_persistence,

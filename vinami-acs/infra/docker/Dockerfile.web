@@ -1,0 +1,43 @@
+FROM node:20-bookworm-slim AS dependencies
+
+RUN npm install --global pnpm@10.34.5
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/api-client/package.json ./packages/api-client/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+COPY packages/test-utils/package.json ./packages/test-utils/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+RUN pnpm install --frozen-lockfile
+
+FROM dependencies AS builder
+
+ARG NEXT_PUBLIC_PRODUCT_NAME="VinAMI ACS Operating System"
+ARG NEXT_PUBLIC_ORGANIZATION_NAME="VinAMI Clinical Research"
+ARG NEXT_PUBLIC_ENVIRONMENT="Development"
+ARG NEXT_PUBLIC_RESEARCH_USE="true"
+ENV NEXT_PUBLIC_PRODUCT_NAME=${NEXT_PUBLIC_PRODUCT_NAME}
+ENV NEXT_PUBLIC_ORGANIZATION_NAME=${NEXT_PUBLIC_ORGANIZATION_NAME}
+ENV NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT}
+ENV NEXT_PUBLIC_RESEARCH_USE=${NEXT_PUBLIC_RESEARCH_USE}
+ENV VINAMI_NEXT_STANDALONE=true
+
+COPY apps/web ./apps/web
+COPY packages ./packages
+RUN pnpm --filter @vinami/web build
+
+FROM node:20-bookworm-slim AS runtime
+
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+WORKDIR /app
+RUN groupadd --gid 10001 vinami && useradd --uid 10001 --gid vinami --create-home vinami
+
+COPY --from=builder --chown=vinami:vinami /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=vinami:vinami /app/apps/web/.next/static ./apps/web/.next/static
+
+USER vinami
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

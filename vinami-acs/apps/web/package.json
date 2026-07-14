@@ -1,0 +1,36 @@
+{
+  "name": "@vinami/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0 --port 3000",
+    "build": "next build",
+    "start": "next start --hostname 0.0.0.0 --port 3000",
+    "typecheck": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006",
+    "storybook:build": "storybook build --quiet"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.101.2",
+    "@tanstack/react-table": "8.21.3",
+    "@vinami/api-client": "workspace:*",
+    "@vinami/contracts": "workspace:*",
+    "@vinami/ui": "workspace:*",
+    "lucide-react": "1.24.0",
+    "next": "15.5.20",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.81.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@storybook/addon-a11y": "9.1.17",
+    "@storybook/nextjs-vite": "9.1.17",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "20.19.27",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "storybook": "9.1.17",
+    "typescript": "5.9.3"
+  }
+}

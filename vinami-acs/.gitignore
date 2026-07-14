@@ -38,6 +38,15 @@ pip-wheel-metadata/
 .DS_Store
 Thumbs.db
 
+# Node and frontend tooling
+node_modules/
+.next/
+storybook-static/
+playwright-report/
+test-results/
+coverage/
+*.tsbuildinfo
+
 # Notebook state and runtime logs
 .ipynb_checkpoints/
 *.log

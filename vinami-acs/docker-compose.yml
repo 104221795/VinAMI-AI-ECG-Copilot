@@ -32,9 +32,18 @@ services:
       VINAMI_DATABASE_URL: postgresql+psycopg://vinami:vinami@postgres:5432/vinami_acs
       VINAMI_LOG_LEVEL: INFO
       VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
+      VINAMI_ECG_ARTIFACT_ROOT: /var/lib/vinami/ecg-artifacts
     depends_on:
       postgres:
         condition: service_healthy
+    restart: "no"
+
+  ecg-artifact-init:
+    image: alpine:3.20
+    command: ["sh", "-c", "chown -R 10001:10001 /artifacts && chmod 750 /artifacts"]
+    user: "0:0"
+    volumes:
+      - ecg_artifact_data:/artifacts
     restart: "no"
 
   api:
@@ -47,15 +56,28 @@ services:
       VINAMI_REDIS_URL: redis://redis:6379/0
       VINAMI_LOG_LEVEL: INFO
       VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
+      VINAMI_ECG_ARTIFACT_ROOT: /var/lib/vinami/ecg-artifacts
+      VINAMI_ECG_PROVIDER: mock
+      VINAMI_ECG_ALLOW_MOCK_PROVIDER: "true"
     depends_on:
+      ecg-artifact-init:
+        condition: service_completed_successfully
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     ports:
       - "8000:8000"
+    volumes:
+      - ecg_artifact_data:/var/lib/vinami/ecg-artifacts
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')",
+        ]
       interval: 10s
       timeout: 3s
       retries: 12
@@ -75,6 +97,41 @@ services:
     ports:
       - "8501:8501"
 
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.web
+      args:
+        NEXT_PUBLIC_PRODUCT_NAME: ${NEXT_PUBLIC_PRODUCT_NAME:-VinAMI ACS Operating System}
+        NEXT_PUBLIC_ORGANIZATION_NAME: ${NEXT_PUBLIC_ORGANIZATION_NAME:-VinAMI Clinical Research}
+        NEXT_PUBLIC_ENVIRONMENT: ${NEXT_PUBLIC_ENVIRONMENT:-Development}
+        NEXT_PUBLIC_RESEARCH_USE: ${NEXT_PUBLIC_RESEARCH_USE:-true}
+    environment:
+      VINAMI_API_BASE_URL: http://api:8000
+      VINAMI_WEB_IDENTITY_MODE: ${VINAMI_WEB_IDENTITY_MODE:-development}
+      VINAMI_WEB_DEVELOPMENT_IDENTITY: ${VINAMI_WEB_DEVELOPMENT_IDENTITY:-physician}
+      NEXT_PUBLIC_PRODUCT_NAME: ${NEXT_PUBLIC_PRODUCT_NAME:-VinAMI ACS Operating System}
+      NEXT_PUBLIC_ORGANIZATION_NAME: ${NEXT_PUBLIC_ORGANIZATION_NAME:-VinAMI Clinical Research}
+      NEXT_PUBLIC_ENVIRONMENT: ${NEXT_PUBLIC_ENVIRONMENT:-Development}
+      NEXT_PUBLIC_RESEARCH_USE: ${NEXT_PUBLIC_RESEARCH_USE:-true}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)})",
+        ]
+      interval: 10s
+      timeout: 4s
+      retries: 12
+    restart: unless-stopped
+
   worker:
     build:
       context: .
@@ -85,12 +142,17 @@ services:
       VINAMI_REDIS_URL: redis://redis:6379/0
       VINAMI_LOG_LEVEL: INFO
       VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
+      VINAMI_ECG_ARTIFACT_ROOT: /var/lib/vinami/ecg-artifacts
     depends_on:
+      ecg-artifact-init:
+        condition: service_completed_successfully
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
+    volumes:
+      - ecg_artifact_data:/var/lib/vinami/ecg-artifacts
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -105,3 +167,4 @@ services:
 
 volumes:
   postgres_data:
+  ecg_artifact_data:

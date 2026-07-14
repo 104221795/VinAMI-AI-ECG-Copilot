@@ -53,6 +53,7 @@ class SQLAlchemyClinicalLifecycleReadRepository:
             select(AuditLogRecord)
             .where(
                 or_(
+                    AuditLogRecord.case_id == case.id,
                     (AuditLogRecord.aggregate_type == "Patient")
                     & (AuditLogRecord.aggregate_id == encounter.patient_id),
                     (AuditLogRecord.aggregate_type == "Encounter")

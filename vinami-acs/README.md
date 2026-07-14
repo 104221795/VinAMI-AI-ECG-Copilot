@@ -13,7 +13,8 @@ This directory is a new modular-monolith application. The repository-root `app.p
 ## Architecture
 
 - `apps/api`: FastAPI factory, `/health`, `/ready`, and `/metrics`.
-- `apps/dashboard`: Streamlit API client showing platform status only.
+- `apps/web`: Next.js clinical product frontend for the verified R1 lifecycle.
+- `apps/dashboard`: Streamlit developer dashboard retained until the final F0 Docker gate permits its legacy transition.
 - `apps/worker`: Redis-connected process that runs persisted due timers and the internal outbox dispatcher.
 - `src/vinami/shared`: settings, structured logging, SQLAlchemy infrastructure, metrics, and composition root.
 - `src/vinami/<context>/{domain,application,ports,adapters,api}`: package boundaries for each approved bounded context. They intentionally contain no clinical implementation in this sprint.
@@ -21,6 +22,14 @@ This directory is a new modular-monolith application. The repository-root `app.p
 - `tests`: unit, integration, architecture, and contract tests.
 
 The dependency direction is delivery -> application -> domain. Infrastructure implements ports. Streamlit calls only `/api/v1` once clinical routes exist and must not query PostgreSQL or import domain services.
+
+## F0 Frontend
+
+The Next.js F0 candidate exposes real PostgreSQL-backed R1 data through FastAPI only:
+
+`Command Center -> Patient/Encounter summary -> Case -> Timeline -> Immutable Audit`
+
+It uses controlled synthetic development identity. Production authentication was not exercised. See `docs/frontend/f0-completion-report.md` for gate status and limitations.
 
 ## Quick Start
 
@@ -34,8 +43,16 @@ Endpoints:
 - API health: `http://localhost:8000/health`
 - API readiness: `http://localhost:8000/ready`
 - API metrics: `http://localhost:8000/metrics`
-- Dashboard: `http://localhost:8501`
+- Next.js F0 UI: `http://localhost:3000`
+- Streamlit developer dashboard: `http://localhost:8501` until the documented legacy transition
 - Prometheus: `http://localhost:9090`
+
+Fast frontend iteration after the API dependencies are running:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm dev
+```
 
 ## Commands
 
@@ -49,6 +66,16 @@ make typecheck   # mypy --strict
 make migrate     # Alembic upgrade head
 make seed        # Validate platform seed prerequisites; creates no clinical records
 make down        # Stop the Compose stack
+```
+
+Frontend quality commands:
+
+```bash
+pnpm quality
+pnpm api:snapshot
+pnpm api:generate
+pnpm api:check
+pnpm test:e2e
 ```
 
 ## Identity Modes

@@ -193,3 +193,29 @@ def test_unimplemented_api_resources_are_not_an_anonymous_bypass(
     assert anonymous.status_code == 401
     assert clinical_reader.status_code == 403
     assert system_reader.status_code == 200
+
+
+def test_identity_session_uses_verified_provider_facts(
+    postgres_session_factory: sessionmaker[Session],
+) -> None:
+    _ = postgres_session_factory
+    with TestClient(create_app(_settings())) as client:
+        missing = client.get("/api/v1/identity/session")
+        response = client.get(
+            "/api/v1/identity/session",
+            headers={
+                "X-Development-Identity": "physician",
+                "X-Actor-Role": "administrator",
+            },
+        )
+
+    assert missing.status_code == 401
+    assert response.status_code == 200
+    payload = response.json()
+    expected = DEVELOPMENT_IDENTITIES["physician"]
+    assert payload["actor_id"] == str(expected.actor_id)
+    assert payload["display_name"] == "Synthetic Physician"
+    assert payload["roles"] == ["physician"]
+    assert payload["identity_mode"] == "development"
+    assert payload["development_only"] is True
+    assert "administrator" not in payload["roles"]

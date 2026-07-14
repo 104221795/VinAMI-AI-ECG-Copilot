@@ -9,5 +9,15 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        additional_dependencies: [fastapi, pydantic-settings, SQLAlchemy, psycopg[binary], structlog, prometheus-client, redis, streamlit, httpx]
-
+        additional_dependencies:
+          [
+            fastapi,
+            pydantic-settings,
+            SQLAlchemy,
+            "psycopg[binary]",
+            structlog,
+            prometheus-client,
+            redis,
+            streamlit,
+            httpx,
+          ]

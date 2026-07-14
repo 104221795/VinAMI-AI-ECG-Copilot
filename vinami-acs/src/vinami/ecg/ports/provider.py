@@ -13,6 +13,8 @@ class ECGPredictionRequest:
     study_id: UUID
     input_reference: str
     image_bytes: bytes | None = None
+    input_quality: str = "acceptable"
+    artifact_checksum: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +30,10 @@ class ModelInfo:
     version: str
     provider_name: str
     input_contract: str
+    synthetic: bool = False
+    checkpoint_checksum: str | None = None
+    label_order: tuple[str, ...] = ()
+    threshold_source: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,6 +59,7 @@ class ECGPredictionResult:
     warnings: tuple[str, ...]
     provenance: dict[str, str]
     failure_reason: str | None = None
+    synthetic: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +68,16 @@ class ECGExplanationResult:
     target_label: str
     reference: str
     warning: str
+    content: bytes | None = None
+    content_type: str | None = None
+    synthetic: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class InputValidationResult:
+    valid: bool
+    warnings: tuple[str, ...] = ()
+    failure_reason: str | None = None
 
 
 class ECGAIProvider(Protocol):
@@ -68,3 +85,4 @@ class ECGAIProvider(Protocol):
     def explain(self, request: ECGExplanationRequest) -> ECGExplanationResult: ...
     def health(self) -> AIProviderHealth: ...
     def get_model_info(self) -> ModelInfo: ...
+    def validate_input(self, request: ECGPredictionRequest) -> InputValidationResult: ...

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -35,6 +36,13 @@ class Settings(BaseSettings):
     event_claim_ttl_seconds: float = Field(default=60.0, gt=0.0)
     event_dispatch_interval_seconds: float = Field(default=1.0, gt=0.0)
     expected_schema_revision: str = EXPECTED_ALEMBIC_HEAD
+    ecg_artifact_root: Path = Path("/tmp/vinami-ecg-artifacts")
+    ecg_artifact_max_bytes: int = Field(default=25 * 1024 * 1024, ge=1024)
+    ecg_provider: str = "mock"
+    ecg_allow_mock_provider: bool = True
+    ecg_checkpoint_path: Path | None = None
+    ecg_checkpoint_sha256: str | None = None
+    ecg_device: str = "cpu"
 
     @model_validator(mode="after")
     def validate_identity_configuration(self) -> Settings:

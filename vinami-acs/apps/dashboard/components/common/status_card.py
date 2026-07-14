@@ -1,7 +1,7 @@
 """Side-effect-free status card presentation."""
 
 import streamlit as st
-from models.view_models import StatusView
+from apps.dashboard.models.view_models import StatusView
 
 
 def render_status_card(view: StatusView) -> None:

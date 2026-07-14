@@ -296,6 +296,11 @@ def test_deterministic_seed_is_repeatable_and_uses_lifecycle_handlers(
                 select(func.count())
                 .select_from(CommandIdempotencyRecord)
                 .where(CommandIdempotencyRecord.actor_id == ACTOR_ID)
+                .where(
+                    CommandIdempotencyRecord.command_type.in_(
+                        ["RegisterPatient", "StartEncounter", "OpenClinicalCase"]
+                    )
+                )
             )
             == len(CASES) * 3
         )
@@ -304,6 +309,15 @@ def test_deterministic_seed_is_repeatable_and_uses_lifecycle_handlers(
                 select(func.count())
                 .select_from(TimelineEventRecord)
                 .where(TimelineEventRecord.case_id.in_(case_ids))
+                .where(
+                    TimelineEventRecord.event_type.in_(
+                        [
+                            "PatientRegistered.v1",
+                            "EncounterStarted.v1",
+                            "ClinicalCaseOpened.v1",
+                        ]
+                    )
+                )
             )
             == len(CASES) * 3
         )

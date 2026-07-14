@@ -21,6 +21,10 @@ dependencies = [
   "streamlit>=1.40,<2.0",
   "httpx>=0.28,<1.0",
   "PyJWT[crypto]>=2.10,<3.0",
+  "python-multipart>=0.0.20,<1.0",
+  "pydicom>=3.0,<4.0",
+  "defusedxml>=0.7,<1.0",
+  "numpy>=2.0,<3.0",
 ]
 
 [project.optional-dependencies]
@@ -62,11 +66,21 @@ files = [
   "apps/dashboard/state/session.py",
   "scripts",
 ]
-mypy_path = ["apps/dashboard"]
 strict = true
 warn_unused_configs = true
 exclude = ["migrations"]
 
 [[tool.mypy.overrides]]
-module = ["streamlit", "structlog", "prometheus_client", "redis", "redis.*"]
+module = [
+  "defusedxml",
+  "defusedxml.*",
+  "prometheus_client",
+  "redis",
+  "redis.*",
+  "streamlit",
+  "structlog",
+  "timm",
+  "torch",
+  "torchvision",
+]
 ignore_missing_imports = true

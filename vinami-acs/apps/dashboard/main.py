@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import streamlit as st
-from api.client import get
-from components.case_header.header import render as render_case_header
-from components.common.status_card import render_status_card
-from components.common.unavailable_state import render as render_unavailable
-from components.patient_queue.queue import render as render_queue
-from demo.adapter import active_cases
-from demo.adapter import enabled as demo_enabled
-from models.view_models import StatusView
-from theme.styles import apply
+
+from apps.dashboard.api.client import get
+from apps.dashboard.components.case_header.header import render as render_case_header
+from apps.dashboard.components.common.status_card import render_status_card
+from apps.dashboard.components.common.unavailable_state import render as render_unavailable
+from apps.dashboard.components.patient_queue.queue import render as render_queue
+from apps.dashboard.demo.adapter import active_cases
+from apps.dashboard.demo.adapter import enabled as demo_enabled
+from apps.dashboard.models.view_models import StatusView
+from apps.dashboard.theme.styles import apply
 
 
 def render_status(title: str, path: str) -> None:

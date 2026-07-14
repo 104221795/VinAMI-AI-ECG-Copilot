@@ -21,6 +21,13 @@ class Permission(StrEnum):
     ENCOUNTER_READ = "encounter:read"
     CLINICAL_CASE_CREATE = "clinical_case:create"
     CLINICAL_CASE_READ = "clinical_case:read"
+    TRIAGE_READ = "triage:read"
+    TRIAGE_WRITE = "triage:write"
+    VITALS_READ = "vitals:read"
+    VITALS_WRITE = "vitals:write"
+    ECG_READ = "ecg:read"
+    ECG_WRITE = "ecg:write"
+    ECG_INTERPRET = "ecg:interpret"
     TIMELINE_READ = "timeline:read"
     AUDIT_READ = "audit:read"
     IDENTITY_INSPECT = "identity:inspect"
@@ -33,6 +40,9 @@ _READ_PERMISSIONS = frozenset(
         Permission.ENCOUNTER_READ,
         Permission.CLINICAL_CASE_READ,
         Permission.TIMELINE_READ,
+        Permission.TRIAGE_READ,
+        Permission.VITALS_READ,
+        Permission.ECG_READ,
     }
 )
 _MUTATION_PERMISSIONS = frozenset(
@@ -40,14 +50,19 @@ _MUTATION_PERMISSIONS = frozenset(
         Permission.PATIENT_CREATE,
         Permission.ENCOUNTER_CREATE,
         Permission.CLINICAL_CASE_CREATE,
+        Permission.TRIAGE_WRITE,
+        Permission.VITALS_WRITE,
+        Permission.ECG_WRITE,
     }
 )
 
 ROLE_PERMISSIONS = MappingProxyType(
     {
-        ClinicalRole.PHYSICIAN: _READ_PERMISSIONS | _MUTATION_PERMISSIONS | {Permission.AUDIT_READ},
+        ClinicalRole.PHYSICIAN: _READ_PERMISSIONS
+        | _MUTATION_PERMISSIONS
+        | {Permission.AUDIT_READ, Permission.ECG_INTERPRET},
         ClinicalRole.NURSE: _READ_PERMISSIONS | _MUTATION_PERMISSIONS,
-        ClinicalRole.TECHNICIAN: _READ_PERMISSIONS,
+        ClinicalRole.TECHNICIAN: _READ_PERMISSIONS | {Permission.ECG_WRITE},
         ClinicalRole.CARE_COORDINATOR: _READ_PERMISSIONS | _MUTATION_PERMISSIONS,
         ClinicalRole.ADMINISTRATOR: frozenset(Permission),
         ClinicalRole.AUDITOR: _READ_PERMISSIONS

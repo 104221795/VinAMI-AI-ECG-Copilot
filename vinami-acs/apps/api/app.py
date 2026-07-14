@@ -13,8 +13,11 @@ from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from apps.api.ecg import router as ecg_router
 from apps.api.http import audit_request_outcome, authorize_for
+from apps.api.identity import router as identity_router
 from apps.api.lifecycle import router as lifecycle_router
+from apps.api.triage_vitals import router as triage_vitals_router
 from vinami.identity.domain.security import Permission
 from vinami.identity.ports.errors import AuthenticationFailedError, AuthorizationDeniedError
 from vinami.shared.application_errors import (
@@ -201,12 +204,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(lifecycle_router)
+    app.include_router(triage_vitals_router)
+    app.include_router(identity_router)
+    app.include_router(ecg_router)
 
     resources = (
         "triage",
         "vitals",
-        "ecg-studies",
-        "ecg-ai-results",
         "troponin",
         "pathways",
         "workflows",

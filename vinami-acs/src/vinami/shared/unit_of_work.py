@@ -16,6 +16,7 @@ from vinami.clinical_case.adapters.read_models import (
     SQLAlchemyClinicalLifecycleReadRepository,
 )
 from vinami.ecg.adapters.persistence import SQLAlchemyECGStudyRepository
+from vinami.ecg.adapters.r3_persistence import SQLAlchemyECGClinicalRepository
 from vinami.identity.adapters.authorization import SQLAlchemyActorAuthorizationRepository
 from vinami.model_registry.adapters.persistence import SQLAlchemyModelRegistryRepository
 from vinami.patient.adapters.persistence import (
@@ -25,6 +26,7 @@ from vinami.patient.adapters.persistence import (
 from vinami.shared.domain import AggregateRoot, OptimisticConcurrencyError
 from vinami.shared.events.contracts import EventEnvelope
 from vinami.shared.idempotency_persistence import SQLAlchemyIdempotencyRepository
+from vinami.triage.adapters.persistence import SQLAlchemyClinicalDocumentationRepository
 from vinami.troponin.adapters.persistence import SQLAlchemyTroponinTimelineRepository
 from vinami.workflow.adapters.decision_persistence import (
     SQLAlchemyPhysicianDecisionRepository,
@@ -65,7 +67,9 @@ class SQLAlchemyUnitOfWork:
         self.lifecycle_reads = SQLAlchemyClinicalLifecycleReadRepository(self._session)
         self.closure_evidence = SQLAlchemyCaseClosureEvidenceRepository(self._session)
         self.ecg_studies = SQLAlchemyECGStudyRepository(self._session)
+        self.ecg_clinical = SQLAlchemyECGClinicalRepository(self._session)
         self.troponin_timelines = SQLAlchemyTroponinTimelineRepository(self._session)
+        self.documentation = SQLAlchemyClinicalDocumentationRepository(self._session)
         self.workflows = SQLAlchemyClinicalWorkflowRepository(self._session)
         self.tasks = SQLAlchemyClinicalTaskRepository(self._session)
         self.alerts = SQLAlchemyAlertRepository(self._session)

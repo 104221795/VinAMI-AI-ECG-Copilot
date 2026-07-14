@@ -1,0 +1,7 @@
+.next
+coverage
+node_modules
+packages/contracts/src/generated.ts
+packages/contracts/openapi.json
+pnpm-lock.yaml
+storybook-static
