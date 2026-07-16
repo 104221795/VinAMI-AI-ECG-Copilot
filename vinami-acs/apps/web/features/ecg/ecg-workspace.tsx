@@ -5,11 +5,15 @@ import {
   Activity,
   BrainCircuit,
   CheckCircle2,
+  Clock3,
+  FileInput,
   FileHeart,
+  RefreshCw,
   ShieldAlert,
   Upload,
 } from "lucide-react";
 import { Badge, ClinicalCard } from "@vinami/ui";
+import type { ECGWaveform } from "@vinami/api-client";
 import type { ECGWorkspaceView } from "@web/entities/ecg/model";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
@@ -34,20 +38,37 @@ const LEADS = [
 
 export function ECGWorkspace({
   caseId,
-  caseVersion,
   initialValue,
 }: {
   caseId: string;
-  caseVersion: number;
   initialValue: ECGWorkspaceView;
 }) {
   const [value, setValue] = useState(initialValue);
   const [reviewSummary, setReviewSummary] = useState("");
+  const [comparisonReview, setComparisonReview] = useState("");
+  const [baselineStudyId, setBaselineStudyId] = useState(
+    initialValue.studies.at(-2)?.studyId ?? "",
+  );
+  const [currentStudyId, setCurrentStudyId] = useState(
+    initialValue.currentStudy?.studyId ?? "",
+  );
+  const [baselineWaveform, setBaselineWaveform] =
+    useState<ECGWorkspaceView["waveform"]>(null);
+  const [currentWaveform, setCurrentWaveform] = useState<
+    ECGWorkspaceView["waveform"]
+  >(initialValue.waveform);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [reminderReason, setReminderReason] = useState(
+    "Physician-requested repeat technical ECG review",
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const api = createBrowserApiClient();
-  const latestAnalysis = value.analyses[0] ?? null;
+  const latestAnalysis =
+    value.analyses.find(
+      (analysis) => analysis.studyId === value.currentStudy?.studyId,
+    ) ?? null;
 
   async function refresh() {
     setValue(await loadECGWorkspaceWith(api, caseId));
@@ -72,7 +93,6 @@ export function ECGWorkspace({
       form.set("study_reference", reference);
       form.set("acquisition_at", new Date().toISOString());
       form.set("content_type", contentType);
-      form.set("expected_case_version", String(caseVersion));
       form.set(
         "artifact",
         new File(
@@ -86,6 +106,158 @@ export function ECGWorkspace({
       await api.uploadECGStudy(caseId, form, crypto.randomUUID());
       await refresh();
       setMessage("Synthetic 12-lead ECG ingested and quality assessed.");
+    });
+  }
+
+  function uploadHospitalFile() {
+    if (!uploadFile) return;
+    execute(async () => {
+      const sourceType =
+        uploadFile.type === "application/pdf"
+          ? "pdf_document"
+          : uploadFile.name.toLowerCase().endsWith(".xml")
+            ? "vendor_xml"
+            : "dicom_file";
+      const contentType =
+        uploadFile.type ||
+        (sourceType === "dicom_file" ? "application/dicom" : "application/xml");
+      const reference = `LOCAL-${Date.now()}`;
+      const form = new FormData();
+      form.set("source_type", sourceType);
+      form.set("study_reference", reference);
+      form.set("acquisition_at", new Date().toISOString());
+      form.set("content_type", contentType);
+      form.set("artifact", uploadFile);
+      await api.uploadECGStudy(caseId, form, crypto.randomUUID());
+      setUploadFile(null);
+      await refresh();
+      setMessage(`${sourceType.replaceAll("_", " ")} stored with provenance.`);
+    });
+  }
+
+  function importMockDICOM(reference: "R3-DICOM-001" | "R3-DICOM-RETRY") {
+    execute(async () => {
+      try {
+        await api.importECGStudy(
+          caseId,
+          {
+            source_type: "dicom_connector",
+            source_connector_id: "mock-dicom-source",
+            external_reference: reference,
+            study_reference: `${reference}-${Date.now()}`,
+            acquisition_at: new Date().toISOString(),
+          },
+          crypto.randomUUID(),
+        );
+      } catch (failure) {
+        await refresh();
+        throw failure;
+      }
+      await refresh();
+      setMessage("Mock hospital DICOM request persisted.");
+    });
+  }
+
+  function retryIngestion(jobId: string, recordVersion: number) {
+    execute(async () => {
+      await api.retryECGIngestion(
+        jobId,
+        { expected_version: recordVersion },
+        crypto.randomUUID(),
+      );
+      await refresh();
+      setMessage("Ingestion retry completed without creating a duplicate job.");
+    });
+  }
+
+  function createComparison() {
+    if (!baselineStudyId || !currentStudyId) return;
+    execute(async () => {
+      await api.createECGComparison(
+        caseId,
+        {
+          baseline_study_id: baselineStudyId,
+          current_study_id: currentStudyId,
+        },
+        crypto.randomUUID(),
+      );
+      const [baseline, current] = await Promise.all([
+        api.getECGWaveform(baselineStudyId).catch(() => null),
+        api.getECGWaveform(currentStudyId).catch(() => null),
+      ]);
+      setBaselineWaveform(baseline ? mapWaveform(baseline) : null);
+      setCurrentWaveform(current ? mapWaveform(current) : null);
+      await refresh();
+      setMessage(
+        "Technical serial ECG comparison persisted for physician review.",
+      );
+    });
+  }
+
+  function recordComparisonReview(comparisonId: string, version: number) {
+    if (!comparisonReview.trim()) return;
+    if (!window.confirm("Record this physician Dynamic ECG review?")) return;
+    execute(async () => {
+      await api.recordECGComparisonReview(
+        comparisonId,
+        {
+          review_status: "reviewed",
+          interpretation: comparisonReview.trim(),
+          occurred_at: new Date().toISOString(),
+          expected_version: version,
+        },
+        crypto.randomUUID(),
+      );
+      setComparisonReview("");
+      await refresh();
+      setMessage("Physician Dynamic ECG review recorded immutably.");
+    });
+  }
+
+  function createReminder() {
+    if (!value.currentStudy || !reminderReason.trim()) return;
+    execute(async () => {
+      await api.createECGReminder(
+        caseId,
+        {
+          source_study_id: value.currentStudy!.studyId,
+          reason: reminderReason.trim(),
+          due_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+          origin: "physician_request",
+        },
+        crypto.randomUUID(),
+      );
+      await refresh();
+      setMessage("Repeat ECG reminder scheduled by physician request.");
+    });
+  }
+
+  function transitionReminder(
+    reminder: ECGWorkspaceView["reminders"][number],
+    action: "acknowledge" | "complete" | "cancel",
+  ) {
+    if (!window.confirm(`Confirm repeat ECG reminder action: ${action}?`))
+      return;
+    execute(async () => {
+      const subsequent = value.studies.find(
+        (study) => study.studyId !== reminder.sourceStudyId,
+      );
+      await api.transitionECGReminder(
+        reminder.reminderId,
+        action,
+        {
+          expected_version: reminder.recordVersion,
+          completed_study_id:
+            action === "complete" ? subsequent?.studyId : null,
+          cancellation_reason:
+            action === "cancel"
+              ? "Physician cancelled demonstration reminder"
+              : null,
+        },
+        crypto.randomUUID(),
+      );
+      await refresh();
+      setMessage(`Repeat ECG reminder ${action} action recorded.`);
     });
   }
 
@@ -103,15 +275,18 @@ export function ECGWorkspace({
   }
 
   function recordReview() {
-    if (!value.currentStudy || !latestAnalysis || !reviewSummary.trim()) return;
+    if (!value.currentStudy || !reviewSummary.trim()) return;
     if (!window.confirm("Record this physician ECG review in the audit trail?"))
       return;
     execute(async () => {
-      const currentVersion = value.interpretations[0]?.recordVersion ?? 0;
+      const currentVersion =
+        value.interpretations.find(
+          (item) => item.studyId === value.currentStudy?.studyId,
+        )?.recordVersion ?? 0;
       await api.recordECGInterpretation(
         value.currentStudy!.studyId,
         {
-          analysis_id: latestAnalysis.analysisId,
+          analysis_id: latestAnalysis?.analysisId ?? null,
           interpretation_status: "reviewed",
           structured_interpretation: reviewSummary.trim(),
           agreement_status: "requires_clinical_correlation",
@@ -154,23 +329,36 @@ export function ECGWorkspace({
       ) : null}
 
       {!value.currentStudy ? (
-        <div className="vm-ecg-empty">
-          <FileHeart size={28} aria-hidden="true" />
-          <div>
-            <h3>No ECG study recorded for this case</h3>
-            <p>
-              Load a deterministic synthetic waveform to exercise the R3
-              clinical workflow.
-            </p>
+        <div className="vm-section-stack">
+          <div className="vm-ecg-empty">
+            <FileHeart size={28} aria-hidden="true" />
+            <div>
+              <h3>No ECG study recorded for this case</h3>
+              <p>
+                Load a deterministic synthetic waveform to exercise the R3
+                clinical workflow.
+              </p>
+            </div>
+            <button
+              className="vm-button vm-button--primary"
+              disabled={isPending}
+              onClick={addDemoStudy}
+            >
+              <Upload size={16} aria-hidden="true" />
+              {isPending ? "Processing..." : "Load synthetic 12-lead ECG"}
+            </button>
           </div>
-          <button
-            className="vm-button vm-button--primary"
-            disabled={isPending}
-            onClick={addDemoStudy}
-          >
-            <Upload size={16} aria-hidden="true" />
-            {isPending ? "Processing..." : "Load synthetic 12-lead ECG"}
-          </button>
+          {supportsHospitalIngestion(value) ? (
+            <SourceIntegrationPanel
+              value={value}
+              uploadFile={uploadFile}
+              isPending={isPending}
+              onFile={setUploadFile}
+              onUpload={uploadHospitalFile}
+              onImport={importMockDICOM}
+              onRetry={retryIngestion}
+            />
+          ) : null}
         </div>
       ) : (
         <div className="vm-section-stack">
@@ -235,7 +423,7 @@ export function ECGWorkspace({
                 value={latestAnalysis}
                 suppress={value.quality?.suppressScoreEmphasis ?? false}
               />
-            ) : (
+            ) : value.currentStudy.waveformAvailable ? (
               <div className="vm-inline-action">
                 <BrainCircuit size={22} aria-hidden="true" />
                 <div>
@@ -253,57 +441,547 @@ export function ECGWorkspace({
                   Run research-use analysis
                 </button>
               </div>
+            ) : (
+              <p className="vm-inline-empty">
+                Automated waveform analysis is unavailable for a document-only
+                ECG study.
+              </p>
             )}
           </ClinicalCard>
 
-          {latestAnalysis ? (
-            <ClinicalCard title="Physician ECG review">
-              <div className="vm-review-layout">
-                <div>
-                  <label
-                    className="vm-field-label"
-                    htmlFor="ecg-review-summary"
-                  >
-                    Structured review summary
-                  </label>
-                  <textarea
-                    id="ecg-review-summary"
-                    value={reviewSummary}
-                    onChange={(event) => setReviewSummary(event.target.value)}
-                    placeholder="Document physician interpretation and clinical correlation"
-                    rows={4}
-                  />
-                  <button
-                    className="vm-button vm-button--primary"
-                    disabled={isPending || !reviewSummary.trim()}
-                    onClick={recordReview}
-                  >
-                    <CheckCircle2 size={16} aria-hidden="true" /> Record
-                    physician review
-                  </button>
-                </div>
-                <div className="vm-review-history">
-                  <h3>Review history</h3>
-                  {value.interpretations.length ? (
-                    value.interpretations.map((item) => (
-                      <article key={item.interpretationId}>
-                        <strong>{item.status.replaceAll("_", " ")}</strong>
-                        <p>{item.summary}</p>
-                        <small>
-                          {item.actorRole} · {formatTimestamp(item.recordedAt)}
-                        </small>
-                      </article>
-                    ))
-                  ) : (
-                    <p>No physician interpretation recorded.</p>
-                  )}
-                </div>
+          <ClinicalCard
+            title={
+              value.currentStudy.waveformAvailable
+                ? "Physician ECG review"
+                : "Physician document review"
+            }
+          >
+            <div className="vm-review-layout">
+              <div>
+                <label className="vm-field-label" htmlFor="ecg-review-summary">
+                  Structured review summary
+                </label>
+                <textarea
+                  id="ecg-review-summary"
+                  value={reviewSummary}
+                  onChange={(event) => setReviewSummary(event.target.value)}
+                  placeholder="Document physician interpretation and clinical correlation"
+                  rows={4}
+                />
+                <button
+                  className="vm-button vm-button--primary"
+                  disabled={isPending || !reviewSummary.trim()}
+                  onClick={recordReview}
+                >
+                  <CheckCircle2 size={16} aria-hidden="true" /> Record physician
+                  review
+                </button>
               </div>
-            </ClinicalCard>
+              <div className="vm-review-history">
+                <h3>Review history</h3>
+                {value.interpretations.length ? (
+                  value.interpretations.map((item) => (
+                    <article key={item.interpretationId}>
+                      <strong>{item.status.replaceAll("_", " ")}</strong>
+                      <p>{item.summary}</p>
+                      <small>
+                        {item.actorRole} · {formatTimestamp(item.recordedAt)}
+                      </small>
+                    </article>
+                  ))
+                ) : (
+                  <p>No physician interpretation recorded.</p>
+                )}
+              </div>
+            </div>
+          </ClinicalCard>
+
+          {supportsHospitalIngestion(value) ? (
+            <SourceIntegrationPanel
+              value={value}
+              uploadFile={uploadFile}
+              isPending={isPending}
+              onFile={setUploadFile}
+              onUpload={uploadHospitalFile}
+              onImport={importMockDICOM}
+              onRetry={retryIngestion}
+            />
+          ) : null}
+
+          {value.capabilities.dynamic_ecg ? (
+            <DynamicECGPanel
+              value={value}
+              baselineStudyId={baselineStudyId}
+              currentStudyId={currentStudyId}
+              baselineWaveform={baselineWaveform}
+              currentWaveform={currentWaveform}
+              comparisonReview={comparisonReview}
+              isPending={isPending}
+              onBaseline={setBaselineStudyId}
+              onCurrent={setCurrentStudyId}
+              onCompare={createComparison}
+              onReviewText={setComparisonReview}
+              onReview={recordComparisonReview}
+            />
+          ) : null}
+
+          {value.capabilities.repeat_ecg ? (
+            <RepeatECGPanel
+              value={value}
+              reason={reminderReason}
+              isPending={isPending}
+              onReason={setReminderReason}
+              onCreate={createReminder}
+              onTransition={transitionReminder}
+            />
           ) : null}
         </div>
       )}
     </section>
+  );
+}
+
+function SourceIntegrationPanel({
+  value,
+  uploadFile,
+  isPending,
+  onFile,
+  onUpload,
+  onImport,
+  onRetry,
+}: {
+  value: ECGWorkspaceView;
+  uploadFile: File | null;
+  isPending: boolean;
+  onFile: (file: File | null) => void;
+  onUpload: () => void;
+  onImport: (reference: "R3-DICOM-001" | "R3-DICOM-RETRY") => void;
+  onRetry: (jobId: string, version: number) => void;
+}) {
+  return (
+    <ClinicalCard title="Source and integration">
+      <div className="vm-source-actions">
+        <div>
+          <span className="vm-field-label">Local hospital-format artifact</span>
+          <input
+            aria-label="DICOM XML or PDF ECG file"
+            type="file"
+            accept=".dcm,.dicom,.xml,.pdf,application/dicom,application/xml,application/pdf"
+            onChange={(event) => onFile(event.target.files?.[0] ?? null)}
+          />
+          <button
+            className="vm-button vm-button--secondary"
+            disabled={!uploadFile || isPending}
+            onClick={onUpload}
+          >
+            <FileInput size={15} aria-hidden="true" /> Import selected file
+          </button>
+        </div>
+        <div>
+          <span className="vm-field-label">
+            Deterministic hospital connector
+          </span>
+          <button
+            className="vm-button vm-button--secondary"
+            disabled={isPending}
+            onClick={() => onImport("R3-DICOM-001")}
+          >
+            Import mock DICOM
+          </button>
+          <button
+            className="vm-button vm-button--secondary"
+            disabled={isPending}
+            onClick={() => onImport("R3-DICOM-RETRY")}
+          >
+            Exercise timeout path
+          </button>
+        </div>
+      </div>
+      <div className="vm-connector-grid">
+        {value.connectors.map((connector) => (
+          <article key={connector.connectorId} className="vm-integration-item">
+            <div>
+              <strong>{connector.displayName}</strong>
+              <Badge tone={connector.available ? "success" : "critical"}>
+                {connector.available ? "Available" : "Unavailable"}
+              </Badge>
+            </div>
+            <p>{connector.detail}</p>
+            <small>
+              {connector.connectorType.replaceAll("_", " ")} ·{" "}
+              {connector.profile ?? "No profile"} ·{" "}
+              {connector.version ?? "Unknown version"}
+            </small>
+          </article>
+        ))}
+      </div>
+      <div className="vm-ingestion-list" aria-label="ECG ingestion jobs">
+        {value.ingestionJobs.length ? (
+          value.ingestionJobs.map((job) => (
+            <article key={job.jobId} className="vm-integration-item">
+              <div>
+                <strong>{job.sourceType.replaceAll("_", " ")}</strong>
+                <Badge
+                  tone={
+                    job.status === "completed"
+                      ? "success"
+                      : job.status === "failed"
+                        ? "critical"
+                        : "warning"
+                  }
+                >
+                  {job.status.replaceAll("_", " ")}
+                </Badge>
+              </div>
+              <p>
+                {job.connectorId ?? "Local upload"} · requested{" "}
+                {formatTimestamp(job.requestedAt)}
+              </p>
+              <small>
+                Parser {job.parser ?? "pending"} {job.parserVersion ?? ""} ·
+                retries {job.retryCount}
+              </small>
+              {job.failureDetail ? (
+                <p className="vm-action-message vm-action-message--error">
+                  {job.failureDetail}
+                </p>
+              ) : null}
+              {job.status === "failed" ? (
+                <button
+                  className="vm-button vm-button--secondary"
+                  disabled={isPending}
+                  onClick={() => onRetry(job.jobId, job.recordVersion)}
+                >
+                  <RefreshCw size={14} aria-hidden="true" /> Safe retry
+                </button>
+              ) : null}
+              <details>
+                <summary>Technical details</summary>
+                <code>{job.correlationId}</code>
+                {job.warnings.map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </details>
+            </article>
+          ))
+        ) : (
+          <p className="vm-inline-empty">
+            No ingestion job has been requested.
+          </p>
+        )}
+      </div>
+      {value.currentStudy?.sourceType === "pdf_document" ? (
+        <div className="vm-pdf-state">
+          <div className="vm-safety-banner" role="note">
+            Source document only. Structured waveform and automated waveform
+            analysis are unavailable.
+          </div>
+          <iframe
+            title="PDF ECG source document preview"
+            src={`/api/backend/api/v1/ecg-studies/${value.currentStudy.studyId}/preview`}
+          />
+        </div>
+      ) : null}
+    </ClinicalCard>
+  );
+}
+
+function DynamicECGPanel({
+  value,
+  baselineStudyId,
+  currentStudyId,
+  baselineWaveform,
+  currentWaveform,
+  comparisonReview,
+  isPending,
+  onBaseline,
+  onCurrent,
+  onCompare,
+  onReviewText,
+  onReview,
+}: {
+  value: ECGWorkspaceView;
+  baselineStudyId: string;
+  currentStudyId: string;
+  baselineWaveform: ECGWorkspaceView["waveform"];
+  currentWaveform: ECGWorkspaceView["waveform"];
+  comparisonReview: string;
+  isPending: boolean;
+  onBaseline: (value: string) => void;
+  onCurrent: (value: string) => void;
+  onCompare: () => void;
+  onReviewText: (value: string) => void;
+  onReview: (comparisonId: string, version: number) => void;
+}) {
+  const comparison = value.comparisons[0] ?? null;
+  return (
+    <ClinicalCard title="Dynamic ECG">
+      <p className="vm-score-explainer">
+        Technical ECG change indicator — physician interpretation required.
+      </p>
+      <div className="vm-comparison-controls">
+        <label>
+          Baseline study
+          <select
+            value={baselineStudyId}
+            onChange={(event) => onBaseline(event.target.value)}
+          >
+            <option value="">Select baseline</option>
+            {value.studies.map((study) => (
+              <option key={study.studyId} value={study.studyId}>
+                {study.studyReference} · {formatTimestamp(study.acquisitionAt)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Current study
+          <select
+            value={currentStudyId}
+            onChange={(event) => onCurrent(event.target.value)}
+          >
+            <option value="">Select current</option>
+            {value.studies.map((study) => (
+              <option key={study.studyId} value={study.studyId}>
+                {study.studyReference} · {formatTimestamp(study.acquisitionAt)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="vm-button vm-button--primary"
+          disabled={
+            isPending ||
+            !baselineStudyId ||
+            !currentStudyId ||
+            baselineStudyId === currentStudyId
+          }
+          onClick={onCompare}
+        >
+          Compare technical signals
+        </button>
+      </div>
+      {comparison ? (
+        <div className="vm-section-stack">
+          <div className="vm-comparison-summary">
+            <StatusMetric
+              label="Comparability"
+              value={comparison.comparabilityStatus}
+            />
+            <StatusMetric
+              label="Score compatibility"
+              value={comparison.scoreCompatibility}
+            />
+            <StatusMetric label="Policy" value={comparison.policyVersion} />
+          </div>
+          {comparison.comparabilityReasons.length ? (
+            <div className="vm-safety-banner" role="status">
+              {comparison.comparabilityReasons
+                .map((reason) => reason.replaceAll("_", " "))
+                .join(" · ")}
+            </div>
+          ) : null}
+          <div
+            className="vm-dynamic-waveforms"
+            aria-label="Synchronized serial ECG waveforms"
+          >
+            <div>
+              <h3>Baseline</h3>
+              {baselineWaveform ? (
+                <WaveformGrid value={baselineWaveform} />
+              ) : (
+                <p>Load comparison to view the structured waveform.</p>
+              )}
+            </div>
+            <div>
+              <h3>Current</h3>
+              {currentWaveform ? (
+                <WaveformGrid value={currentWaveform} />
+              ) : (
+                <p>Structured waveform unavailable.</p>
+              )}
+            </div>
+          </div>
+          {comparison.leadComparisons.length ? (
+            <div className="vm-table-scroll">
+              <table>
+                <caption>Lead-by-lead non-diagnostic technical metrics</caption>
+                <thead>
+                  <tr>
+                    <th>Lead</th>
+                    <th>Similarity</th>
+                    <th>Normalized difference</th>
+                    <th>Baseline shift</th>
+                    <th>Alignment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparison.leadComparisons.map((lead) => (
+                    <tr key={lead.leadName}>
+                      <th>{lead.leadName}</th>
+                      <td>{lead.waveformSimilarity.toFixed(3)}</td>
+                      <td>{lead.normalizedDifference.toFixed(3)}</td>
+                      <td>{lead.baselineShiftIndicator.toFixed(3)}</td>
+                      <td>{lead.sampleAlignmentStatus.replaceAll("_", " ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {comparison.scoreEvolution.length ? (
+            <div className="vm-score-evolution">
+              <h3>Compatible model-score evolution</h3>
+              {comparison.scoreEvolution.map((score) => (
+                <div key={score.findingCode}>
+                  <strong>{score.findingCode}</strong>
+                  <span>
+                    {score.previousScore.toFixed(3)} →{" "}
+                    {score.currentScore.toFixed(3)}
+                  </span>
+                  <small>
+                    Δ {score.absoluteDelta.toFixed(3)} ·{" "}
+                    {score.compatibilityStatus}
+                  </small>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>
+              Score deltas are withheld when model or preprocessing provenance
+              is incompatible.
+            </p>
+          )}
+          <label className="vm-field-label" htmlFor="dynamic-review">
+            Physician comparison review
+          </label>
+          <textarea
+            id="dynamic-review"
+            rows={3}
+            value={comparisonReview}
+            onChange={(event) => onReviewText(event.target.value)}
+          />
+          <button
+            className="vm-button vm-button--primary"
+            disabled={isPending || !comparisonReview.trim()}
+            onClick={() =>
+              onReview(
+                comparison.comparisonId,
+                value.comparisonReviews.find(
+                  (review) => review.comparisonId === comparison.comparisonId,
+                )?.recordVersion ?? 0,
+              )
+            }
+          >
+            Record physician review
+          </button>
+        </div>
+      ) : (
+        <p className="vm-inline-empty">
+          Select two structured studies to assess technical comparability.
+        </p>
+      )}
+    </ClinicalCard>
+  );
+}
+
+function RepeatECGPanel({
+  value,
+  reason,
+  isPending,
+  onReason,
+  onCreate,
+  onTransition,
+}: {
+  value: ECGWorkspaceView;
+  reason: string;
+  isPending: boolean;
+  onReason: (value: string) => void;
+  onCreate: () => void;
+  onTransition: (
+    reminder: ECGWorkspaceView["reminders"][number],
+    action: "acknowledge" | "complete" | "cancel",
+  ) => void;
+}) {
+  return (
+    <ClinicalCard title="Repeat ECG workflow">
+      <div className="vm-inline-action">
+        <Clock3 size={22} aria-hidden="true" />
+        <div>
+          <label className="vm-field-label" htmlFor="repeat-reason">
+            Reason
+          </label>
+          <input
+            id="repeat-reason"
+            value={reason}
+            onChange={(event) => onReason(event.target.value)}
+          />
+        </div>
+        <button
+          className="vm-button vm-button--primary"
+          disabled={isPending || !value.currentStudy || !reason.trim()}
+          onClick={onCreate}
+        >
+          Schedule +30 min
+        </button>
+      </div>
+      <div className="vm-ingestion-list">
+        {value.reminders.map((reminder) => (
+          <article key={reminder.reminderId} className="vm-integration-item">
+            <div>
+              <strong>{reminder.reason}</strong>
+              <Badge
+                tone={
+                  reminder.status === "completed"
+                    ? "success"
+                    : reminder.status === "overdue"
+                      ? "critical"
+                      : "warning"
+                }
+              >
+                {reminder.status}
+              </Badge>
+            </div>
+            <p>
+              Due {formatTimestamp(reminder.dueAt)} ·{" "}
+              {reminder.origin.replaceAll("_", " ")} · requested by{" "}
+              {reminder.requestedByRole}
+            </p>
+            {reminder.completedAt ? (
+              <small>Completed {formatTimestamp(reminder.completedAt)}</small>
+            ) : null}
+            {reminder.cancellationReason ? (
+              <small>{reminder.cancellationReason}</small>
+            ) : null}
+            {!["completed", "cancelled"].includes(reminder.status) ? (
+              <div className="vm-case-header">
+                {reminder.status !== "acknowledged" ? (
+                  <button
+                    className="vm-button vm-button--secondary"
+                    onClick={() => onTransition(reminder, "acknowledge")}
+                  >
+                    Acknowledge
+                  </button>
+                ) : null}
+                <button
+                  className="vm-button vm-button--secondary"
+                  disabled={value.studies.length < 2}
+                  onClick={() => onTransition(reminder, "complete")}
+                >
+                  Complete with subsequent ECG
+                </button>
+                <button
+                  className="vm-button vm-button--secondary"
+                  onClick={() => onTransition(reminder, "cancel")}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </ClinicalCard>
   );
 }
 
@@ -418,7 +1096,7 @@ function AnalysisPanel({
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(finding.score * 100)}
-              aria-valuetext={`${(finding.score * 100).toFixed(1)} percent; ${finding.positive ? "above" : "below"} the model threshold`}
+              aria-valuetext={`${(finding.score * 100).toFixed(1)} percent; ${finding.thresholdMet ? "above" : "below"} the model threshold`}
             >
               <span style={{ width: `${finding.score * 100}%` }} />
               {finding.threshold !== null ? (
@@ -462,4 +1140,24 @@ function demoWaveform(reference: string) {
       }),
     })),
   };
+}
+
+function mapWaveform(
+  value: ECGWaveform,
+): NonNullable<ECGWorkspaceView["waveform"]> {
+  return {
+    studyReference: value.study_reference,
+    samplingRateHz: value.sampling_rate_hz,
+    amplitudeUnit: value.amplitude_unit,
+    leads: value.leads,
+  };
+}
+
+function supportsHospitalIngestion(value: ECGWorkspaceView): boolean {
+  return [
+    "local_dicom",
+    "mock_dicom_connector",
+    "canonical_xml",
+    "pdf_document",
+  ].some((capability) => value.capabilities[capability] === true);
 }

@@ -60,6 +60,7 @@ class CanonicalECGPreprocessor:
             conversion_method=conversion,
             conversion_version="ucum-demo-1" if conversion else None,
             calibration=value.calibration,
+            source_identifiers=value.source_identifiers,
         )
         return PreprocessingResult(
             waveform, content, None, None, (conversion,) if conversion else (), ()

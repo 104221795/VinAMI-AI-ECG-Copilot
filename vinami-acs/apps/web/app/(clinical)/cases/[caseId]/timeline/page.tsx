@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@vinami/ui";
+import { CaseHistoryPanel } from "@web/features/case-history/case-history-panel";
+import {
+  loadModelProvenance,
+  loadOutcomeHistory,
+} from "@web/features/case-history/server-data";
 import { TimelineView } from "@web/features/case-timeline/timeline-view";
 import { loadTimeline } from "@web/features/case-timeline/server-data";
 import { loadCaseWorkspace } from "@web/features/case-summary/server-data";
@@ -16,18 +21,25 @@ export default async function TimelinePage({
 }) {
   const { caseId } = await params;
   try {
-    const [workspace, events] = await Promise.all([
+    const [workspace, timeline, outcomes, provenance] = await Promise.all([
       loadCaseWorkspace(caseId),
       loadTimeline(caseId),
+      loadOutcomeHistory(caseId),
+      loadModelProvenance(caseId),
     ]);
     return (
       <>
         <CaseWorkspaceHeader value={workspace} active="timeline" />
         <PageHeader
-          title="Lifecycle Timeline"
-          description="Persisted event projections from the transactional outbox. Newly committed events may appear after the worker processes them."
+          title="Timeline, Outcome and Learning Record"
+          description="Consolidated backend Timeline, physician-authored outcome revisions, model provenance and research-use export."
         />
-        <TimelineView events={events} />
+        <TimelineView value={timeline} />
+        <CaseHistoryPanel
+          caseId={caseId}
+          initialOutcomes={outcomes}
+          initialProvenance={provenance}
+        />
       </>
     );
   } catch (error) {

@@ -1,6 +1,170 @@
 {
   "components": {
     "schemas": {
+      "AlertActionBody": {
+        "additionalProperties": false,
+        "description": "Optimistically versioned alert transition request.",
+        "properties": {
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "AlertActionBody",
+        "type": "object"
+      },
+      "AlertResponse": {
+        "additionalProperties": false,
+        "description": "Generated-client operational alert contract.",
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "alert_id": {
+            "format": "uuid",
+            "title": "Alert Id",
+            "type": "string"
+          },
+          "alert_type": {
+            "title": "Alert Type",
+            "type": "string"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "escalation_level": {
+            "title": "Escalation Level",
+            "type": "integer"
+          },
+          "history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "raised_at": {
+            "format": "date-time",
+            "title": "Raised At",
+            "type": "string"
+          },
+          "resolution_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Reason"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          }
+        },
+        "required": [
+          "alert_id",
+          "case_id",
+          "workflow_id",
+          "task_id",
+          "alert_type",
+          "source",
+          "severity",
+          "message",
+          "status",
+          "version",
+          "raised_at",
+          "acknowledged_at",
+          "resolved_at",
+          "resolution_reason",
+          "escalation_level",
+          "history"
+        ],
+        "title": "AlertResponse",
+        "type": "object"
+      },
       "AnalysisResponse": {
         "properties": {
           "analysis_id": {
@@ -245,6 +409,145 @@
           "original_filename"
         ],
         "title": "ArtifactResponse",
+        "type": "object"
+      },
+      "AssessmentBody": {
+        "additionalProperties": false,
+        "properties": {
+          "additional_information_required": {
+            "anyOf": [
+              {
+                "maxLength": 3000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Information Required"
+          },
+          "contradictory_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Contradictory Evidence",
+            "type": "array"
+          },
+          "expected_snapshot_version": {
+            "minimum": 1,
+            "title": "Expected Snapshot Version",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "supporting_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Supporting Evidence",
+            "type": "array"
+          },
+          "uncertainty": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Uncertainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "expected_snapshot_version",
+          "summary",
+          "uncertainty"
+        ],
+        "title": "AssessmentBody",
+        "type": "object"
+      },
+      "AssessmentCorrectionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "additional_information_required": {
+            "anyOf": [
+              {
+                "maxLength": 3000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Additional Information Required"
+          },
+          "contradictory_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Contradictory Evidence",
+            "type": "array"
+          },
+          "correction_reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Correction Reason",
+            "type": "string"
+          },
+          "expected_assessment_version": {
+            "minimum": 1,
+            "title": "Expected Assessment Version",
+            "type": "integer"
+          },
+          "expected_snapshot_version": {
+            "minimum": 1,
+            "title": "Expected Snapshot Version",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "summary": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Summary",
+            "type": "string"
+          },
+          "supporting_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Supporting Evidence",
+            "type": "array"
+          },
+          "uncertainty": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Uncertainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "expected_snapshot_version",
+          "summary",
+          "uncertainty",
+          "expected_assessment_version",
+          "correction_reason"
+        ],
+        "title": "AssessmentCorrectionBody",
         "type": "object"
       },
       "AuditEntryResponse": {
@@ -626,6 +929,21 @@
         "title": "ClinicalCaseResponse",
         "type": "object"
       },
+      "ClinicalDecisionType": {
+        "description": "Documented physician plans supported by the R5 workspace.",
+        "enum": [
+          "continue_observation",
+          "request_repeat_ecg",
+          "request_repeat_troponin",
+          "request_additional_information",
+          "request_cardiology_review",
+          "request_cath_lab_review",
+          "maintain_current_plan",
+          "other_documented_plan"
+        ],
+        "title": "ClinicalDecisionType",
+        "type": "string"
+      },
       "ClinicalPriority": {
         "description": "Operational priority label chosen by a human workflow command.",
         "enum": [
@@ -635,6 +953,561 @@
         ],
         "title": "ClinicalPriority",
         "type": "string"
+      },
+      "ClinicalReasoningWorkspaceResponse": {
+        "additionalProperties": false,
+        "description": "Generated-client contract for the server-computed R5 workspace.",
+        "properties": {
+          "assessments": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Assessments",
+            "type": "array"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "case_version": {
+            "title": "Case Version",
+            "type": "integer"
+          },
+          "decisions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "safety_notice": {
+            "title": "Safety Notice",
+            "type": "string"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
+          }
+        },
+        "required": [
+          "case_id",
+          "case_version",
+          "snapshot",
+          "assessments",
+          "decisions",
+          "safety_notice"
+        ],
+        "title": "ClinicalReasoningWorkspaceResponse",
+        "type": "object"
+      },
+      "CommandCenterAlertResponse": {
+        "additionalProperties": false,
+        "description": "Unresolved R6 alert summary.",
+        "properties": {
+          "alert_id": {
+            "format": "uuid",
+            "title": "Alert Id",
+            "type": "string"
+          },
+          "alert_type": {
+            "title": "Alert Type",
+            "type": "string"
+          },
+          "escalation_level": {
+            "title": "Escalation Level",
+            "type": "integer"
+          },
+          "raised_at": {
+            "format": "date-time",
+            "title": "Raised At",
+            "type": "string"
+          },
+          "severity": {
+            "title": "Severity",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alert_id",
+          "alert_type",
+          "severity",
+          "status",
+          "raised_at",
+          "escalation_level"
+        ],
+        "title": "CommandCenterAlertResponse",
+        "type": "object"
+      },
+      "CommandCenterCaseResponse": {
+        "additionalProperties": false,
+        "description": "One physician-facing operational queue row and quick-view payload.",
+        "properties": {
+          "active_task_count": {
+            "title": "Active Task Count",
+            "type": "integer"
+          },
+          "age_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Band"
+          },
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterAlertResponse"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "case_priority": {
+            "title": "Case Priority",
+            "type": "string"
+          },
+          "case_status": {
+            "title": "Case Status",
+            "type": "string"
+          },
+          "case_version": {
+            "title": "Case Version",
+            "type": "integer"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "decision_rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Rationale"
+          },
+          "decision_recorded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Recorded At"
+          },
+          "decision_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Type"
+          },
+          "encounter_id": {
+            "format": "uuid",
+            "title": "Encounter Id",
+            "type": "string"
+          },
+          "evidence_freshness": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Evidence Freshness",
+            "type": "object"
+          },
+          "evidence_status": {
+            "title": "Evidence Status",
+            "type": "string"
+          },
+          "latest_activity_at": {
+            "format": "date-time",
+            "title": "Latest Activity At",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "oldest_overdue_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oldest Overdue At"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "operational_priority": {
+            "title": "Operational Priority",
+            "type": "string"
+          },
+          "overdue_task_count": {
+            "title": "Overdue Task Count",
+            "type": "integer"
+          },
+          "owner_team_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Team Id"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "patient_id": {
+            "format": "uuid",
+            "title": "Patient Id",
+            "type": "string"
+          },
+          "patient_reference": {
+            "title": "Patient Reference",
+            "type": "string"
+          },
+          "priority_reason": {
+            "title": "Priority Reason",
+            "type": "string"
+          },
+          "sex_at_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sex At Birth"
+          },
+          "snapshot_created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Created At"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterTaskResponse"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "technical_limits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Technical Limits",
+            "type": "array"
+          },
+          "unresolved_alert_count": {
+            "title": "Unresolved Alert Count",
+            "type": "integer"
+          },
+          "update_token": {
+            "title": "Update Token",
+            "type": "string"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
+          "workflow_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow State"
+          },
+          "workflow_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Version"
+          }
+        },
+        "required": [
+          "case_id",
+          "encounter_id",
+          "patient_id",
+          "patient_reference",
+          "age_band",
+          "sex_at_birth",
+          "location",
+          "case_status",
+          "case_priority",
+          "case_version",
+          "opened_at",
+          "workflow_id",
+          "workflow_state",
+          "workflow_version",
+          "operational_priority",
+          "priority_reason",
+          "active_task_count",
+          "overdue_task_count",
+          "unresolved_alert_count",
+          "next_due_at",
+          "oldest_overdue_at",
+          "owner_user_id",
+          "owner_team_id",
+          "snapshot_id",
+          "snapshot_created_at",
+          "evidence_status",
+          "evidence_freshness",
+          "missing_evidence",
+          "technical_limits",
+          "decision_id",
+          "decision_type",
+          "decision_rationale",
+          "decision_recorded_at",
+          "latest_activity_at",
+          "update_token",
+          "tasks",
+          "alerts"
+        ],
+        "title": "CommandCenterCaseResponse",
+        "type": "object"
+      },
+      "CommandCenterPageResponse": {
+        "additionalProperties": false,
+        "description": "Filtered and stably ordered active-case page.",
+        "properties": {
+          "evaluated_at": {
+            "format": "date-time",
+            "title": "Evaluated At",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterCaseResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "evaluated_at"
+        ],
+        "title": "CommandCenterPageResponse",
+        "type": "object"
+      },
+      "CommandCenterTaskResponse": {
+        "additionalProperties": false,
+        "description": "Active R6 task summary.",
+        "properties": {
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "escalation_level": {
+            "title": "Escalation Level",
+            "type": "integer"
+          },
+          "overdue_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overdue At"
+          },
+          "owner_team_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Team Id"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "format": "uuid",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "task_type": {
+            "title": "Task Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "task_type",
+          "status",
+          "priority",
+          "due_at",
+          "overdue_at",
+          "escalation_level",
+          "owner_user_id",
+          "owner_team_id"
+        ],
+        "title": "CommandCenterTaskResponse",
+        "type": "object"
       },
       "ComparisonBody": {
         "properties": {
@@ -710,13 +1583,20 @@
             "title": "Lead Comparisons",
             "type": "array"
           },
+          "model_score_compatibility": {
+            "title": "Model Score Compatibility",
+            "type": "string"
+          },
           "model_score_deltas": {
             "items": {
-              "items": {},
-              "type": "array"
+              "$ref": "#/components/schemas/ModelScoreEvolutionResponse"
             },
             "title": "Model Score Deltas",
             "type": "array"
+          },
+          "physician_review_status": {
+            "title": "Physician Review Status",
+            "type": "string"
           },
           "preprocessing_version": {
             "title": "Preprocessing Version",
@@ -735,10 +1615,26 @@
             "title": "Requested At",
             "type": "string"
           },
+          "requested_by_actor_role": {
+            "title": "Requested By Actor Role",
+            "type": "string"
+          },
           "safety_notice": {
             "default": "Technical ECG change indicator - physician interpretation required.",
             "title": "Safety Notice",
             "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
           },
           "status": {
             "title": "Status",
@@ -765,13 +1661,461 @@
           "lead_comparisons",
           "technical_change_indicators",
           "model_score_deltas",
+          "model_score_compatibility",
           "quality_context",
+          "requested_by_actor_role",
           "requested_at",
+          "started_at",
           "completed_at",
+          "physician_review_status",
           "correlation_id",
           "record_version"
         ],
         "title": "ComparisonResponse",
+        "type": "object"
+      },
+      "ComparisonReviewBody": {
+        "properties": {
+          "expected_version": {
+            "minimum": 0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "interpretation": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "review_status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_status",
+          "interpretation",
+          "occurred_at",
+          "expected_version"
+        ],
+        "title": "ComparisonReviewBody",
+        "type": "object"
+      },
+      "ComparisonReviewCorrectionBody": {
+        "properties": {
+          "correction_reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Correction Reason",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 0,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "interpretation": {
+            "maxLength": 12000,
+            "minLength": 1,
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "review_status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "review_status",
+          "interpretation",
+          "occurred_at",
+          "expected_version",
+          "correction_reason"
+        ],
+        "title": "ComparisonReviewCorrectionBody",
+        "type": "object"
+      },
+      "ComparisonReviewResponse": {
+        "properties": {
+          "actor_id": {
+            "format": "uuid",
+            "title": "Actor Id",
+            "type": "string"
+          },
+          "actor_role": {
+            "title": "Actor Role",
+            "type": "string"
+          },
+          "comparison_id": {
+            "format": "uuid",
+            "title": "Comparison Id",
+            "type": "string"
+          },
+          "correction_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correction Reason"
+          },
+          "correlation_id": {
+            "format": "uuid",
+            "title": "Correlation Id",
+            "type": "string"
+          },
+          "interpretation": {
+            "title": "Interpretation",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "record_version": {
+            "title": "Record Version",
+            "type": "integer"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "review_id": {
+            "format": "uuid",
+            "title": "Review Id",
+            "type": "string"
+          },
+          "review_status": {
+            "title": "Review Status",
+            "type": "string"
+          },
+          "revision_number": {
+            "title": "Revision Number",
+            "type": "integer"
+          },
+          "supersedes_review_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Review Id"
+          }
+        },
+        "required": [
+          "review_id",
+          "comparison_id",
+          "actor_id",
+          "actor_role",
+          "review_status",
+          "interpretation",
+          "occurred_at",
+          "recorded_at",
+          "correlation_id",
+          "record_version",
+          "revision_number",
+          "supersedes_review_id",
+          "correction_reason"
+        ],
+        "title": "ComparisonReviewResponse",
+        "type": "object"
+      },
+      "CompleteCaseWorkspaceResponse": {
+        "additionalProperties": false,
+        "description": "Integrated current-state projection with source provenance and no ORM leakage.",
+        "properties": {
+          "age_band": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Band"
+          },
+          "alerts": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "case_priority": {
+            "title": "Case Priority",
+            "type": "string"
+          },
+          "case_status": {
+            "title": "Case Status",
+            "type": "string"
+          },
+          "case_version": {
+            "title": "Case Version",
+            "type": "integer"
+          },
+          "ecg": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecg"
+          },
+          "encounter_id": {
+            "format": "uuid",
+            "title": "Encounter Id",
+            "type": "string"
+          },
+          "encounter_status": {
+            "title": "Encounter Status",
+            "type": "string"
+          },
+          "evaluated_at": {
+            "format": "date-time",
+            "title": "Evaluated At",
+            "type": "string"
+          },
+          "evidence_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Snapshot"
+          },
+          "evidence_status": {
+            "title": "Evidence Status",
+            "type": "string"
+          },
+          "last_updated_at": {
+            "format": "date-time",
+            "title": "Last Updated At",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "missing_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Evidence",
+            "type": "array"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "opening_reason": {
+            "title": "Opening Reason",
+            "type": "string"
+          },
+          "patient_id": {
+            "format": "uuid",
+            "title": "Patient Id",
+            "type": "string"
+          },
+          "patient_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Patient Name"
+          },
+          "patient_reference": {
+            "title": "Patient Reference",
+            "type": "string"
+          },
+          "physician_assessment": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Physician Assessment"
+          },
+          "physician_decision": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Physician Decision"
+          },
+          "sex_at_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sex At Birth"
+          },
+          "stale_evidence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Stale Evidence",
+            "type": "array"
+          },
+          "tasks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "technical_limits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Technical Limits",
+            "type": "array"
+          },
+          "timeline": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Timeline",
+            "type": "array"
+          },
+          "triage": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triage"
+          },
+          "troponin": {
+            "additionalProperties": true,
+            "title": "Troponin",
+            "type": "object"
+          },
+          "update_token": {
+            "title": "Update Token",
+            "type": "string"
+          },
+          "vitals": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vitals"
+          },
+          "workflow": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow"
+          }
+        },
+        "required": [
+          "case_id",
+          "encounter_id",
+          "patient_id",
+          "patient_reference",
+          "patient_name",
+          "age_band",
+          "sex_at_birth",
+          "location",
+          "encounter_status",
+          "case_status",
+          "case_priority",
+          "opening_reason",
+          "opened_at",
+          "last_updated_at",
+          "case_version",
+          "triage",
+          "vitals",
+          "ecg",
+          "troponin",
+          "evidence_snapshot",
+          "physician_assessment",
+          "physician_decision",
+          "workflow",
+          "tasks",
+          "alerts",
+          "timeline",
+          "evidence_status",
+          "missing_evidence",
+          "stale_evidence",
+          "technical_limits",
+          "update_token",
+          "evaluated_at"
+        ],
+        "title": "CompleteCaseWorkspaceResponse",
         "type": "object"
       },
       "ConnectorResponse": {
@@ -791,6 +2135,10 @@
             "title": "Connector Id",
             "type": "string"
           },
+          "connector_type": {
+            "title": "Connector Type",
+            "type": "string"
+          },
           "detail": {
             "title": "Detail",
             "type": "string"
@@ -799,9 +2147,31 @@
             "title": "Display Name",
             "type": "string"
           },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
           "source_type": {
             "title": "Source Type",
             "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
           }
         },
         "required": [
@@ -810,7 +2180,10 @@
           "source_type",
           "available",
           "capabilities",
-          "detail"
+          "detail",
+          "connector_type",
+          "profile",
+          "version"
         ],
         "title": "ConnectorResponse",
         "type": "object"
@@ -1258,6 +2631,221 @@
         "title": "DataQualityStatus",
         "type": "string"
       },
+      "DecisionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "assessment_id": {
+            "format": "uuid",
+            "title": "Assessment Id",
+            "type": "string"
+          },
+          "decision_type": {
+            "$ref": "#/components/schemas/ClinicalDecisionType"
+          },
+          "evidence_references": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Evidence References",
+            "type": "array"
+          },
+          "expected_assessment_version": {
+            "minimum": 1,
+            "title": "Expected Assessment Version",
+            "type": "integer"
+          },
+          "expected_snapshot_version": {
+            "minimum": 1,
+            "title": "Expected Snapshot Version",
+            "type": "integer"
+          },
+          "rationale": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "uncertainty": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Uncertainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "assessment_id",
+          "expected_snapshot_version",
+          "expected_assessment_version",
+          "decision_type",
+          "rationale",
+          "uncertainty",
+          "evidence_references"
+        ],
+        "title": "DecisionBody",
+        "type": "object"
+      },
+      "DecisionCorrectionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "assessment_id": {
+            "format": "uuid",
+            "title": "Assessment Id",
+            "type": "string"
+          },
+          "correction_reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Correction Reason",
+            "type": "string"
+          },
+          "decision_type": {
+            "$ref": "#/components/schemas/ClinicalDecisionType"
+          },
+          "evidence_references": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Evidence References",
+            "type": "array"
+          },
+          "expected_assessment_version": {
+            "minimum": 1,
+            "title": "Expected Assessment Version",
+            "type": "integer"
+          },
+          "expected_decision_version": {
+            "minimum": 1,
+            "title": "Expected Decision Version",
+            "type": "integer"
+          },
+          "expected_snapshot_version": {
+            "minimum": 1,
+            "title": "Expected Snapshot Version",
+            "type": "integer"
+          },
+          "rationale": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "uncertainty": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Uncertainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "assessment_id",
+          "expected_snapshot_version",
+          "expected_assessment_version",
+          "decision_type",
+          "rationale",
+          "uncertainty",
+          "evidence_references",
+          "expected_decision_version",
+          "correction_reason"
+        ],
+        "title": "DecisionCorrectionBody",
+        "type": "object"
+      },
+      "DecisionRevocationBody": {
+        "additionalProperties": false,
+        "properties": {
+          "assessment_id": {
+            "format": "uuid",
+            "title": "Assessment Id",
+            "type": "string"
+          },
+          "decision_type": {
+            "$ref": "#/components/schemas/ClinicalDecisionType"
+          },
+          "evidence_references": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Evidence References",
+            "type": "array"
+          },
+          "expected_assessment_version": {
+            "minimum": 1,
+            "title": "Expected Assessment Version",
+            "type": "integer"
+          },
+          "expected_decision_version": {
+            "minimum": 1,
+            "title": "Expected Decision Version",
+            "type": "integer"
+          },
+          "expected_snapshot_version": {
+            "minimum": 1,
+            "title": "Expected Snapshot Version",
+            "type": "integer"
+          },
+          "operation": {
+            "const": "revoke",
+            "default": "revoke",
+            "title": "Operation",
+            "type": "string"
+          },
+          "rationale": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Rationale",
+            "type": "string"
+          },
+          "revocation_reason": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Revocation Reason",
+            "type": "string"
+          },
+          "snapshot_id": {
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "uncertainty": {
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Uncertainty",
+            "type": "string"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "assessment_id",
+          "expected_snapshot_version",
+          "expected_assessment_version",
+          "expected_decision_version",
+          "decision_type",
+          "rationale",
+          "uncertainty",
+          "evidence_references",
+          "revocation_reason"
+        ],
+        "title": "DecisionRevocationBody",
+        "type": "object"
+      },
       "ECGSourceType": {
         "enum": [
           "manual_upload",
@@ -1456,10 +3044,24 @@
             "title": "Analyses",
             "type": "array"
           },
+          "capabilities": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "title": "Capabilities",
+            "type": "object"
+          },
           "clinical_case_id": {
             "format": "uuid",
             "title": "Clinical Case Id",
             "type": "string"
+          },
+          "comparison_reviews": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonReviewResponse"
+            },
+            "title": "Comparison Reviews",
+            "type": "array"
           },
           "comparisons": {
             "items": {
@@ -1477,6 +3079,18 @@
                 "type": "null"
               }
             ]
+          },
+          "data_freshness": {
+            "format": "date-time",
+            "title": "Data Freshness",
+            "type": "string"
+          },
+          "ingestion_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/IngestionJobResponse"
+            },
+            "title": "Ingestion Jobs",
+            "type": "array"
           },
           "interpretations": {
             "items": {
@@ -1521,8 +3135,12 @@
           "quality",
           "analyses",
           "interpretations",
+          "ingestion_jobs",
           "comparisons",
+          "comparison_reviews",
           "reminders",
+          "capabilities",
+          "data_freshness",
           "safety_notice"
         ],
         "title": "ECGWorkspaceResponse",
@@ -1661,6 +3279,50 @@
           "explanation_reference"
         ],
         "title": "FindingResponse",
+        "type": "object"
+      },
+      "GenerateTaskBody": {
+        "additionalProperties": false,
+        "description": "Request operational work from one persisted physician decision.",
+        "properties": {
+          "decision_id": {
+            "format": "uuid",
+            "title": "Decision Id",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "expected_decision_version": {
+            "minimum": 1,
+            "title": "Expected Decision Version",
+            "type": "integer"
+          },
+          "expected_workflow_version": {
+            "minimum": 1,
+            "title": "Expected Workflow Version",
+            "type": "integer"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/TaskPriority",
+            "default": "routine"
+          }
+        },
+        "required": [
+          "decision_id",
+          "expected_decision_version",
+          "expected_workflow_version"
+        ],
+        "title": "GenerateTaskBody",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1811,6 +3473,11 @@
       },
       "IngestionJobResponse": {
         "properties": {
+          "acquisition_at": {
+            "format": "date-time",
+            "title": "Acquisition At",
+            "type": "string"
+          },
           "artifact_id": {
             "anyOf": [
               {
@@ -1839,6 +3506,10 @@
               }
             ],
             "title": "Completed At"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
           },
           "correlation_id": {
             "format": "uuid",
@@ -1909,9 +3580,17 @@
             "title": "Record Version",
             "type": "integer"
           },
+          "request_source": {
+            "title": "Request Source",
+            "type": "string"
+          },
           "requested_at": {
             "format": "date-time",
             "title": "Requested At",
+            "type": "string"
+          },
+          "requested_by_actor_role": {
+            "title": "Requested By Actor Role",
             "type": "string"
           },
           "resulting_study_id": {
@@ -1930,6 +3609,18 @@
             "title": "Retry Count",
             "type": "integer"
           },
+          "retry_of_job_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry Of Job Id"
+          },
           "source_connector_id": {
             "anyOf": [
               {
@@ -1945,8 +3636,24 @@
             "title": "Source Type",
             "type": "string"
           },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
           "status": {
             "title": "Status",
+            "type": "string"
+          },
+          "study_reference": {
+            "title": "Study Reference",
             "type": "string"
           },
           "warnings": {
@@ -1964,8 +3671,14 @@
           "source_connector_id",
           "external_reference",
           "status",
+          "requested_by_actor_role",
           "requested_at",
+          "started_at",
           "completed_at",
+          "request_source",
+          "study_reference",
+          "acquisition_at",
+          "content_type",
           "artifact_id",
           "resulting_study_id",
           "parser_name",
@@ -1974,6 +3687,7 @@
           "failure_category",
           "failure_detail_safe",
           "retry_count",
+          "retry_of_job_id",
           "correlation_id",
           "record_version"
         ],
@@ -2244,6 +3958,10 @@
             "title": "Quality Difference",
             "type": "string"
           },
+          "sample_alignment_status": {
+            "title": "Sample Alignment Status",
+            "type": "string"
+          },
           "waveform_similarity": {
             "title": "Waveform Similarity",
             "type": "number"
@@ -2256,7 +3974,8 @@
           "amplitude_scale_change",
           "baseline_shift_indicator",
           "missing_data_percentage",
-          "quality_difference"
+          "quality_difference",
+          "sample_alignment_status"
         ],
         "title": "LeadComparisonResponse",
         "type": "object"
@@ -2277,6 +3996,85 @@
           "description"
         ],
         "title": "MissingDocumentationItemResponse",
+        "type": "object"
+      },
+      "ModelScoreEvolutionResponse": {
+        "properties": {
+          "absolute_delta": {
+            "title": "Absolute Delta",
+            "type": "number"
+          },
+          "compatibility_status": {
+            "title": "Compatibility Status",
+            "type": "string"
+          },
+          "current_model_version": {
+            "title": "Current Model Version",
+            "type": "string"
+          },
+          "current_score": {
+            "title": "Current Score",
+            "type": "number"
+          },
+          "current_threshold_met": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Threshold Met"
+          },
+          "finding_code": {
+            "title": "Finding Code",
+            "type": "string"
+          },
+          "previous_model_version": {
+            "title": "Previous Model Version",
+            "type": "string"
+          },
+          "previous_score": {
+            "title": "Previous Score",
+            "type": "number"
+          },
+          "previous_threshold_met": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Threshold Met"
+          },
+          "threshold_state_changed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Threshold State Changed"
+          }
+        },
+        "required": [
+          "finding_code",
+          "previous_score",
+          "current_score",
+          "absolute_delta",
+          "previous_threshold_met",
+          "current_threshold_met",
+          "threshold_state_changed",
+          "previous_model_version",
+          "current_model_version",
+          "compatibility_status"
+        ],
+        "title": "ModelScoreEvolutionResponse",
         "type": "object"
       },
       "ObservationState": {
@@ -2329,6 +4127,13 @@
           "priority"
         ],
         "title": "OpenClinicalCaseRequest",
+        "type": "object"
+      },
+      "OverdueEvaluationBody": {
+        "additionalProperties": false,
+        "description": "Request server-authoritative due-time evaluation.",
+        "properties": {},
+        "title": "OverdueEvaluationBody",
         "type": "object"
       },
       "PaginatedClinicalCasesResponse": {
@@ -2875,6 +4680,10 @@
             "title": "Due At",
             "type": "string"
           },
+          "origin": {
+            "$ref": "#/components/schemas/ReminderOrigin",
+            "default": "physician_request"
+          },
           "reason": {
             "maxLength": 2000,
             "minLength": 1,
@@ -2894,6 +4703,15 @@
         ],
         "title": "ReminderBody",
         "type": "object"
+      },
+      "ReminderOrigin": {
+        "enum": [
+          "physician_request",
+          "technical_quality",
+          "demonstration_policy"
+        ],
+        "title": "ReminderOrigin",
+        "type": "string"
       },
       "ReminderResponse": {
         "properties": {
@@ -2921,10 +4739,57 @@
             ],
             "title": "Acknowledged By"
           },
+          "cancellation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellation Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "cancelled_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled By"
+          },
           "clinical_case_id": {
             "format": "uuid",
             "title": "Clinical Case Id",
             "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
           },
           "completed_study_id": {
             "anyOf": [
@@ -2953,6 +4818,10 @@
             "title": "Due At",
             "type": "string"
           },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
           "reason": {
             "title": "Reason",
             "type": "string"
@@ -2971,6 +4840,10 @@
             "title": "Requested By",
             "type": "string"
           },
+          "requested_by_actor_role": {
+            "title": "Requested By Actor Role",
+            "type": "string"
+          },
           "source_study_id": {
             "format": "uuid",
             "title": "Source Study Id",
@@ -2979,6 +4852,11 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
           }
         },
         "required": [
@@ -2986,13 +4864,20 @@
           "clinical_case_id",
           "source_study_id",
           "requested_by",
+          "requested_by_actor_role",
+          "origin",
           "reason",
           "due_at",
           "status",
           "acknowledged_by",
           "acknowledged_at",
           "completed_study_id",
+          "completed_at",
+          "cancelled_by",
+          "cancelled_at",
+          "cancellation_reason",
           "created_at",
+          "updated_at",
           "correlation_id",
           "record_version"
         ],
@@ -3001,6 +4886,19 @@
       },
       "ReminderTransitionBody": {
         "properties": {
+          "cancellation_reason": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellation Reason"
+          },
           "completed_study_id": {
             "anyOf": [
               {
@@ -3039,6 +4937,20 @@
         "title": "RequestAnalysisBody",
         "type": "object"
       },
+      "RetryIngestionBody": {
+        "properties": {
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "RetryIngestionBody",
+        "type": "object"
+      },
       "SafeDemographicSummaryModel": {
         "additionalProperties": false,
         "description": "Optional non-identifying demographic summary.",
@@ -3075,6 +4987,21 @@
           }
         },
         "title": "SafeDemographicSummaryModel",
+        "type": "object"
+      },
+      "SnapshotBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_case_version": {
+            "minimum": 1,
+            "title": "Expected Case Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_case_version"
+        ],
+        "title": "SnapshotBody",
         "type": "object"
       },
       "StartEncounterRequest": {
@@ -3154,6 +5081,327 @@
           "state"
         ],
         "title": "StructuredObservationModel",
+        "type": "object"
+      },
+      "TaskActionBody": {
+        "additionalProperties": false,
+        "description": "Optimistically versioned task transition request.",
+        "properties": {
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "owner_team_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Team Id"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "TaskActionBody",
+        "type": "object"
+      },
+      "TaskPriority": {
+        "description": "Operational urgency without implying diagnostic certainty.",
+        "enum": [
+          "routine",
+          "priority",
+          "urgent"
+        ],
+        "title": "TaskPriority",
+        "type": "string"
+      },
+      "TaskResponse": {
+        "additionalProperties": false,
+        "description": "Generated-client task contract.",
+        "properties": {
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acknowledged At"
+          },
+          "cancellation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancellation Reason"
+          },
+          "cancelled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cancelled At"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "escalation_level": {
+            "title": "Escalation Level",
+            "type": "integer"
+          },
+          "history": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "History",
+            "type": "array"
+          },
+          "originating_decision": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Originating Decision"
+          },
+          "originating_decision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Originating Decision Id"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "overdue_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overdue At"
+          },
+          "owner_team_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Team Id"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "priority": {
+            "title": "Priority",
+            "type": "string"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "task_id": {
+            "format": "uuid",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "task_type": {
+            "title": "Task Type",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          }
+        },
+        "required": [
+          "task_id",
+          "case_id",
+          "workflow_id",
+          "task_type",
+          "status",
+          "priority",
+          "version",
+          "created_at",
+          "created_by",
+          "due_at",
+          "originating_decision_id",
+          "source_type",
+          "source_id",
+          "owner_user_id",
+          "owner_team_id",
+          "acknowledged_at",
+          "started_at",
+          "completed_at",
+          "outcome",
+          "cancelled_at",
+          "cancellation_reason",
+          "overdue_at",
+          "escalation_level",
+          "history"
+        ],
+        "title": "TaskResponse",
         "type": "object"
       },
       "TimelineEventResponse": {
@@ -3626,6 +5874,446 @@
         "title": "TriageVitalsSummaryResponse",
         "type": "object"
       },
+      "TroponinAmendmentBody": {
+        "additionalProperties": false,
+        "properties": {
+          "amendment_reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Amendment Reason",
+            "type": "string"
+          },
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "result_status": {
+            "title": "Result Status",
+            "type": "string"
+          },
+          "resulted_at": {
+            "format": "date-time",
+            "title": "Resulted At",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "unit",
+          "result_status",
+          "amendment_reason",
+          "resulted_at",
+          "expected_version"
+        ],
+        "title": "TroponinAmendmentBody",
+        "type": "object"
+      },
+      "TroponinImportBody": {
+        "additionalProperties": false,
+        "properties": {
+          "connector_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Connector Id",
+            "type": "string"
+          },
+          "expected_case_version": {
+            "minimum": 1,
+            "title": "Expected Case Version",
+            "type": "integer"
+          },
+          "external_reference": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "External Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connector_id",
+          "external_reference",
+          "expected_case_version"
+        ],
+        "title": "TroponinImportBody",
+        "type": "object"
+      },
+      "TroponinRepeatTransitionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "completed_result_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed Result Id"
+          },
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "TroponinRepeatTransitionBody",
+        "type": "object"
+      },
+      "TroponinResultBody": {
+        "additionalProperties": false,
+        "properties": {
+          "accession_number": {
+            "anyOf": [
+              {
+                "maxLength": 160,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accession Number"
+          },
+          "analyte": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Analyte",
+            "type": "string"
+          },
+          "assay_code": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Assay Code",
+            "type": "string"
+          },
+          "expected_case_version": {
+            "minimum": 1,
+            "title": "Expected Case Version",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "quality_flags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Quality Flags",
+            "type": "array"
+          },
+          "reference_limit_source": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Limit Source"
+          },
+          "reference_limit_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Limit Unit"
+          },
+          "reference_limit_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Limit Value"
+          },
+          "result_status": {
+            "title": "Result Status",
+            "type": "string"
+          },
+          "resulted_at": {
+            "format": "date-time",
+            "title": "Resulted At",
+            "type": "string"
+          },
+          "source_result_id": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Source Result Id",
+            "type": "string"
+          },
+          "source_system": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Source System",
+            "type": "string"
+          },
+          "specimen_collected_at": {
+            "format": "date-time",
+            "title": "Specimen Collected At",
+            "type": "string"
+          },
+          "specimen_type": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Specimen Type",
+            "type": "string"
+          },
+          "unit": {
+            "maxLength": 30,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "description": "Base-10 decimal string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assay_code",
+          "analyte",
+          "value",
+          "unit",
+          "specimen_type",
+          "specimen_collected_at",
+          "resulted_at",
+          "result_status",
+          "source_system",
+          "expected_case_version"
+        ],
+        "title": "TroponinResultBody",
+        "type": "object"
+      },
+      "TroponinRetryImportBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_version": {
+            "minimum": 1,
+            "title": "Expected Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_version"
+        ],
+        "title": "TroponinRetryImportBody",
+        "type": "object"
+      },
+      "TroponinReviewBody": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_case_version": {
+            "minimum": 1,
+            "title": "Expected Case Version",
+            "type": "integer"
+          },
+          "incompatibility_acknowledged": {
+            "default": false,
+            "title": "Incompatibility Acknowledged",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "quality_limitation_acknowledged": {
+            "default": false,
+            "title": "Quality Limitation Acknowledged",
+            "type": "boolean"
+          },
+          "referenced_result_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Referenced Result Ids",
+            "type": "array"
+          },
+          "repeat_measurement_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat Measurement Reason"
+          },
+          "repeat_measurement_requested": {
+            "default": false,
+            "title": "Repeat Measurement Requested",
+            "type": "boolean"
+          },
+          "review_status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "referenced_result_ids",
+          "review_status",
+          "occurred_at",
+          "expected_case_version"
+        ],
+        "title": "TroponinReviewBody",
+        "type": "object"
+      },
+      "TroponinReviewCorrectionBody": {
+        "additionalProperties": false,
+        "properties": {
+          "corrected_note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Note"
+          },
+          "correction_reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Correction Reason",
+            "type": "string"
+          },
+          "expected_case_version": {
+            "minimum": 1,
+            "title": "Expected Case Version",
+            "type": "integer"
+          },
+          "expected_review_version": {
+            "minimum": 1,
+            "title": "Expected Review Version",
+            "type": "integer"
+          },
+          "incompatibility_acknowledged": {
+            "default": false,
+            "title": "Incompatibility Acknowledged",
+            "type": "boolean"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "quality_limitation_acknowledged": {
+            "default": false,
+            "title": "Quality Limitation Acknowledged",
+            "type": "boolean"
+          },
+          "referenced_result_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Referenced Result Ids",
+            "type": "array"
+          },
+          "repeat_measurement_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repeat Measurement Reason"
+          },
+          "repeat_measurement_requested": {
+            "default": false,
+            "title": "Repeat Measurement Requested",
+            "type": "boolean"
+          },
+          "review_status": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Review Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "correction_reason",
+          "referenced_result_ids",
+          "review_status",
+          "occurred_at",
+          "expected_case_version",
+          "expected_review_version"
+        ],
+        "title": "TroponinReviewCorrectionBody",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -4045,6 +6733,74 @@
           "leads"
         ],
         "title": "WaveformResponse",
+        "type": "object"
+      },
+      "WorkflowState": {
+        "description": "Explicit lifecycle states for a suspected ACS case workflow.",
+        "enum": [
+          "NEW",
+          "TRIAGE_IN_PROGRESS",
+          "AWAITING_ECG",
+          "ECG_UNDER_REVIEW",
+          "AWAITING_TROPONIN",
+          "OBSERVATION",
+          "PHYSICIAN_REVIEW_REQUIRED",
+          "PATHWAY_SELECTED",
+          "TRANSFER_IN_PROGRESS",
+          "CATH_LAB_REVIEW",
+          "DISCHARGE_REVIEW",
+          "CLOSED",
+          "CANCELLED"
+        ],
+        "title": "WorkflowState",
+        "type": "string"
+      },
+      "WorkflowWorkspaceResponse": {
+        "additionalProperties": false,
+        "description": "Authoritative case-level R6 workspace contract.",
+        "properties": {
+          "alerts": {
+            "items": {
+              "$ref": "#/components/schemas/AlertResponse"
+            },
+            "title": "Alerts",
+            "type": "array"
+          },
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "case_version": {
+            "title": "Case Version",
+            "type": "integer"
+          },
+          "safety_notice": {
+            "title": "Safety Notice",
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "workflow": {
+            "additionalProperties": true,
+            "title": "Workflow",
+            "type": "object"
+          }
+        },
+        "required": [
+          "case_id",
+          "case_version",
+          "workflow",
+          "tasks",
+          "alerts",
+          "safety_notice"
+        ],
+        "title": "WorkflowWorkspaceResponse",
         "type": "object"
       }
     },
@@ -4571,6 +7327,745 @@
         ]
       }
     },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning": {
+      "get": {
+        "operationId": "workspace_api_v1_clinical_cases__case_id__clinical_reasoning_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClinicalReasoningWorkspaceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Workspace",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments": {
+      "post": {
+        "operationId": "record_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Record Assessment Api V1 Clinical Cases  Case Id  Clinical Reasoning Assessments Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Assessment",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments/{assessment_id}/corrections": {
+      "post": {
+        "operationId": "correct_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments__assessment_id__corrections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "assessment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Assessment Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssessmentCorrectionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Correct Assessment Api V1 Clinical Cases  Case Id  Clinical Reasoning Assessments  Assessment Id  Corrections Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Correct Assessment",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions": {
+      "post": {
+        "operationId": "record_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Record Decision Api V1 Clinical Cases  Case Id  Clinical Reasoning Decisions Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Decision",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/corrections": {
+      "post": {
+        "operationId": "correct_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__corrections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Decision Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionCorrectionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Correct Decision Api V1 Clinical Cases  Case Id  Clinical Reasoning Decisions  Decision Id  Corrections Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Correct Decision",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/revocations": {
+      "post": {
+        "operationId": "revoke_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__revocations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "decision_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Decision Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRevocationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Revoke Decision Api V1 Clinical Cases  Case Id  Clinical Reasoning Decisions  Decision Id  Revocations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Revoke Decision",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/snapshots": {
+      "post": {
+        "operationId": "create_snapshot_api_v1_clinical_cases__case_id__clinical_reasoning_snapshots_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SnapshotBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Create Snapshot Api V1 Clinical Cases  Case Id  Clinical Reasoning Snapshots Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Snapshot",
+        "tags": [
+          "clinical-reasoning"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/complete-workspace": {
+      "get": {
+        "description": "Return the visible effective case state from one backend projection.",
+        "operationId": "get_complete_case_workspace_api_v1_clinical_cases__case_id__complete_workspace_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompleteCaseWorkspaceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Complete Case Workspace",
+        "tags": [
+          "case-workspace"
+        ]
+      }
+    },
     "/api/v1/clinical-cases/{case_id}/ecg-comparisons": {
       "get": {
         "operationId": "list_comparisons_api_v1_clinical_cases__case_id__ecg_comparisons_get",
@@ -4804,6 +8299,74 @@
       }
     },
     "/api/v1/clinical-cases/{case_id}/ecg-imports": {
+      "get": {
+        "operationId": "list_ecg_imports_api_v1_clinical_cases__case_id__ecg_imports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IngestionJobResponse"
+                  },
+                  "title": "Response List Ecg Imports Api V1 Clinical Cases  Case Id  Ecg Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Ecg Imports",
+        "tags": [
+          "ecg-integration"
+        ]
+      },
       "post": {
         "operationId": "import_ecg_api_v1_clinical_cases__case_id__ecg_imports_post",
         "parameters": [
@@ -5284,6 +8847,77 @@
         "summary": "Schedule Reminder",
         "tags": [
           "ecg-reminders"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/repeat-troponin-requests": {
+      "get": {
+        "operationId": "list_repeat_requests_api_v1_clinical_cases__case_id__repeat_troponin_requests_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Repeat Requests Api V1 Clinical Cases  Case Id  Repeat Troponin Requests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Repeat Requests",
+        "tags": [
+          "troponin"
         ]
       }
     },
@@ -5962,6 +9596,811 @@
         ]
       }
     },
+    "/api/v1/clinical-cases/{case_id}/troponin-deltas": {
+      "get": {
+        "operationId": "get_deltas_api_v1_clinical_cases__case_id__troponin_deltas_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Deltas Api V1 Clinical Cases  Case Id  Troponin Deltas Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Deltas",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-imports": {
+      "get": {
+        "operationId": "list_imports_api_v1_clinical_cases__case_id__troponin_imports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Imports Api V1 Clinical Cases  Case Id  Troponin Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Imports",
+        "tags": [
+          "troponin"
+        ]
+      },
+      "post": {
+        "operationId": "import_result_api_v1_clinical_cases__case_id__troponin_imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinImportBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Import Result Api V1 Clinical Cases  Case Id  Troponin Imports Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Result",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-results": {
+      "get": {
+        "operationId": "list_results_api_v1_clinical_cases__case_id__troponin_results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Results Api V1 Clinical Cases  Case Id  Troponin Results Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Results",
+        "tags": [
+          "troponin"
+        ]
+      },
+      "post": {
+        "operationId": "record_result_api_v1_clinical_cases__case_id__troponin_results_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinResultBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Record Result Api V1 Clinical Cases  Case Id  Troponin Results Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Result",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-reviews": {
+      "get": {
+        "operationId": "list_reviews_api_v1_clinical_cases__case_id__troponin_reviews_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Reviews Api V1 Clinical Cases  Case Id  Troponin Reviews Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Reviews",
+        "tags": [
+          "troponin"
+        ]
+      },
+      "post": {
+        "operationId": "record_review_api_v1_clinical_cases__case_id__troponin_reviews_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinReviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Record Review Api V1 Clinical Cases  Case Id  Troponin Reviews Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Review",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-reviews/{review_id}/corrections": {
+      "post": {
+        "operationId": "correct_review_api_v1_clinical_cases__case_id__troponin_reviews__review_id__corrections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinReviewCorrectionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Correct Review Api V1 Clinical Cases  Case Id  Troponin Reviews  Review Id  Corrections Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Correct Review",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-series": {
+      "get": {
+        "operationId": "get_series_api_v1_clinical_cases__case_id__troponin_series_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Series Api V1 Clinical Cases  Case Id  Troponin Series Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Series",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/troponin-workspace": {
+      "get": {
+        "operationId": "get_workspace_api_v1_clinical_cases__case_id__troponin_workspace_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Workspace Api V1 Clinical Cases  Case Id  Troponin Workspace Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Workspace",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
     "/api/v1/clinical-cases/{case_id}/vital-observation-sets": {
       "post": {
         "operationId": "record_vitals_api_v1_clinical_cases__case_id__vital_observation_sets_post",
@@ -6460,6 +10899,723 @@
         ]
       }
     },
+    "/api/v1/clinical-cases/{case_id}/workflow-operations": {
+      "get": {
+        "operationId": "workspace_api_v1_clinical_cases__case_id__workflow_operations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkflowWorkspaceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Workspace",
+        "tags": [
+          "workflow-operations"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/alerts/{alert_id}/{action}": {
+      "post": {
+        "operationId": "change_alert_api_v1_clinical_cases__case_id__workflow_operations_alerts__alert_id___action__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "alert_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Alert Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "acknowledge",
+                "resolve"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Alert",
+        "tags": [
+          "workflow-operations"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/overdue-evaluations": {
+      "post": {
+        "operationId": "evaluate_overdue_api_v1_clinical_cases__case_id__workflow_operations_overdue_evaluations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverdueEvaluationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Evaluate Overdue Api V1 Clinical Cases  Case Id  Workflow Operations Overdue Evaluations Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Evaluate Overdue",
+        "tags": [
+          "workflow-operations"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/{task_id}/{action}": {
+      "post": {
+        "operationId": "change_task_api_v1_clinical_cases__case_id__workflow_operations_tasks__task_id___action__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "assign",
+                "acknowledge",
+                "start",
+                "complete",
+                "cancel"
+              ],
+              "title": "Action",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskActionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Change Task",
+        "tags": [
+          "workflow-operations"
+        ]
+      }
+    },
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/from-decisions": {
+      "post": {
+        "operationId": "generate_task_api_v1_clinical_cases__case_id__workflow_operations_tasks_from_decisions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateTaskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Generate Task",
+        "tags": [
+          "workflow-operations"
+        ]
+      }
+    },
+    "/api/v1/command-center/cases": {
+      "get": {
+        "description": "Return only cases visible to the verified identity's location scope.",
+        "operationId": "list_command_center_cases_api_v1_command_center_cases_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "routine",
+                    "urgent",
+                    "critical"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workflow_state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WorkflowState"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Workflow State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "overdue",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Overdue"
+            }
+          },
+          {
+            "in": "query",
+            "name": "alert_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "active",
+                    "acknowledged",
+                    "unresolved",
+                    "none"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Alert Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "evidence_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "current",
+                    "missing",
+                    "stale",
+                    "technical_limit"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Evidence Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "owner_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "priority",
+              "enum": [
+                "priority",
+                "opened_at",
+                "next_due_at",
+                "latest_activity"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "default": "desc",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "title": "Direction",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Command Center Cases",
+        "tags": [
+          "command-center"
+        ]
+      }
+    },
     "/api/v1/ecg-analyses/{analysis_id}": {
       "get": {
         "operationId": "get_analysis_api_v1_ecg_analyses__analysis_id__get",
@@ -6686,6 +11842,272 @@
         ]
       }
     },
+    "/api/v1/ecg-comparisons/{comparison_id}/physician-reviews": {
+      "get": {
+        "operationId": "list_comparison_reviews_api_v1_ecg_comparisons__comparison_id__physician_reviews_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comparison_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comparison Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ComparisonReviewResponse"
+                  },
+                  "title": "Response List Comparison Reviews Api V1 Ecg Comparisons  Comparison Id  Physician Reviews Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Comparison Reviews",
+        "tags": [
+          "dynamic-ecg"
+        ]
+      },
+      "post": {
+        "operationId": "record_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comparison_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comparison Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparisonReviewBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonReviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Record Comparison Review",
+        "tags": [
+          "dynamic-ecg"
+        ]
+      }
+    },
+    "/api/v1/ecg-comparisons/{comparison_id}/physician-reviews/{review_id}/corrections": {
+      "post": {
+        "operationId": "correct_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews__review_id__corrections_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "comparison_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Comparison Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Review Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparisonReviewCorrectionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonReviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Correct Comparison Review",
+        "tags": [
+          "dynamic-ecg"
+        ]
+      }
+    },
     "/api/v1/ecg-ingestion-jobs/{job_id}": {
       "get": {
         "operationId": "get_ingestion_api_v1_ecg_ingestion_jobs__job_id__get",
@@ -6747,6 +12169,100 @@
           }
         ],
         "summary": "Get Ingestion",
+        "tags": [
+          "ecg-integration"
+        ]
+      }
+    },
+    "/api/v1/ecg-ingestion-jobs/{job_id}/retry": {
+      "post": {
+        "operationId": "retry_ingestion_api_v1_ecg_ingestion_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetryIngestionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngestionJobResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Ingestion",
         "tags": [
           "ecg-integration"
         ]
@@ -7974,6 +13490,298 @@
         ]
       }
     },
+    "/api/v1/laboratory-connectors": {
+      "get": {
+        "operationId": "list_connectors_api_v1_laboratory_connectors_get",
+        "parameters": [
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Connectors Api V1 Laboratory Connectors Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Connectors",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/laboratory-connectors/{connector_id}/health": {
+      "get": {
+        "operationId": "connector_health_api_v1_laboratory_connectors__connector_id__health_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "connector_id",
+            "required": true,
+            "schema": {
+              "title": "Connector Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Connector Health Api V1 Laboratory Connectors  Connector Id  Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Connector Health",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/laboratory-import-jobs/{job_id}": {
+      "get": {
+        "operationId": "get_import_api_v1_laboratory_import_jobs__job_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Import Api V1 Laboratory Import Jobs  Job Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Import",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/laboratory-import-jobs/{job_id}/retry": {
+      "post": {
+        "operationId": "retry_import_api_v1_laboratory_import_jobs__job_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Job Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinRetryImportBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Retry Import Api V1 Laboratory Import Jobs  Job Id  Retry Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Import",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
     "/api/v1/model-registry": {
       "get": {
         "description": "Provide a stable paginated surface pending context-specific query handlers.",
@@ -8491,6 +14299,72 @@
         ]
       }
     },
+    "/api/v1/repeat-ecg-reminders/{reminder_id}": {
+      "get": {
+        "operationId": "get_reminder_api_v1_repeat_ecg_reminders__reminder_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reminder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reminder Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Reminder",
+        "tags": [
+          "ecg-reminders"
+        ]
+      }
+    },
     "/api/v1/repeat-ecg-reminders/{reminder_id}/acknowledge": {
       "post": {
         "operationId": "acknowledge_reminder_api_v1_repeat_ecg_reminders__reminder_id__acknowledge_post",
@@ -8580,6 +14454,100 @@
           }
         ],
         "summary": "Acknowledge Reminder",
+        "tags": [
+          "ecg-reminders"
+        ]
+      }
+    },
+    "/api/v1/repeat-ecg-reminders/{reminder_id}/cancel": {
+      "post": {
+        "operationId": "cancel_reminder_api_v1_repeat_ecg_reminders__reminder_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reminder_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Reminder Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderTransitionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReminderResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Reminder",
         "tags": [
           "ecg-reminders"
         ]
@@ -8676,6 +14644,294 @@
         "summary": "Complete Reminder",
         "tags": [
           "ecg-reminders"
+        ]
+      }
+    },
+    "/api/v1/repeat-troponin-requests/{request_id}/acknowledge": {
+      "post": {
+        "operationId": "acknowledge_repeat_api_v1_repeat_troponin_requests__request_id__acknowledge_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinRepeatTransitionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Acknowledge Repeat Api V1 Repeat Troponin Requests  Request Id  Acknowledge Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Acknowledge Repeat",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/repeat-troponin-requests/{request_id}/cancel": {
+      "post": {
+        "operationId": "cancel_repeat_api_v1_repeat_troponin_requests__request_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinRepeatTransitionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Cancel Repeat Api V1 Repeat Troponin Requests  Request Id  Cancel Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Cancel Repeat",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/repeat-troponin-requests/{request_id}/complete": {
+      "post": {
+        "operationId": "complete_repeat_api_v1_repeat_troponin_requests__request_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinRepeatTransitionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Complete Repeat Api V1 Repeat Troponin Requests  Request Id  Complete Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Complete Repeat",
+        "tags": [
+          "troponin"
         ]
       }
     },
@@ -8863,41 +15119,78 @@
         ]
       }
     },
-    "/api/v1/troponin": {
+    "/api/v1/troponin-assays": {
       "get": {
-        "description": "Provide a stable paginated surface pending context-specific query handlers.",
-        "operationId": "list_troponin_api_v1_troponin_get",
+        "operationId": "list_assays_api_v1_troponin_assays_get",
         "parameters": [
           {
-            "in": "query",
-            "name": "page",
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
             "required": false,
             "schema": {
-              "default": 1,
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
             }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "title": "Response List Assays Api V1 Troponin Assays Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
           },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
           {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          },
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Assays",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/troponin-assays/{assay_id}": {
+      "get": {
+        "operationId": "get_assay_api_v1_troponin_assays__assay_id__get",
+        "parameters": [
           {
-            "in": "query",
-            "name": "resource_name",
-            "required": false,
+            "in": "path",
+            "name": "assay_id",
+            "required": true,
             "schema": {
-              "default": "troponin",
-              "title": "Resource Name",
+              "format": "uuid",
+              "title": "Assay Id",
               "type": "string"
             }
           },
@@ -8926,7 +15219,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response List Troponin Api V1 Troponin Get",
+                  "title": "Response Get Assay Api V1 Troponin Assays  Assay Id  Get",
                   "type": "object"
                 }
               }
@@ -8949,7 +15242,171 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "List Troponin",
+        "summary": "Get Assay",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/troponin-results/{result_id}": {
+      "get": {
+        "operationId": "get_result_api_v1_troponin_results__result_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Result Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Result Api V1 Troponin Results  Result Id  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Result",
+        "tags": [
+          "troponin"
+        ]
+      }
+    },
+    "/api/v1/troponin-results/{result_id}/amendments": {
+      "post": {
+        "operationId": "amend_result_api_v1_troponin_results__result_id__amendments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "result_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Result Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Persistent command deduplication key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Persistent command deduplication key",
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TroponinAmendmentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Amend Result Api V1 Troponin Results  Result Id  Amendments Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Amend Result",
         "tags": [
           "troponin"
         ]

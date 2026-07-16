@@ -12,7 +12,14 @@ export function CaseWorkspaceHeader({
   active = "overview",
 }: {
   value: CaseWorkspaceView;
-  active?: "overview" | "timeline" | "audit";
+  active?:
+    | "overview"
+    | "ecg"
+    | "troponin"
+    | "clinical-reasoning"
+    | "workflow"
+    | "timeline"
+    | "audit";
 }) {
   return (
     <div className="vm-card" style={{ marginBottom: 18 }}>
@@ -36,6 +43,30 @@ export function CaseWorkspaceHeader({
           </div>
         </div>
         <nav className="vm-case-header" aria-label="Case workspace sections">
+          <Link
+            className={`vm-button${active === "workflow" ? " vm-button--primary" : ""}`}
+            href={`/cases/${value.caseId}/workflow`}
+          >
+            Workflow
+          </Link>
+          <Link
+            className={`vm-button${active === "clinical-reasoning" ? " vm-button--primary" : ""}`}
+            href={`/cases/${value.caseId}/clinical-reasoning`}
+          >
+            Clinical Reasoning
+          </Link>
+          <Link
+            className={`vm-button${active === "troponin" ? " vm-button--primary" : ""}`}
+            href={`/cases/${value.caseId}/troponin`}
+          >
+            Troponin
+          </Link>
+          <Link
+            className={`vm-button${active === "ecg" ? " vm-button--primary" : ""}`}
+            href={`/cases/${value.caseId}/ecg`}
+          >
+            ECG
+          </Link>
           <Link
             className={`vm-button${active === "overview" ? " vm-button--primary" : ""}`}
             href={`/cases/${value.caseId}`}

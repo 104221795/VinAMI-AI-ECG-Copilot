@@ -5,6 +5,8 @@ import {
   ClipboardList,
   FileClock,
   HeartPulse,
+  ListTodo,
+  Stethoscope,
   ServerCog,
   ShieldCheck,
 } from "lucide-react";
@@ -42,6 +44,18 @@ export function ClinicalSidebar() {
         {caseId && (
           <div className="vm-case-nav">
             <p className="vm-nav-label">Selected case</p>
+            <Link
+              href={`/cases/${caseId}/workflow`}
+              className={navClass(pathname.endsWith("/workflow"))}
+            >
+              <ListTodo size={18} /> Tasks and Alerts
+            </Link>
+            <Link
+              href={`/cases/${caseId}/clinical-reasoning`}
+              className={navClass(pathname.endsWith("/clinical-reasoning"))}
+            >
+              <Stethoscope size={18} /> Clinical Reasoning
+            </Link>
             <Link
               href={`/cases/${caseId}`}
               className={navClass(pathname === `/cases/${caseId}`)}

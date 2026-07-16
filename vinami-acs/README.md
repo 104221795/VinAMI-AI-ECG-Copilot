@@ -23,13 +23,15 @@ This directory is a new modular-monolith application. The repository-root `app.p
 
 The dependency direction is delivery -> application -> domain. Infrastructure implements ports. Streamlit calls only `/api/v1` once clinical routes exist and must not query PostgreSQL or import domain services.
 
-## F0 Frontend
+## Verified Frontend Slices
 
-The Next.js F0 candidate exposes real PostgreSQL-backed R1 data through FastAPI only:
+The Next.js product frontend exposes real PostgreSQL-backed data through FastAPI only:
 
 `Command Center -> Patient/Encounter summary -> Case -> Timeline -> Immutable Audit`
 
-It uses controlled synthetic development identity. Production authentication was not exercised. See `docs/frontend/f0-completion-report.md` for gate status and limitations.
+R2 adds structured triage and vital documentation. R3 adds an ECG Workspace for artifact ingestion, technical quality, deterministic provider analysis, five independent label scores, serial evidence, and physician review. The R3 runtime is a research-use mock-provider demonstration, not real-model validation.
+
+It uses controlled synthetic development identity. Production authentication was not exercised. See `docs/recovery/r3/r3-completion-report.md` for R3 gate status and limitations.
 
 ## Quick Start
 

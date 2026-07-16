@@ -62,10 +62,28 @@ export interface ECGWorkspaceView {
   analyses: ECGAnalysisView[];
   interpretations: Array<{
     interpretationId: string;
+    studyId: string;
     status: string;
     summary: string;
     actorRole: string;
     recordedAt: string;
+    recordVersion: number;
+  }>;
+  ingestionJobs: Array<{
+    jobId: string;
+    sourceType: string;
+    connectorId: string | null;
+    externalReference: string | null;
+    status: string;
+    requestedAt: string;
+    completedAt: string | null;
+    parser: string | null;
+    parserVersion: string | null;
+    warnings: string[];
+    failureCategory: string | null;
+    failureDetail: string | null;
+    retryCount: number;
+    correlationId: string;
     recordVersion: number;
   }>;
   comparisons: Array<{
@@ -74,6 +92,38 @@ export interface ECGWorkspaceView {
     currentStudyId: string;
     status: string;
     comparabilityStatus: string;
+    comparabilityReasons: string[];
+    leadComparisons: Array<{
+      leadName: string;
+      waveformSimilarity: number;
+      normalizedDifference: number;
+      amplitudeScaleChange: number;
+      baselineShiftIndicator: number;
+      missingDataPercentage: number;
+      qualityDifference: string;
+      sampleAlignmentStatus: string;
+    }>;
+    technicalChangeIndicators: string[];
+    scoreEvolution: Array<{
+      findingCode: string;
+      previousScore: number;
+      currentScore: number;
+      absoluteDelta: number;
+      compatibilityStatus: string;
+    }>;
+    scoreCompatibility: string;
+    policyVersion: string;
+    recordVersion: number;
+    safetyNotice: string;
+  }>;
+  comparisonReviews: Array<{
+    reviewId: string;
+    comparisonId: string;
+    reviewStatus: string;
+    interpretation: string;
+    actorRole: string;
+    recordedAt: string;
+    recordVersion: number;
   }>;
   reminders: Array<{
     reminderId: string;
@@ -81,7 +131,27 @@ export interface ECGWorkspaceView {
     reason: string;
     dueAt: string;
     status: string;
+    origin: string;
+    requestedByRole: string;
+    acknowledgedAt: string | null;
+    completedStudyId: string | null;
+    completedAt: string | null;
+    cancellationReason: string | null;
+    recordVersion: number;
   }>;
+  capabilities: Record<string, boolean>;
+  connectors: Array<{
+    connectorId: string;
+    displayName: string;
+    sourceType: string;
+    available: boolean;
+    capabilities: string[];
+    detail: string;
+    connectorType: string;
+    profile: string | null;
+    version: string | null;
+  }>;
+  dataFreshness: string;
   waveform: ECGWaveformView | null;
   safetyNotice: string;
 }

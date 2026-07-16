@@ -51,7 +51,7 @@ async function createCase(request: APIRequestContext) {
 test("R3 ECG golden path is clear, auditable, and clinically bounded", async ({
   page,
   request,
-}) => {
+}, testInfo) => {
   const clinicalCase = await createCase(request);
   await page.goto(`/cases/${clinicalCase.case_id}`);
 
@@ -76,7 +76,10 @@ test("R3 ECG golden path is clear, auditable, and clinically bounded", async ({
     page.getByText("acceptable", { exact: true }).first(),
   ).toBeVisible();
   await page.screenshot({
-    path: path.join(screenshots, "r3-ecg-waveform-quality-desktop.png"),
+    path: path.join(
+      screenshots,
+      `r3-ecg-waveform-quality-${testInfo.project.name}.png`,
+    ),
     fullPage: true,
   });
 
@@ -88,7 +91,10 @@ test("R3 ECG golden path is clear, auditable, and clinically bounded", async ({
   await expect(page.getByText(/scores do not need to sum to 1/i)).toBeVisible();
   await expect(page.getByText(/not clinical probabilities/i)).toBeVisible();
   await page.screenshot({
-    path: path.join(screenshots, "r3-ecg-multilabel-ranking-desktop.png"),
+    path: path.join(
+      screenshots,
+      `r3-ecg-multilabel-ranking-${testInfo.project.name}.png`,
+    ),
     fullPage: true,
   });
 

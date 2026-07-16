@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
 import {
   EmptyState,
   ErrorState,
@@ -11,15 +10,16 @@ import {
   Pagination,
   StaleDataBanner,
 } from "@vinami/ui";
-import type { CaseQueueView } from "@web/entities/clinical-case/model";
-import { loadCaseQueueWith } from "./data";
-import { ActiveCaseTable } from "./active-case-table";
-import { FilterBar, type CommandFilters } from "./filter-bar";
-import { SelectedCasePanel } from "./selected-case-panel";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatRelative } from "@web/shared/formatting";
 import { useConnectivity } from "@web/shared/hooks/use-connectivity";
+import { useState } from "react";
+import { ActiveCaseTable } from "./active-case-table";
+import { loadCommandCenterWith } from "./data";
+import { FilterBar, type CommandFilters } from "./filter-bar";
+import type { CommandCenterPageView } from "./model";
+import { SelectedCasePanel } from "./selected-case-panel";
 
 export interface CommandCenterState extends CommandFilters {
   page: number;
@@ -31,38 +31,36 @@ export function CommandCenter({
   initialData,
   initialState,
 }: {
-  initialData: CaseQueueView;
+  initialData: CommandCenterPageView;
   initialState: CommandCenterState;
 }) {
   const online = useConnectivity();
   const [state, setState] = useState(initialState);
-  const serverQuery = {
-    page: state.page,
-    page_size: state.pageSize,
-    status: state.status || undefined,
-    priority: state.priority || undefined,
-    location: state.location || undefined,
-  };
-  const isInitialQuery =
-    state.page === initialState.page &&
-    state.status === initialState.status &&
-    state.priority === initialState.priority &&
-    state.location === initialState.location;
+  const serverQuery = toServerQuery(state);
   const query = useQuery({
-    queryKey: ["clinical-cases", serverQuery],
-    queryFn: () => loadCaseQueueWith(createBrowserApiClient(), serverQuery),
-    initialData: isInitialQuery ? initialData : undefined,
-    staleTime: 30_000,
+    queryKey: ["r7-command-center", serverQuery],
+    queryFn: () => loadCommandCenterWith(createBrowserApiClient(), serverQuery),
+    initialData: initialData,
+    staleTime: 20_000,
+    refetchInterval: 30_000,
   });
   const updateUrl = (next: CommandCenterState) => {
     setState(next);
     const params = new URLSearchParams();
-    if (next.status) params.set("status", next.status);
-    if (next.priority) params.set("priority", next.priority);
-    if (next.location) params.set("location", next.location);
-    if (next.search) params.set("q", next.search);
-    if (next.page > 1) params.set("page", String(next.page));
-    if (next.selected) params.set("selected", next.selected);
+    for (const [key, value] of Object.entries({
+      priority: next.priority,
+      workflow_state: next.workflowState,
+      overdue: next.overdue,
+      alert_status: next.alertStatus,
+      evidence_status: next.evidenceStatus,
+      owner: next.owner,
+      sort: next.sort,
+      direction: next.direction,
+      page: next.page > 1 ? String(next.page) : "",
+      selected: next.selected ?? "",
+    })) {
+      if (value) params.set(key, value);
+    }
     const serialized = params.toString();
     window.history.replaceState(
       null,
@@ -70,21 +68,9 @@ export function CommandCenter({
       `/command-center${serialized ? `?${serialized}` : ""}`,
     );
   };
-  const rows = useMemo(() => {
-    const search = state.search.trim().toLowerCase();
-    if (!search) return query.data?.rows ?? [];
-    return (query.data?.rows ?? []).filter((row) =>
-      [row.patientReference, row.caseReference, row.encounterReference].some(
-        (value) => value.toLowerCase().includes(search),
-      ),
-    );
-  }, [query.data?.rows, state.search]);
-  const selectedRow = query.data?.rows.find(
-    (row) => row.caseId === state.selected,
-  );
   if (!online && !query.data)
     return <OfflineState onRetry={() => query.refetch()} />;
-  if (query.isLoading) return <LoadingSkeleton lines={9} />;
+  if (query.isLoading) return <LoadingSkeleton lines={10} />;
   if (query.isError) {
     const error = presentError(query.error);
     return (
@@ -97,65 +83,101 @@ export function CommandCenter({
   const data = query.data;
   if (!data) return null;
   const stale =
-    Date.now() - new Date(data.refreshedAt).getTime() > 60_000 || !online;
+    Date.now() - new Date(data.evaluated_at).getTime() > 60_000 || !online;
+  const selected = data.items.find((item) => item.case_id === state.selected);
+  const summary = data.items.reduce(
+    (value, item) => ({
+      overdue: value.overdue + (item.overdue_task_count > 0 ? 1 : 0),
+      alerts: value.alerts + (item.unresolved_alert_count > 0 ? 1 : 0),
+      evidence: value.evidence + (item.evidence_status !== "current" ? 1 : 0),
+    }),
+    { overdue: 0, alerts: 0, evidence: 0 },
+  );
   return (
     <>
       {stale && (
-        <StaleDataBanner updatedLabel={formatRelative(data.refreshedAt)} />
+        <StaleDataBanner updatedLabel={formatRelative(data.evaluated_at)} />
       )}
-      {data.partialCount > 0 && (
-        <div className="vm-banner vm-banner--stale" role="status">
-          {data.partialCount} case row could not load its Patient or Encounter
-          projection.
+      <section className="vm-command-summary" aria-label="Operational summary">
+        <MetricTile
+          label="Active cases"
+          value={data.total}
+          detail={`Page ${data.page}`}
+        />
+        <MetricTile
+          label="Cases overdue"
+          value={summary.overdue}
+          detail="Current server page"
+        />
+        <MetricTile
+          label="Cases with alerts"
+          value={summary.alerts}
+          detail="Unresolved"
+        />
+        <MetricTile
+          label="Evidence attention"
+          value={summary.evidence}
+          detail="Missing, stale or limited"
+        />
+      </section>
+      <FilterBar
+        value={state}
+        onChange={(filters) =>
+          updateUrl({ ...state, ...filters, page: 1, selected: undefined })
+        }
+      />
+      {query.isFetching && (
+        <div className="vm-inline-refresh" role="status">
+          Refreshing operational state…
         </div>
       )}
-      <div className="vm-layout-split">
+      <div className="vm-command-layout">
         <section aria-label="Active case queue">
-          <div style={{ display: "flex", gap: 1, marginBottom: 12 }}>
-            <MetricTile
-              label="Active cases"
-              value={data.total}
-              detail={`Page ${data.page}`}
-            />
-            <MetricTile
-              label="Data state"
-              value={query.isFetching ? "Refreshing" : "Current"}
-              detail={`Updated ${formatRelative(data.refreshedAt, new Date(data.refreshedAt).getTime())}`}
-            />
-          </div>
-          <FilterBar
-            value={state}
-            locations={[
-              ...new Set(data.rows.map((row) => row.location)),
-            ].sort()}
-            onChange={(filters) => updateUrl({ ...state, ...filters, page: 1 })}
-          />
-          {rows.length ? (
+          {data.items.length ? (
             <ActiveCaseTable
-              rows={rows}
-              referenceTime={data.refreshedAt}
+              rows={data.items}
+              referenceTime={data.evaluated_at}
               selectedCaseId={state.selected}
-              onSelect={(selected) => updateUrl({ ...state, selected })}
+              onSelect={(selectedCase) =>
+                updateUrl({ ...state, selected: selectedCase })
+              }
             />
           ) : (
             <EmptyState
-              title="No cases match this view"
-              description="Adjust filters or search. No case records have been fabricated for this state."
+              title="No active cases match this view"
+              description="Adjust the operational filters. Missing evidence is never treated as negative evidence."
             />
           )}
           <Pagination
             page={data.page}
-            pageSize={data.pageSize}
+            pageSize={data.page_size}
             total={data.total}
-            onChange={(page) => updateUrl({ ...state, page })}
+            onChange={(page) =>
+              updateUrl({ ...state, page, selected: undefined })
+            }
           />
         </section>
         <SelectedCasePanel
-          row={selectedRow}
-          referenceTime={data.refreshedAt}
+          row={selected}
+          referenceTime={data.evaluated_at}
           onClear={() => updateUrl({ ...state, selected: undefined })}
         />
       </div>
     </>
   );
+}
+
+function toServerQuery(state: CommandCenterState) {
+  return {
+    page: state.page,
+    page_size: state.pageSize,
+    priority: state.priority || undefined,
+    workflow_state: state.workflowState || undefined,
+    overdue: state.overdue ? state.overdue === "true" : undefined,
+    alert_status: state.alertStatus || undefined,
+    evidence_status: state.evidenceStatus || undefined,
+    owner_id: state.owner || undefined,
+    sort: state.sort,
+    direction: state.direction,
+  } as const;
 }

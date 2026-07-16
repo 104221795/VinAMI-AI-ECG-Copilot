@@ -16,7 +16,7 @@ export default async function AuditPage({
 }) {
   const { caseId } = await params;
   try {
-    const [workspace, entries] = await Promise.all([
+    const [workspace, audit] = await Promise.all([
       loadCaseWorkspace(caseId),
       loadAudit(caseId),
     ]);
@@ -27,7 +27,7 @@ export default async function AuditPage({
           title="Immutable Audit"
           description="Read-only lifecycle audit with verified actor provenance. Credentials and secrets are never displayed."
         />
-        <AuditTable entries={entries} />
+        <AuditTable value={audit} />
       </>
     );
   } catch (error) {

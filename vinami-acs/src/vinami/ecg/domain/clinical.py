@@ -31,6 +31,7 @@ class IngestionStatus(StrEnum):
     VALIDATING = "validating"
     PARSING = "parsing"
     NORMALIZING = "normalizing"
+    ASSESSING_QUALITY = "assessing_quality"
     COMPLETED = "completed"
     REJECTED = "rejected"
     FAILED = "failed"
@@ -69,8 +70,10 @@ class ComparisonStatus(StrEnum):
 
 class ComparabilityStatus(StrEnum):
     COMPARABLE = "comparable"
-    LIMITED = "limited"
+    COMPARABLE_WITH_WARNING = "comparable_with_warning"
+    PARTIALLY_COMPARABLE = "partially_comparable"
     NON_COMPARABLE = "non_comparable"
+    UNKNOWN = "unknown"
 
 
 class ReminderStatus(StrEnum):
@@ -80,6 +83,12 @@ class ReminderStatus(StrEnum):
     ACKNOWLEDGED = "acknowledged"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+
+
+class ReminderOrigin(StrEnum):
+    PHYSICIAN_REQUEST = "physician_request"
+    TECHNICAL_QUALITY = "technical_quality"
+    DEMONSTRATION_POLICY = "demonstration_policy"
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +113,7 @@ class ECGWaveform:
     conversion_method: str | None = None
     conversion_version: str | None = None
     calibration: str | None = None
+    source_identifiers: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -150,8 +160,14 @@ class ECGIngestionJob(AggregateRoot):
     source_type: ECGSourceType
     status: IngestionStatus
     requested_by: UUID
+    requested_by_role: str
     requested_at: datetime
     correlation_id: UUID
+    request_source: str
+    idempotency_key: str
+    study_reference: str
+    acquisition_at: datetime
+    content_type: str
     record_version: int = 1
     source_connector_id: str | None = None
     external_reference: str | None = None
@@ -165,6 +181,7 @@ class ECGIngestionJob(AggregateRoot):
     retry_count: int = 0
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    retry_of_job_id: UUID | None = None
 
     @classmethod
     def request(
@@ -173,7 +190,13 @@ class ECGIngestionJob(AggregateRoot):
         clinical_case_id: UUID,
         source_type: ECGSourceType,
         requested_by: UUID,
+        requested_by_role: str,
         requested_at: datetime,
+        request_source: str,
+        idempotency_key: str,
+        study_reference: str,
+        acquisition_at: datetime,
+        content_type: str,
         context: EventContext,
         job_id: UUID | None = None,
         source_connector_id: str | None = None,
@@ -185,8 +208,14 @@ class ECGIngestionJob(AggregateRoot):
             source_type=source_type,
             status=IngestionStatus.REQUESTED,
             requested_by=requested_by,
+            requested_by_role=require_text(requested_by_role, "requested_by_role"),
             requested_at=require_utc(requested_at, "requested_at"),
             correlation_id=context.correlation_id,
+            request_source=require_text(request_source, "request_source"),
+            idempotency_key=require_text(idempotency_key, "idempotency_key"),
+            study_reference=require_text(study_reference, "study_reference"),
+            acquisition_at=require_utc(acquisition_at, "acquisition_at"),
+            content_type=require_text(content_type, "content_type"),
             source_connector_id=source_connector_id,
             external_reference=external_reference,
         )
@@ -202,6 +231,44 @@ class ECGIngestionJob(AggregateRoot):
         )
         return job
 
+    def start(self, occurred_at: datetime) -> None:
+        if self.status is not IngestionStatus.REQUESTED:
+            raise DomainInvariantError("ingestion job cannot start from its current state")
+        self.status = IngestionStatus.RECEIVING
+        self.started_at = require_utc(occurred_at, "started_at")
+        self.record_version += 1
+
+    def mark_retry(self, occurred_at: datetime, context: EventContext) -> None:
+        if self.status not in {IngestionStatus.FAILED, IngestionStatus.REJECTED}:
+            raise DomainInvariantError("only failed ingestion can be retried")
+        if self.resulting_study_id is not None:
+            raise DomainInvariantError("completed ingestion cannot be retried")
+        self.status = IngestionStatus.REQUESTED
+        self.retry_count += 1
+        self.started_at = None
+        self.completed_at = None
+        self.failure_category = None
+        self.failure_detail_safe = None
+        self.record_version += 1
+        self._record_event(
+            "ECGIngestionRetried.v1",
+            self.record_version,
+            {
+                "case_id": str(self.clinical_case_id),
+                "ingestion_job_id": str(self.id),
+                "retry_count": self.retry_count,
+                "retried_at": require_utc(occurred_at, "retried_at").isoformat(),
+                "resulting_version": self.record_version,
+            },
+            context,
+        )
+
+    def attach_source_artifact(self, artifact_id: UUID) -> None:
+        if self.status is not IngestionStatus.RECEIVING:
+            raise DomainInvariantError("source artifact can only be attached while receiving")
+        self.artifact_id = artifact_id
+        self.record_version += 1
+
     def complete(
         self,
         *,
@@ -213,7 +280,7 @@ class ECGIngestionJob(AggregateRoot):
         completed_at: datetime,
         context: EventContext,
     ) -> None:
-        if self.status not in {IngestionStatus.REQUESTED, IngestionStatus.FAILED}:
+        if self.status not in {IngestionStatus.RECEIVING, IngestionStatus.ASSESSING_QUALITY}:
             raise DomainInvariantError("ingestion job cannot complete from its current state")
         self.status = IngestionStatus.COMPLETED
         self.artifact_id = artifact_id
@@ -266,6 +333,50 @@ class LeadComparison:
     baseline_shift_indicator: float
     missing_data_percentage: float
     quality_difference: str
+    sample_alignment_status: str = "aligned"
+
+
+@dataclass(frozen=True, slots=True)
+class ModelScoreEvolution:
+    finding_code: str
+    previous_score: float
+    current_score: float
+    absolute_delta: float
+    previous_threshold_met: bool | None
+    current_threshold_met: bool | None
+    threshold_state_changed: bool | None
+    previous_model_version: str
+    current_model_version: str
+    compatibility_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class DynamicECGPhysicianReview:
+    review_id: UUID
+    comparison_id: UUID
+    actor_id: UUID
+    actor_role: str
+    review_status: str
+    interpretation: str
+    occurred_at: datetime
+    recorded_at: datetime
+    correlation_id: UUID
+    record_version: int
+    revision_number: int
+    supersedes_review_id: UUID | None = None
+    correction_reason: str | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "review_status", require_text(self.review_status, "review_status"))
+        object.__setattr__(
+            self, "interpretation", require_text(self.interpretation, "interpretation")
+        )
+        object.__setattr__(self, "occurred_at", require_utc(self.occurred_at, "occurred_at"))
+        object.__setattr__(self, "recorded_at", require_utc(self.recorded_at, "recorded_at"))
+        if self.revision_number < 1 or self.record_version < 1:
+            raise DomainInvariantError("dynamic ECG review versions must be positive")
+        if self.supersedes_review_id is not None and not self.correction_reason:
+            raise DomainInvariantError("comparison review correction requires a reason")
 
 
 @dataclass(slots=True)
@@ -280,13 +391,17 @@ class DynamicECGComparison(AggregateRoot):
     comparability_reasons: tuple[str, ...]
     lead_comparisons: tuple[LeadComparison, ...]
     technical_change_indicators: tuple[str, ...]
-    model_score_deltas: tuple[tuple[str, float, float, float], ...]
+    model_score_deltas: tuple[ModelScoreEvolution, ...]
     quality_context: str
     requested_by: UUID
     requested_at: datetime
     completed_at: datetime
     correlation_id: UUID
     record_version: int = 1
+    requested_by_role: str = "unknown"
+    started_at: datetime | None = None
+    physician_review_status: str = "pending"
+    model_score_compatibility: str = "not_available"
 
     def __post_init__(self) -> None:
         if self.baseline_study_id == self.current_study_id:
@@ -309,9 +424,31 @@ class ECGRepeatReminder(AggregateRoot):
     created_at: datetime
     correlation_id: UUID
     record_version: int = 1
+    requested_by_role: str = "unknown"
+    origin: ReminderOrigin = ReminderOrigin.PHYSICIAN_REQUEST
+    updated_at: datetime | None = None
     acknowledged_by: UUID | None = None
     acknowledged_at: datetime | None = None
     completed_study_id: UUID | None = None
+    completed_at: datetime | None = None
+    cancelled_by: UUID | None = None
+    cancelled_at: datetime | None = None
+    cancellation_reason: str | None = None
+
+    def effective_status(self, now: datetime) -> ReminderStatus:
+        now = require_utc(now, "now")
+        active_statuses = {
+            ReminderStatus.SCHEDULED,
+            ReminderStatus.DUE,
+            ReminderStatus.OVERDUE,
+        }
+        if self.status not in active_statuses:
+            return self.status
+        if now > self.due_at:
+            return ReminderStatus.OVERDUE
+        if now == self.due_at:
+            return ReminderStatus.DUE
+        return ReminderStatus.SCHEDULED
 
     def acknowledge(self, actor_id: UUID, occurred_at: datetime, context: EventContext) -> None:
         if self.status not in {
@@ -323,6 +460,7 @@ class ECGRepeatReminder(AggregateRoot):
         self.status = ReminderStatus.ACKNOWLEDGED
         self.acknowledged_by = actor_id
         self.acknowledged_at = require_utc(occurred_at, "acknowledged_at")
+        self.updated_at = self.acknowledged_at
         self.record_version += 1
         self._record_event(
             "RepeatECGReminderAcknowledged.v1",
@@ -344,6 +482,8 @@ class ECGRepeatReminder(AggregateRoot):
             raise DomainInvariantError("cancelled reminder cannot be completed")
         self.status = ReminderStatus.COMPLETED
         self.completed_study_id = study_id
+        self.completed_at = require_utc(occurred_at, "completed_at")
+        self.updated_at = self.completed_at
         self.record_version += 1
         self._record_event(
             "RepeatECGReminderCompleted.v1",
@@ -352,7 +492,34 @@ class ECGRepeatReminder(AggregateRoot):
                 "case_id": str(self.clinical_case_id),
                 "reminder_id": str(self.id),
                 "study_id": str(study_id),
-                "completed_at": require_utc(occurred_at, "completed_at").isoformat(),
+                "completed_at": self.completed_at.isoformat(),
+                "resulting_version": self.record_version,
+            },
+            context,
+        )
+
+    def cancel(
+        self,
+        actor_id: UUID,
+        reason: str,
+        occurred_at: datetime,
+        context: EventContext,
+    ) -> None:
+        if self.status in {ReminderStatus.COMPLETED, ReminderStatus.CANCELLED}:
+            raise DomainInvariantError("reminder cannot be cancelled from its current state")
+        self.status = ReminderStatus.CANCELLED
+        self.cancelled_by = actor_id
+        self.cancelled_at = require_utc(occurred_at, "cancelled_at")
+        self.cancellation_reason = require_text(reason, "cancellation_reason")
+        self.updated_at = self.cancelled_at
+        self.record_version += 1
+        self._record_event(
+            "RepeatECGReminderCancelled.v1",
+            self.record_version,
+            {
+                "case_id": str(self.clinical_case_id),
+                "reminder_id": str(self.id),
+                "reason": self.cancellation_reason,
                 "resulting_version": self.record_version,
             },
             context,

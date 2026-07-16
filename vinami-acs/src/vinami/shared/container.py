@@ -8,6 +8,25 @@ from typing import cast
 import structlog
 
 from vinami.audit.adapters.writer import SQLAlchemyAuditWriter
+from vinami.audit.application.history import (
+    CaseHistoryApplicationService,
+    CaseHistoryQueryService,
+)
+from vinami.audit.application.history import (
+    UnitOfWorkFactory as CaseHistoryUnitOfWorkFactory,
+)
+from vinami.clinical_case.application.case_workspace import (
+    CompleteCaseWorkspaceQueryService,
+)
+from vinami.clinical_case.application.case_workspace import (
+    UnitOfWorkFactory as CaseWorkspaceUnitOfWorkFactory,
+)
+from vinami.clinical_case.application.command_center import (
+    CommandCenterQueryService,
+)
+from vinami.clinical_case.application.command_center import (
+    UnitOfWorkFactory as CommandCenterUnitOfWorkFactory,
+)
 from vinami.ecg.adapters.artifact_store import LocalECGArtifactStore
 from vinami.ecg.adapters.ingestion import (
     CanonicalWaveformAdapter,
@@ -34,6 +53,13 @@ from vinami.identity.adapters.oidc import OIDCIdentityProvider
 from vinami.identity.application.authorization import ExplicitAuthorizationPolicy
 from vinami.identity.ports.authorization import AuthorizationPolicy
 from vinami.identity.ports.provider import IdentityBinding, IdentityProvider
+from vinami.reasoning.application.service import (
+    ClinicalReasoningApplicationService,
+    ClinicalReasoningQueryService,
+)
+from vinami.reasoning.application.service import (
+    UnitOfWorkFactory as ReasoningUnitOfWorkFactory,
+)
 from vinami.shared.config import Settings
 from vinami.shared.database import Database
 from vinami.shared.events.dispatcher import InternalEventDispatcher
@@ -44,6 +70,15 @@ from vinami.shared.logging import configure_logging
 from vinami.shared.metrics import Metrics
 from vinami.shared.orm_registry import initialize_mappings
 from vinami.shared.unit_of_work import SQLAlchemyUnitOfWork
+from vinami.troponin.adapters.laboratory import MockLaboratoryConnector
+from vinami.troponin.application.service import (
+    TroponinApplicationService,
+    TroponinQueryService,
+)
+from vinami.workflow.application.operations import (
+    WorkflowOperationsQueryService,
+    WorkflowOperationsService,
+)
 
 
 @dataclass(slots=True)
@@ -134,6 +169,57 @@ class AppContainer:
             _ecg_sources(),
             self.ecg_providers(),
             MockDICOMSourceConnector(),
+        )
+
+    def laboratory_connectors(self) -> dict[str, MockLaboratoryConnector]:
+        """Expose only the deterministic local/mock connector in R4."""
+        connector = MockLaboratoryConnector()
+        return {connector.connector_id: connector}
+
+    def troponin_application(self) -> TroponinApplicationService:
+        """Compose the R4 troponin command service behind application ports."""
+        return TroponinApplicationService(self.unit_of_work, self.laboratory_connectors())
+
+    def troponin_queries(self) -> TroponinQueryService:
+        """Compose the R4 troponin read service."""
+        return TroponinQueryService(self.unit_of_work, self.laboratory_connectors())
+
+    def clinical_reasoning_application(self) -> ClinicalReasoningApplicationService:
+        """Compose R5 commands behind the reasoning persistence port."""
+        return ClinicalReasoningApplicationService(
+            cast(ReasoningUnitOfWorkFactory, self.unit_of_work)
+        )
+
+    def clinical_reasoning_queries(self) -> ClinicalReasoningQueryService:
+        """Compose the R5 evidence workspace query service."""
+        return ClinicalReasoningQueryService(cast(ReasoningUnitOfWorkFactory, self.unit_of_work))
+
+    def workflow_operations(self) -> WorkflowOperationsService:
+        """Compose R6 operational workflow commands."""
+        return WorkflowOperationsService(self.unit_of_work)
+
+    def workflow_operation_queries(self) -> WorkflowOperationsQueryService:
+        """Compose the authoritative R6 workflow workspace query."""
+        return WorkflowOperationsQueryService(self.unit_of_work)
+
+    def command_center_queries(self) -> CommandCenterQueryService:
+        """Compose the R7 operational queue projection."""
+        return CommandCenterQueryService(cast(CommandCenterUnitOfWorkFactory, self.unit_of_work))
+
+    def complete_case_workspace_queries(self) -> CompleteCaseWorkspaceQueryService:
+        """Compose the R8 integrated case projection."""
+        return CompleteCaseWorkspaceQueryService(
+            cast(CaseWorkspaceUnitOfWorkFactory, self.unit_of_work)
+        )
+
+    def case_history_queries(self) -> CaseHistoryQueryService:
+        """Compose R9 timeline, audit, outcome and provenance queries."""
+        return CaseHistoryQueryService(cast(CaseHistoryUnitOfWorkFactory, self.unit_of_work))
+
+    def case_history_application(self) -> CaseHistoryApplicationService:
+        """Compose R9 outcome and research export commands."""
+        return CaseHistoryApplicationService(
+            cast(CaseHistoryUnitOfWorkFactory, self.unit_of_work)
         )
 
 

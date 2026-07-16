@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint, select
+from sqlalchemy import Enum, ForeignKey, Integer, String, Text, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from vinami.alerts.adapters.persistence import AlertRecord
@@ -18,7 +18,14 @@ from vinami.workflow.domain.definition import (
     WorkflowState,
     WorkflowTransitionHistory,
 )
-from vinami.workflow.domain.model import ClinicalTask, ClinicalWorkflow, TaskAssignment, TaskStatus
+from vinami.workflow.domain.model import (
+    ClinicalTask,
+    ClinicalWorkflow,
+    TaskAssignment,
+    TaskPriority,
+    TaskStatus,
+    TaskTransition,
+)
 
 
 class ClinicalWorkflowRecord(Base):
@@ -118,6 +125,12 @@ class ClinicalTaskRecord(Base):
             "workflow_effect",
             name="uq_clinical_task_workflow_effect",
         ),
+        UniqueConstraint(
+            "case_id",
+            "source_type",
+            "source_id",
+            name="uq_clinical_task_case_source",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
@@ -145,9 +158,64 @@ class ClinicalTaskRecord(Base):
         ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
     )
     outcome: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    originating_decision_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("clinical_reasoning_decisions.decision_id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    source_type: Mapped[str] = mapped_column(String(80), default="legacy")
+    source_id: Mapped[UUID | None] = mapped_column(UUIDType, nullable=True, index=True)
+    priority: Mapped[TaskPriority] = mapped_column(
+        Enum(TaskPriority, name="clinical_task_priority"), default=TaskPriority.ROUTINE
+    )
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_by: Mapped[UUID | None] = mapped_column(
+        ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    acknowledged_by: Mapped[UUID | None] = mapped_column(
+        ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    started_by: Mapped[UUID | None] = mapped_column(
+        ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    cancelled_by: Mapped[UUID | None] = mapped_column(
+        ForeignKey("clinical_users.id", ondelete="SET NULL"), nullable=True
+    )
+    cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    overdue_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    escalation_level: Mapped[int] = mapped_column(Integer, default=0)
+
+    __mapper_args__ = {"version_id_col": version, "version_id_generator": False}
 
 
-def task_from_record(record: ClinicalTaskRecord) -> ClinicalTask:
+class ClinicalTaskTransitionRecord(Base):
+    """Append-only lifecycle history for a clinical task."""
+
+    __tablename__ = "clinical_task_transitions"
+
+    id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
+    task_id: Mapped[UUID] = mapped_column(
+        ForeignKey("clinical_tasks.id", ondelete="CASCADE"), index=True
+    )
+    from_status: Mapped[TaskStatus] = mapped_column(
+        Enum(TaskStatus, name="task_status", create_type=False)
+    )
+    to_status: Mapped[TaskStatus] = mapped_column(
+        Enum(TaskStatus, name="task_status", create_type=False)
+    )
+    actor_id: Mapped[UUID] = mapped_column(
+        ForeignKey("clinical_users.id", ondelete="RESTRICT"), index=True
+    )
+    occurred_at: Mapped[datetime] = mapped_column(UTCDateTime(), index=True)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+def task_from_record(
+    record: ClinicalTaskRecord, transitions: list[ClinicalTaskTransitionRecord] | None = None
+) -> ClinicalTask:
     """Rehydrate a task without recreating its emitted events."""
     assignment = None
     if record.assigned_at is not None:
@@ -165,6 +233,33 @@ def task_from_record(record: ClinicalTaskRecord) -> ClinicalTask:
         completed_at=record.completed_at,
         completed_by=record.completed_by,
         outcome=record.outcome,
+        workflow_id=record.workflow_id,
+        originating_decision_id=record.originating_decision_id,
+        source_type=record.source_type,
+        source_id=record.source_id,
+        priority=record.priority,
+        version=record.version,
+        created_by=record.created_by,
+        acknowledged_at=record.acknowledged_at,
+        acknowledged_by=record.acknowledged_by,
+        started_at=record.started_at,
+        started_by=record.started_by,
+        cancelled_at=record.cancelled_at,
+        cancelled_by=record.cancelled_by,
+        cancellation_reason=record.cancellation_reason,
+        overdue_at=record.overdue_at,
+        escalation_level=record.escalation_level,
+        transition_history=[
+            TaskTransition(
+                item.id,
+                item.from_status,
+                item.to_status,
+                item.actor_id,
+                item.occurred_at,
+                item.reason,
+            )
+            for item in transitions or []
+        ],
     )
 
 
@@ -405,13 +500,51 @@ class SQLAlchemyClinicalTaskRepository:
                 completed_at=task.completed_at,
                 completed_by=task.completed_by,
                 outcome=task.outcome,
+                workflow_id=task.workflow_id,
+                originating_decision_id=task.originating_decision_id,
+                source_type=task.source_type,
+                source_id=task.source_id,
+                priority=task.priority,
+                version=task.version,
+                created_by=task.created_by,
+                acknowledged_at=task.acknowledged_at,
+                acknowledged_by=task.acknowledged_by,
+                started_at=task.started_at,
+                started_by=task.started_by,
+                cancelled_at=task.cancelled_at,
+                cancelled_by=task.cancelled_by,
+                cancellation_reason=task.cancellation_reason,
+                overdue_at=task.overdue_at,
+                escalation_level=task.escalation_level,
             )
         )
 
     def get(self, task_id: UUID) -> ClinicalTask | None:
         """Return a task by identifier."""
         record = self._session.get(ClinicalTaskRecord, task_id)
-        return task_from_record(record) if record is not None else None
+        return self._task(record) if record is not None else None
+
+    def list_by_case(self, case_id: UUID) -> list[ClinicalTask]:
+        """Return all case tasks including immutable lifecycle history."""
+        records = self._session.scalars(
+            select(ClinicalTaskRecord)
+            .where(ClinicalTaskRecord.case_id == case_id)
+            .order_by(ClinicalTaskRecord.created_at.desc())
+        ).all()
+        return [self._task(record) for record in records]
+
+    def find_by_source(
+        self, case_id: UUID, source_type: str, source_id: UUID
+    ) -> ClinicalTask | None:
+        """Find a deduplicated task generated from one persisted source."""
+        record = self._session.scalar(
+            select(ClinicalTaskRecord).where(
+                ClinicalTaskRecord.case_id == case_id,
+                ClinicalTaskRecord.source_type == source_type,
+                ClinicalTaskRecord.source_id == source_id,
+            )
+        )
+        return self._task(record) if record is not None else None
 
     def save(self, task: ClinicalTask) -> None:
         """Persist mutable completion state only."""
@@ -419,6 +552,42 @@ class SQLAlchemyClinicalTaskRepository:
         if record is None:
             raise ValueError(f"task {task.id} does not exist")
         record.status = task.status
+        record.assigned_team_id = task.assignment.team_id if task.assignment else None
+        record.assigned_user_id = task.assignment.user_id if task.assignment else None
+        record.assigned_at = task.assignment.assigned_at if task.assignment else None
         record.completed_at = task.completed_at
         record.completed_by = task.completed_by
         record.outcome = task.outcome
+        record.version = task.version
+        record.acknowledged_at = task.acknowledged_at
+        record.acknowledged_by = task.acknowledged_by
+        record.started_at = task.started_at
+        record.started_by = task.started_by
+        record.cancelled_at = task.cancelled_at
+        record.cancelled_by = task.cancelled_by
+        record.cancellation_reason = task.cancellation_reason
+        record.overdue_at = task.overdue_at
+        record.escalation_level = task.escalation_level
+        for item in task.transition_history:
+            if self._session.get(ClinicalTaskTransitionRecord, item.transition_id) is None:
+                self._session.add(
+                    ClinicalTaskTransitionRecord(
+                        id=item.transition_id,
+                        task_id=task.id,
+                        from_status=item.from_status,
+                        to_status=item.to_status,
+                        actor_id=item.actor_id,
+                        occurred_at=item.occurred_at,
+                        reason=item.reason,
+                    )
+                )
+
+    def _task(self, record: ClinicalTaskRecord) -> ClinicalTask:
+        transitions = list(
+            self._session.scalars(
+                select(ClinicalTaskTransitionRecord)
+                .where(ClinicalTaskTransitionRecord.task_id == record.id)
+                .order_by(ClinicalTaskTransitionRecord.occurred_at)
+            )
+        )
+        return task_from_record(record, transitions)

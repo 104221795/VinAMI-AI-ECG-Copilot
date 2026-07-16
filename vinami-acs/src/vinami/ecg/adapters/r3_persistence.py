@@ -25,6 +25,7 @@ from vinami.ecg.domain.clinical import (
     ComparabilityStatus,
     ComparisonStatus,
     DynamicECGComparison,
+    DynamicECGPhysicianReview,
     ECGIngestionJob,
     ECGQualityResult,
     ECGRepeatReminder,
@@ -32,6 +33,8 @@ from vinami.ecg.domain.clinical import (
     ECGWaveform,
     IngestionStatus,
     LeadComparison,
+    ModelScoreEvolution,
+    ReminderOrigin,
     ReminderStatus,
     TechnicalQualityStatus,
 )
@@ -145,9 +148,7 @@ class ECGQualityRecord(Base):
 
 class ECGIngestionJobRecord(Base):
     __tablename__ = "ecg_ingestion_jobs"
-    __table_args__ = (
-        Index("ix_ecg_ingestion_case_requested", "clinical_case_id", "requested_at"),
-    )
+    __table_args__ = (Index("ix_ecg_ingestion_case_requested", "clinical_case_id", "requested_at"),)
     id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
     clinical_case_id: Mapped[UUID] = mapped_column(
         UUIDType, ForeignKey("clinical_cases.id", ondelete="CASCADE"), nullable=False
@@ -159,7 +160,13 @@ class ECGIngestionJobRecord(Base):
     requested_by: Mapped[UUID] = mapped_column(
         UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
     )
+    requested_by_role: Mapped[str] = mapped_column(String(80), nullable=False)
     requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    request_source: Mapped[str] = mapped_column(String(160), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(240), nullable=False)
+    study_reference: Mapped[str] = mapped_column(String(240), nullable=False)
+    acquisition_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(160), nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     artifact_id: Mapped[UUID | None] = mapped_column(
@@ -174,6 +181,9 @@ class ECGIngestionJobRecord(Base):
     failure_category: Mapped[str | None] = mapped_column(String(120), nullable=True)
     failure_detail_safe: Mapped[str | None] = mapped_column(Text, nullable=True)
     retry_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    retry_of_job_id: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey("ecg_ingestion_jobs.id", ondelete="RESTRICT"), nullable=True
+    )
     correlation_id: Mapped[UUID] = mapped_column(UUIDType, nullable=False, index=True)
     record_version: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -296,15 +306,52 @@ class DynamicECGComparisonRecord(Base):
     comparability_reasons: Mapped[list[str]] = mapped_column(JSONDocument, nullable=False)
     lead_comparisons: Mapped[list[dict[str, object]]] = mapped_column(JSONDocument, nullable=False)
     technical_change_indicators: Mapped[list[str]] = mapped_column(JSONDocument, nullable=False)
-    model_score_deltas: Mapped[list[list[object]]] = mapped_column(JSONDocument, nullable=False)
+    model_score_deltas: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONDocument, nullable=False
+    )
     quality_context: Mapped[str] = mapped_column(Text, nullable=False)
     requested_by: Mapped[UUID] = mapped_column(
         UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
     )
+    requested_by_role: Mapped[str] = mapped_column(String(80), nullable=False)
     requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     completed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    physician_review_status: Mapped[str] = mapped_column(String(40), nullable=False)
+    model_score_compatibility: Mapped[str] = mapped_column(String(80), nullable=False)
     correlation_id: Mapped[UUID] = mapped_column(UUIDType, nullable=False, index=True)
     record_version: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class DynamicECGPhysicianReviewRecord(Base):
+    __tablename__ = "dynamic_ecg_physician_reviews"
+    __table_args__ = (
+        UniqueConstraint("comparison_id", "revision_number", name="uq_dynamic_review_revision"),
+    )
+    id: Mapped[UUID] = mapped_column(UUIDType, primary_key=True)
+    comparison_id: Mapped[UUID] = mapped_column(
+        UUIDType,
+        ForeignKey("dynamic_ecg_comparisons.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    actor_id: Mapped[UUID] = mapped_column(
+        UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
+    )
+    actor_role: Mapped[str] = mapped_column(String(80), nullable=False)
+    review_status: Mapped[str] = mapped_column(String(80), nullable=False)
+    interpretation: Mapped[str] = mapped_column(Text, nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    correlation_id: Mapped[UUID] = mapped_column(UUIDType, nullable=False, index=True)
+    record_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    supersedes_review_id: Mapped[UUID | None] = mapped_column(
+        UUIDType,
+        ForeignKey("dynamic_ecg_physician_reviews.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    correction_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class ECGRepeatReminderRecord(Base):
@@ -320,6 +367,8 @@ class ECGRepeatReminderRecord(Base):
     requested_by: Mapped[UUID] = mapped_column(
         UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
     )
+    requested_by_role: Mapped[str] = mapped_column(String(80), nullable=False)
+    origin: Mapped[str] = mapped_column(String(80), nullable=False)
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     due_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
@@ -330,7 +379,14 @@ class ECGRepeatReminderRecord(Base):
     completed_study_id: Mapped[UUID | None] = mapped_column(
         UUIDType, ForeignKey("ecg_studies.id", ondelete="RESTRICT"), nullable=True
     )
+    completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    cancelled_by: Mapped[UUID | None] = mapped_column(
+        UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=True
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     correlation_id: Mapped[UUID] = mapped_column(UUIDType, nullable=False, index=True)
     record_version: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -394,11 +450,20 @@ class SQLAlchemyECGClinicalRepository:
             "failure_category",
             "failure_detail_safe",
             "retry_count",
+            "retry_of_job_id",
             "record_version",
         ):
             item = getattr(value, name)
             setattr(record, name, item.value if hasattr(item, "value") else item)
         record.warnings = list(value.warnings)
+
+    def list_ingestion_jobs(self, case_id: UUID) -> tuple[ECGIngestionJob, ...]:
+        values = self._session.scalars(
+            select(ECGIngestionJobRecord)
+            .where(ECGIngestionJobRecord.clinical_case_id == case_id)
+            .order_by(ECGIngestionJobRecord.requested_at.desc(), ECGIngestionJobRecord.id)
+        ).all()
+        return tuple(_job_domain(value) for value in values)
 
     def add_study(
         self, value: ECGStudySnapshot, waveform: ECGWaveform | None, quality: ECGQualityResult
@@ -570,11 +635,15 @@ class SQLAlchemyECGClinicalRepository:
                 comparability_reasons=list(value.comparability_reasons),
                 lead_comparisons=[_lead_document(item) for item in value.lead_comparisons],
                 technical_change_indicators=list(value.technical_change_indicators),
-                model_score_deltas=[list(item) for item in value.model_score_deltas],
+                model_score_deltas=[asdict(item) for item in value.model_score_deltas],
                 quality_context=value.quality_context,
                 requested_by=value.requested_by,
+                requested_by_role=value.requested_by_role,
                 requested_at=value.requested_at,
+                started_at=value.started_at,
                 completed_at=value.completed_at,
+                physician_review_status=value.physician_review_status,
+                model_score_compatibility=value.model_score_compatibility,
                 correlation_id=value.correlation_id,
                 record_version=value.record_version,
             )
@@ -591,6 +660,30 @@ class SQLAlchemyECGClinicalRepository:
             .order_by(DynamicECGComparisonRecord.requested_at.desc())
         ).all()
         return tuple(_comparison_domain(value) for value in values)
+
+    def add_comparison_review(self, value: DynamicECGPhysicianReview) -> None:
+        self._session.add(
+            DynamicECGPhysicianReviewRecord(
+                id=value.review_id,
+                **{
+                    field: getattr(value, field)
+                    for field in DynamicECGPhysicianReview.__dataclass_fields__
+                    if field != "review_id"
+                },
+            )
+        )
+
+    def get_comparison_review(self, review_id: UUID) -> DynamicECGPhysicianReview | None:
+        value = self._session.get(DynamicECGPhysicianReviewRecord, review_id)
+        return _comparison_review_domain(value) if value else None
+
+    def list_comparison_reviews(self, comparison_id: UUID) -> tuple[DynamicECGPhysicianReview, ...]:
+        values = self._session.scalars(
+            select(DynamicECGPhysicianReviewRecord)
+            .where(DynamicECGPhysicianReviewRecord.comparison_id == comparison_id)
+            .order_by(DynamicECGPhysicianReviewRecord.revision_number.desc())
+        ).all()
+        return tuple(_comparison_review_domain(value) for value in values)
 
     def add_reminder(self, value: ECGRepeatReminder) -> None:
         self._session.add(_reminder_record(value))
@@ -609,6 +702,11 @@ class SQLAlchemyECGClinicalRepository:
         record.acknowledged_by = value.acknowledged_by
         record.acknowledged_at = value.acknowledged_at
         record.completed_study_id = value.completed_study_id
+        record.completed_at = value.completed_at
+        record.cancelled_by = value.cancelled_by
+        record.cancelled_at = value.cancelled_at
+        record.cancellation_reason = value.cancellation_reason
+        record.updated_at = value.updated_at or value.created_at
         record.record_version = value.record_version
 
     def list_reminders(self, case_id: UUID) -> tuple[ECGRepeatReminder, ...]:
@@ -636,7 +734,13 @@ def _job_record(value: ECGIngestionJob) -> ECGIngestionJobRecord:
         external_reference=value.external_reference,
         status=value.status.value,
         requested_by=value.requested_by,
+        requested_by_role=value.requested_by_role,
         requested_at=value.requested_at,
+        request_source=value.request_source,
+        idempotency_key=value.idempotency_key,
+        study_reference=value.study_reference,
+        acquisition_at=value.acquisition_at,
+        content_type=value.content_type,
         started_at=value.started_at,
         completed_at=value.completed_at,
         artifact_id=value.artifact_id,
@@ -647,6 +751,7 @@ def _job_record(value: ECGIngestionJob) -> ECGIngestionJobRecord:
         failure_category=value.failure_category,
         failure_detail_safe=value.failure_detail_safe,
         retry_count=value.retry_count,
+        retry_of_job_id=value.retry_of_job_id,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )
@@ -659,8 +764,14 @@ def _job_domain(value: ECGIngestionJobRecord) -> ECGIngestionJob:
         source_type=ECGSourceType(value.source_type),
         status=IngestionStatus(value.status),
         requested_by=value.requested_by,
+        requested_by_role=value.requested_by_role,
         requested_at=value.requested_at,
         correlation_id=value.correlation_id,
+        request_source=value.request_source,
+        idempotency_key=value.idempotency_key,
+        study_reference=value.study_reference,
+        acquisition_at=value.acquisition_at,
+        content_type=value.content_type,
         record_version=value.record_version,
         source_connector_id=value.source_connector_id,
         external_reference=value.external_reference,
@@ -672,6 +783,7 @@ def _job_domain(value: ECGIngestionJobRecord) -> ECGIngestionJob:
         failure_category=value.failure_category,
         failure_detail_safe=value.failure_detail_safe,
         retry_count=value.retry_count,
+        retry_of_job_id=value.retry_of_job_id,
         started_at=value.started_at,
         completed_at=value.completed_at,
     )
@@ -709,6 +821,7 @@ def _waveform_document(value: ECGWaveform) -> dict[str, object]:
         "conversion_method": value.conversion_method,
         "conversion_version": value.conversion_version,
         "calibration": value.calibration,
+        "source_identifiers": [list(item) for item in value.source_identifiers],
     }
 
 
@@ -736,6 +849,7 @@ def _waveform_domain(value: dict[str, object]) -> ECGWaveform:
         if value.get("conversion_version")
         else None,
         calibration=str(value["calibration"]) if value.get("calibration") else None,
+        source_identifiers=_identifier_pairs(value.get("source_identifiers")),
     )
 
 
@@ -781,17 +895,22 @@ def _lead_domain(value: dict[str, object]) -> LeadComparison:
             value["missing_data_percentage"], "missing_data_percentage"
         ),
         quality_difference=str(value["quality_difference"]),
+        sample_alignment_status=str(value.get("sample_alignment_status", "aligned")),
     )
 
 
-def _score_delta(value: list[object]) -> tuple[str, float, float, float]:
-    if len(value) != 4:
-        raise ValueError("persisted ECG score delta is malformed")
-    return (
-        str(value[0]),
-        _number(value[1], "baseline_score"),
-        _number(value[2], "current_score"),
-        _number(value[3], "score_delta"),
+def _score_delta(value: dict[str, object]) -> ModelScoreEvolution:
+    return ModelScoreEvolution(
+        finding_code=str(value["finding_code"]),
+        previous_score=_number(value["previous_score"], "previous_score"),
+        current_score=_number(value["current_score"], "current_score"),
+        absolute_delta=_number(value["absolute_delta"], "absolute_delta"),
+        previous_threshold_met=_optional_bool(value.get("previous_threshold_met")),
+        current_threshold_met=_optional_bool(value.get("current_threshold_met")),
+        threshold_state_changed=_optional_bool(value.get("threshold_state_changed")),
+        previous_model_version=str(value["previous_model_version"]),
+        current_model_version=str(value["current_model_version"]),
+        compatibility_status=str(value["compatibility_status"]),
     )
 
 
@@ -811,10 +930,34 @@ def _comparison_domain(value: DynamicECGComparisonRecord) -> DynamicECGCompariso
         model_score_deltas=tuple(_score_delta(item) for item in value.model_score_deltas),
         quality_context=value.quality_context,
         requested_by=value.requested_by,
+        requested_by_role=value.requested_by_role,
         requested_at=value.requested_at,
+        started_at=value.started_at,
         completed_at=value.completed_at,
+        physician_review_status=value.physician_review_status,
+        model_score_compatibility=value.model_score_compatibility,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
+    )
+
+
+def _comparison_review_domain(
+    value: DynamicECGPhysicianReviewRecord,
+) -> DynamicECGPhysicianReview:
+    return DynamicECGPhysicianReview(
+        review_id=value.id,
+        comparison_id=value.comparison_id,
+        actor_id=value.actor_id,
+        actor_role=value.actor_role,
+        review_status=value.review_status,
+        interpretation=value.interpretation,
+        occurred_at=value.occurred_at,
+        recorded_at=value.recorded_at,
+        correlation_id=value.correlation_id,
+        record_version=value.record_version,
+        revision_number=value.revision_number,
+        supersedes_review_id=value.supersedes_review_id,
+        correction_reason=value.correction_reason,
     )
 
 
@@ -822,6 +965,14 @@ def _string_tuple(value: object, field: str) -> tuple[str, ...]:
     if not isinstance(value, (list, tuple)):
         raise ValueError(f"persisted ECG {field} is malformed")
     return tuple(str(item) for item in value)
+
+
+def _identifier_pairs(value: object) -> tuple[tuple[str, str], ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(
+        (str(item[0]), str(item[1])) for item in value if isinstance(item, list) and len(item) == 2
+    )
 
 
 def _number(value: object, field: str) -> float:
@@ -837,19 +988,30 @@ def _integer(value: object, field: str) -> int:
     return int(number)
 
 
+def _optional_bool(value: object) -> bool | None:
+    return value if isinstance(value, bool) else None
+
+
 def _reminder_record(value: ECGRepeatReminder) -> ECGRepeatReminderRecord:
     return ECGRepeatReminderRecord(
         id=value.id,
         clinical_case_id=value.clinical_case_id,
         source_study_id=value.source_study_id,
         requested_by=value.requested_by,
+        requested_by_role=value.requested_by_role,
+        origin=value.origin.value,
         reason=value.reason,
         due_at=value.due_at,
         status=value.status.value,
         acknowledged_by=value.acknowledged_by,
         acknowledged_at=value.acknowledged_at,
         completed_study_id=value.completed_study_id,
+        completed_at=value.completed_at,
+        cancelled_by=value.cancelled_by,
+        cancelled_at=value.cancelled_at,
+        cancellation_reason=value.cancellation_reason,
         created_at=value.created_at,
+        updated_at=value.updated_at or value.created_at,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )
@@ -861,13 +1023,20 @@ def _reminder_domain(value: ECGRepeatReminderRecord) -> ECGRepeatReminder:
         clinical_case_id=value.clinical_case_id,
         source_study_id=value.source_study_id,
         requested_by=value.requested_by,
+        requested_by_role=value.requested_by_role,
+        origin=ReminderOrigin(value.origin),
         reason=value.reason,
         due_at=value.due_at,
         status=ReminderStatus(value.status),
         acknowledged_by=value.acknowledged_by,
         acknowledged_at=value.acknowledged_at,
         completed_study_id=value.completed_study_id,
+        completed_at=value.completed_at,
+        cancelled_by=value.cancelled_by,
+        cancelled_at=value.cancelled_at,
+        cancellation_reason=value.cancellation_reason,
         created_at=value.created_at,
+        updated_at=value.updated_at,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )

@@ -46,6 +46,14 @@ class SQLAlchemyAuditWriter:
                     occurred_at=entry.occurred_at,
                     payload=entry.payload,
                     source_event_id=None,
+                    authorization_result=entry.payload.get("authorization_result")
+                    if isinstance(entry.payload.get("authorization_result"), str)
+                    else None,
+                    idempotency_key=entry.payload.get("idempotency_key")
+                    if isinstance(entry.payload.get("idempotency_key"), str)
+                    else None,
+                    correction_status="original",
+                    source_record_version=entry.resulting_version,
                 )
             )
             if entry.case_id is not None:

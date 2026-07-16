@@ -160,6 +160,8 @@ class CanonicalXMLAdapter:
             True,
             ("receive", "parse", "waveform"),
             "Only urn:vinami:ecg:canonical:1 is supported",
+            profile=self.namespace,
+            version=self.parser_version,
         )
 
     def health(self) -> SourceInfo:
@@ -248,16 +250,18 @@ class DICOMWaveformAdapter:
             for name in ("StudyInstanceUID", "SeriesInstanceUID", "SOPInstanceUID")
             if getattr(dataset, name, None)
         )
+        source_acquired_at = _dicom_acquisition_time(dataset) or acquisition_at
+        calibration = "DICOM channel sensitivity applied by pydicom" if channels else None
         return ParsedWaveform(
             study_reference,
             lead_names,
             samples,
             rate,
             "uV",
-            acquisition_at,
+            source_acquired_at,
             "dicom-waveform",
             str(getattr(dataset, "ManufacturerModelName", "")) or None,
-            None,
+            calibration,
             self.parser_name,
             self.parser_version,
             (),
@@ -313,11 +317,28 @@ class ECGSourceRegistry:
 class MockDICOMSourceConnector:
     """Deterministic connector fixture; it does not represent a live PACS connection."""
 
-    def query(self, external_reference: str) -> tuple[str, ...]:
-        return (external_reference,) if external_reference == "R3-DICOM-001" else ()
+    connector_id = "mock-dicom-source"
 
-    def retrieve(self, external_reference: str) -> bytes:
-        if external_reference != "R3-DICOM-001":
+    def query(self, external_reference: str) -> tuple[str, ...]:
+        supported = {
+            "R3-DICOM-001",
+            "R3-DICOM-RETRY",
+            "R3-DICOM-MALFORMED",
+            "R3-DICOM-TIMEOUT",
+            "R3-DICOM-UNAVAILABLE",
+        }
+        return (external_reference,) if external_reference in supported else ()
+
+    def retrieve(self, external_reference: str, attempt: int = 0) -> bytes:
+        if external_reference == "R3-DICOM-UNAVAILABLE":
+            raise ConnectionError("mock hospital ECG connector is unavailable")
+        if external_reference == "R3-DICOM-TIMEOUT":
+            raise TimeoutError("mock hospital ECG connector timed out")
+        if external_reference == "R3-DICOM-RETRY" and attempt == 0:
+            raise TimeoutError("mock hospital ECG retrieval requires a safe retry")
+        if external_reference == "R3-DICOM-MALFORMED":
+            return b"not-a-dicom-object"
+        if external_reference not in {"R3-DICOM-001", "R3-DICOM-RETRY"}:
             raise FileNotFoundError("mock DICOM source reference is unavailable")
         return build_demo_dicom()
 
@@ -333,6 +354,9 @@ class MockDICOMSourceConnector:
             True,
             ("query", "retrieve", "receive"),
             "Synthetic local connector; no live hospital system",
+            connector_type="deterministic_mock_dicom",
+            profile="DICOM Part 10 waveform",
+            version="1.0.0",
         )
 
 
@@ -394,6 +418,7 @@ def build_demo_dicom() -> bytes:
     dataset.StudyInstanceUID = generate_uid()
     dataset.SeriesInstanceUID = generate_uid()
     dataset.ManufacturerModelName = "VinAMI DICOM fixture"
+    dataset.AcquisitionDateTime = "20260714100000+0700"
     sample_count = 200
     matrix = np.array(
         [
@@ -432,6 +457,16 @@ def _dicom_lead_name(channel: Any, index: int) -> str:
     except (AttributeError, IndexError, TypeError):
         name = f"CHANNEL_{index + 1}"
     return name if name in STANDARD_12_LEADS else name
+
+
+def _dicom_acquisition_time(dataset: Any) -> datetime | None:
+    value = str(getattr(dataset, "AcquisitionDateTime", "")).strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y%m%d%H%M%S%z")
+    except ValueError:
+        return None
 
 
 def _validate_waveform(

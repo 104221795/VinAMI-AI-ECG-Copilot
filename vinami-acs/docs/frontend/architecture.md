@@ -1,4 +1,4 @@
-# F0/R2 Frontend Architecture
+# F0/R2/R3 Frontend Architecture
 
 ## Purpose
 
@@ -29,6 +29,25 @@ All application routes are dynamically rendered so actor-specific identity and c
 
 R2 adds `entities/clinical-documentation` and `features/clinical-documentation`. The server feature loads the backend summary and immutable histories; the Client Component owns form state and invokes only generated API-client methods. Four POST paths are separately allow-listed by the BFF. The browser supplies idempotency and correlation references but never supplies a trusted actor identity.
 
+R3 adds `entities/ecg` and `features/ecg`. The server loads the normalized ECG workspace contract, while browser commands use the same allow-listed BFF for multipart ingestion, analysis, and physician interpretation. Presentation receives typed view models and renders waveform, technical quality, serial evidence, five independent label scores, provenance, and append-only review. It contains no provider, threshold, database, or clinical decision logic.
+
 ## Enforced Rules
 
 Architecture tests prohibit Python/ORM/model imports, server-only imports from Client Components, local-storage access tokens, future clinical routes and prohibited autonomous clinical claims in production UI source.
+
+# R6 workflow workspace
+
+`/cases/[caseId]/workflow` is an API-only operational view over the case-owned workflow,
+tasks, alerts, and immutable histories. It combines the generated R6 contract with R5
+decision references; it never calculates task authority, overdue state, escalation, or
+clinical conclusions in the browser. Mutations use correlation-aware BFF forwarding,
+persistent idempotency keys, and server-supplied aggregate versions.
+
+## R7 Advanced Command Center
+
+`/command-center` consumes one generated `/api/v1/command-center/cases` projection.
+The backend owns operational priority, evidence state, effective physician authority,
+R6 overdue and escalation state, stable sorting, visibility and pagination. The browser
+only renders server timestamps and update tokens, maintains filter/selection state, and
+links to specialized case workspaces. No queue component queries persistence, derives a
+clinical conclusion, or creates tasks, alerts, workflow transitions or evidence records.

@@ -45,6 +45,9 @@ class SourceInfo:
     available: bool
     capabilities: tuple[str, ...]
     detail: str
+    connector_type: str = "local_adapter"
+    profile: str | None = None
+    version: str | None = None
 
 
 class ECGSourceAdapter(Protocol):
@@ -59,8 +62,13 @@ class ECGSourceAdapter(Protocol):
     def health(self) -> SourceInfo: ...
 
 
-class DICOMSourceConnector(Protocol):
+class ECGSourceConnector(Protocol):
+    connector_id: str
+
     def query(self, external_reference: str) -> tuple[str, ...]: ...
-    def retrieve(self, external_reference: str) -> bytes: ...
+    def retrieve(self, external_reference: str, attempt: int = 0) -> bytes: ...
     def receive(self, content: bytes) -> str: ...
     def health(self) -> SourceInfo: ...
+
+
+DICOMSourceConnector = ECGSourceConnector

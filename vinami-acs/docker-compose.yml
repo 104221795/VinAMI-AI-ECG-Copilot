@@ -40,7 +40,8 @@ services:
 
   ecg-artifact-init:
     image: alpine:3.20
-    command: ["sh", "-c", "chown -R 10001:10001 /artifacts && chmod 750 /artifacts"]
+    command:
+      ["sh", "-c", "chown -R 10001:10001 /artifacts && chmod 750 /artifacts"]
     user: "0:0"
     volumes:
       - ecg_artifact_data:/artifacts

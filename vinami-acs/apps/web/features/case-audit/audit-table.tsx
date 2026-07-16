@@ -3,10 +3,11 @@ import {
   StatusBadge,
   TechnicalDetailsDisclosure,
 } from "@vinami/ui";
-import type { AuditEntryView } from "@web/entities/audit-entry/model";
+import type { AuditEntryPageView } from "@web/entities/audit-entry/model";
 import { formatTimestamp } from "@web/shared/formatting";
 
-export function AuditTable({ entries }: { entries: AuditEntryView[] }) {
+export function AuditTable({ value }: { value: AuditEntryPageView }) {
+  const entries = value.items;
   if (!entries.length)
     return (
       <EmptyState
@@ -22,6 +23,11 @@ export function AuditTable({ entries }: { entries: AuditEntryView[] }) {
         borderRadius: "var(--radius-md)",
       }}
     >
+      <p className="vm-muted">
+        Showing {entries.length} of {value.total} append-only audit records.
+        Consequential commands include actor, authorization and idempotency
+        provenance where available.
+      </p>
       <table
         className="vm-table vm-audit-table"
         aria-label="Immutable case audit history"
@@ -69,6 +75,16 @@ export function AuditTable({ entries }: { entries: AuditEntryView[] }) {
                     <dd>{entry.identityProvider ?? "Not supplied"}</dd>
                     <dt>Authentication</dt>
                     <dd>{entry.authenticationMethod ?? "Not supplied"}</dd>
+                    <dt>Authorization</dt>
+                    <dd>{entry.authorizationResult ?? "Not supplied"}</dd>
+                    <dt>Idempotency key</dt>
+                    <dd>
+                      <code>{entry.idempotencyKey ?? "Not supplied"}</code>
+                    </dd>
+                    <dt>Correction state</dt>
+                    <dd>{entry.correctionStatus}</dd>
+                    <dt>Source record version</dt>
+                    <dd>{entry.sourceRecordVersion ?? "Not supplied"}</dd>
                     <dt>Resource UUID</dt>
                     <dd>
                       <code>{entry.resourceId}</code>

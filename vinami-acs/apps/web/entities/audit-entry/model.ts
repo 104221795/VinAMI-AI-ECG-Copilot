@@ -16,4 +16,15 @@ export interface AuditEntryView {
   causationId: string | null;
   identityProvider: string | null;
   authenticationMethod: string | null;
+  idempotencyKey: string | null;
+  authorizationResult: string | null;
+  correctionStatus: string;
+  sourceRecordVersion: number | null;
+}
+
+export interface AuditEntryPageView {
+  items: AuditEntryView[];
+  page: number;
+  pageSize: number;
+  total: number;
 }

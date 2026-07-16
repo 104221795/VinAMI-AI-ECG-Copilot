@@ -8,4 +8,15 @@ export interface TimelineEventView {
   actorId: string | null;
   correlationId: string;
   causationId: string | null;
+  sourceRecordId: string | null;
+  sourceRecordVersion: number | null;
+  correctionStatus: string;
+  dataClassification: string;
+}
+
+export interface TimelineEventPageView {
+  items: TimelineEventView[];
+  page: number;
+  pageSize: number;
+  total: number;
 }

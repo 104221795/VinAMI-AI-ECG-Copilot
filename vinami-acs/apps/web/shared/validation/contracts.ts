@@ -106,6 +106,145 @@ export const auditSchema = z.array(
   }),
 );
 
+export const timelineHistoryPageSchema = z.object({
+  items: z.array(
+    z.object({
+      timeline_event_id: uuid,
+      clinical_case_id: uuid,
+      event_type: z.string().min(1),
+      title: z.string().min(1),
+      occurred_at: timestamp,
+      recorded_at: timestamp,
+      source: z.string().min(1),
+      actor_id: uuid.nullable(),
+      correlation_id: uuid,
+      causation_id: uuid.nullable(),
+      source_record_id: uuid.nullable(),
+      source_record_version: z.number().int().nullable(),
+      correction_status: z.string().min(1),
+      supersedes_timeline_event_id: uuid.nullable(),
+      revokes_timeline_event_id: uuid.nullable(),
+      data_classification: z.string().min(1),
+    }),
+  ),
+  page: z.number().int().positive(),
+  page_size: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+});
+
+export const auditHistoryPageSchema = z.object({
+  items: z.array(
+    z.object({
+      audit_id: uuid,
+      actor_id: uuid.nullable(),
+      actor_role: z.string().nullable(),
+      identity_subject: z.string().nullable(),
+      actor_roles: z.array(z.string()),
+      applied_permission: z.string().nullable(),
+      identity_provider: z.string().nullable(),
+      authentication_method: z.string().nullable(),
+      session_reference: z.string().nullable(),
+      action: z.string(),
+      resource_type: z.string(),
+      resource_id: uuid,
+      request_source: z.string(),
+      correlation_id: uuid,
+      causation_id: uuid.nullable(),
+      prior_version: z.number().int().nullable(),
+      resulting_version: z.number().int().nullable(),
+      outcome: z.string(),
+      reason: z.string().nullable(),
+      recorded_at: timestamp,
+      idempotency_key: z.string().nullable(),
+      authorization_result: z.string().nullable(),
+      correction_status: z.string(),
+      source_record_version: z.number().int().nullable(),
+    }),
+  ),
+  page: z.number().int().positive(),
+  page_size: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+});
+
+export const outcomeResponseSchema = z.object({
+  outcome_id: uuid,
+  clinical_case_id: uuid,
+  outcome_type: z.string(),
+  outcome_timestamp: timestamp,
+  final_conclusion: z.string(),
+  disposition: z.string().nullable(),
+  destination: z.string().nullable(),
+  cath_lab_review_outcome: z.string().nullable(),
+  intervention_reference: z.string().nullable(),
+  complications: z.string().nullable(),
+  follow_up_status: z.string().nullable(),
+  data_completeness: z.string(),
+  source: z.string(),
+  uncertainty: z.string().nullable(),
+  unavailable_reason: z.string().nullable(),
+  recorded_at: timestamp,
+  recorded_by: uuid,
+  actor_role: z.string(),
+  revision_number: z.number().int().positive(),
+  record_version: z.number().int().positive(),
+  supersedes_outcome_id: uuid.nullable(),
+  correction_reason: z.string().nullable(),
+  correlation_id: uuid.nullable(),
+  causation_id: uuid.nullable(),
+});
+
+export const outcomeHistorySchema = z.object({
+  current: outcomeResponseSchema.nullable(),
+  revisions: z.array(outcomeResponseSchema),
+  safety_notice: z.string(),
+});
+
+export const modelProvenanceSchema = z.array(
+  z.object({
+    analysis_id: uuid,
+    study_id: uuid,
+    provider_name: z.string(),
+    provider_version: z.string(),
+    model_name: z.string(),
+    model_version: z.string(),
+    model_checksum: z.string().nullable(),
+    threshold_version: z.string().nullable(),
+    preprocessing_version: z.string(),
+    label_mapping_version: z.string(),
+    executed_at: timestamp.nullable(),
+    input_quality: z.string(),
+    input_artifact_id: uuid,
+    input_artifact_checksum: z.string(),
+    explanation_artifact_id: uuid.nullable(),
+    explanation_status: z.string(),
+    synthetic: z.boolean(),
+    status: z.string(),
+    warnings: z.array(z.string()),
+    record_version: z.number().int().positive(),
+    safety_notice: z.string(),
+  }),
+);
+
+export const researchExportSchema = z.object({
+  export_id: uuid,
+  status: z.string(),
+  schema_version: z.string(),
+  requested_by: uuid,
+  requested_by_role: z.string(),
+  requested_at: timestamp,
+  completed_at: timestamp.nullable(),
+  case_ids: z.array(uuid),
+  filters: z.record(z.string(), z.unknown()),
+  row_count: z.number().int().nonnegative(),
+  pseudonymization_method: z.string(),
+  checksum_sha256: z.string(),
+  content_json: z.record(z.string(), z.unknown()),
+  content_csv: z.string(),
+  correlation_id: uuid,
+  metadata: z.record(z.string(), z.unknown()),
+  safety_notice: z.string(),
+});
+
 export const healthSchema = z
   .object({
     status: z.string(),
@@ -300,6 +439,7 @@ export const ecgQualitySchema = z.object({
 const ecgInterpretationSchema = z
   .object({
     interpretation_id: uuid,
+    ecg_study_id: uuid,
     analysis_id: uuid.nullable(),
     actor_role: z.string().min(1),
     interpretation_status: z.string().min(1),
@@ -321,6 +461,25 @@ export const ecgWorkspaceSchema = z.object({
   quality: ecgQualitySchema.nullable(),
   analyses: z.array(ecgAnalysisSchema),
   interpretations: z.array(ecgInterpretationSchema),
+  ingestion_jobs: z.array(
+    z.object({
+      ingestion_job_id: uuid,
+      source_type: z.string(),
+      source_connector_id: z.string().nullable(),
+      external_reference: z.string().nullable(),
+      status: z.string(),
+      requested_at: timestamp,
+      completed_at: timestamp.nullable(),
+      parser_name: z.string().nullable(),
+      parser_version: z.string().nullable(),
+      warnings: z.array(z.string()),
+      failure_category: z.string().nullable(),
+      failure_detail_safe: z.string().nullable(),
+      retry_count: z.number().int().nonnegative(),
+      correlation_id: uuid,
+      record_version: z.number().int().positive(),
+    }),
+  ),
   comparisons: z.array(
     z
       .object({
@@ -329,9 +488,46 @@ export const ecgWorkspaceSchema = z.object({
         current_study_id: uuid,
         status: z.string().min(1),
         comparability_status: z.string().min(1),
+        comparability_reasons: z.array(z.string()),
+        lead_comparisons: z.array(
+          z.object({
+            lead_name: z.string(),
+            waveform_similarity: z.number(),
+            normalized_difference: z.number(),
+            amplitude_scale_change: z.number(),
+            baseline_shift_indicator: z.number(),
+            missing_data_percentage: z.number(),
+            quality_difference: z.string(),
+            sample_alignment_status: z.string(),
+          }),
+        ),
+        technical_change_indicators: z.array(z.string()),
+        model_score_deltas: z.array(
+          z.object({
+            finding_code: z.string(),
+            previous_score: z.number(),
+            current_score: z.number(),
+            absolute_delta: z.number(),
+            compatibility_status: z.string(),
+          }),
+        ),
+        model_score_compatibility: z.string(),
+        comparison_policy_version: z.string(),
+        record_version: z.number().int().positive(),
         safety_notice: z.string().min(1),
       })
       .passthrough(),
+  ),
+  comparison_reviews: z.array(
+    z.object({
+      review_id: uuid,
+      comparison_id: uuid,
+      actor_role: z.string(),
+      review_status: z.string(),
+      interpretation: z.string(),
+      recorded_at: timestamp,
+      record_version: z.number().int().positive(),
+    }),
   ),
   reminders: z.array(
     z
@@ -341,10 +537,18 @@ export const ecgWorkspaceSchema = z.object({
         reason: z.string().min(1),
         due_at: timestamp,
         status: z.string().min(1),
+        origin: z.string(),
+        requested_by_actor_role: z.string(),
+        acknowledged_at: timestamp.nullable(),
+        completed_study_id: uuid.nullable(),
+        completed_at: timestamp.nullable(),
+        cancellation_reason: z.string().nullable(),
         record_version: z.number().int().positive(),
       })
       .passthrough(),
   ),
+  capabilities: z.record(z.string(), z.boolean()),
+  data_freshness: timestamp,
   safety_notice: z.string().min(1),
 });
 
@@ -363,4 +567,16 @@ export const ecgWaveformSchema = z.object({
       samples: z.array(z.number().finite()).min(1),
     }),
   ),
+});
+
+export const ecgConnectorSchema = z.object({
+  connector_id: z.string(),
+  display_name: z.string(),
+  source_type: z.string(),
+  available: z.boolean(),
+  capabilities: z.array(z.string()),
+  detail: z.string(),
+  connector_type: z.string(),
+  profile: z.string().nullable(),
+  version: z.string().nullable(),
 });

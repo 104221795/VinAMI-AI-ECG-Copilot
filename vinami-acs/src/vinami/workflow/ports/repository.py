@@ -50,6 +50,14 @@ class ClinicalTaskRepository(Protocol):
     def save(self, task: ClinicalTask) -> None:
         """Stage completion state for a task."""
 
+    def list_by_case(self, case_id: UUID) -> list[ClinicalTask]:
+        """Return all tasks owned by one clinical case."""
+
+    def find_by_source(
+        self, case_id: UUID, source_type: str, source_id: UUID
+    ) -> ClinicalTask | None:
+        """Find an idempotently generated task by persisted provenance."""
+
 
 class WorkflowUnitOfWork(Protocol):
     """Application-facing transaction boundary for workflow commands."""

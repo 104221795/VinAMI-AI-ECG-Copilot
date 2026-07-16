@@ -9,8 +9,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.exc import StaleDataError
 
 from vinami.alerts.adapters.persistence import SQLAlchemyAlertRepository
+from vinami.audit.adapters.history import SQLAlchemyCaseHistoryRepository
 from vinami.audit.adapters.persistence import OutboxEventRecord
+from vinami.clinical_case.adapters.case_workspace import SQLAlchemyCaseWorkspaceReadRepository
 from vinami.clinical_case.adapters.closure import SQLAlchemyCaseClosureEvidenceRepository
+from vinami.clinical_case.adapters.command_center import (
+    SQLAlchemyCommandCenterReadRepository,
+)
 from vinami.clinical_case.adapters.persistence import SQLAlchemyClinicalCaseRepository
 from vinami.clinical_case.adapters.read_models import (
     SQLAlchemyClinicalLifecycleReadRepository,
@@ -23,11 +28,13 @@ from vinami.patient.adapters.persistence import (
     SQLAlchemyEncounterRepository,
     SQLAlchemyPatientRepository,
 )
+from vinami.reasoning.adapters.r5_persistence import SQLAlchemyClinicalReasoningRepository
 from vinami.shared.domain import AggregateRoot, OptimisticConcurrencyError
 from vinami.shared.events.contracts import EventEnvelope
 from vinami.shared.idempotency_persistence import SQLAlchemyIdempotencyRepository
 from vinami.triage.adapters.persistence import SQLAlchemyClinicalDocumentationRepository
 from vinami.troponin.adapters.persistence import SQLAlchemyTroponinTimelineRepository
+from vinami.troponin.adapters.r4_persistence import SQLAlchemyTroponinEvidenceRepository
 from vinami.workflow.adapters.decision_persistence import (
     SQLAlchemyPhysicianDecisionRepository,
 )
@@ -64,15 +71,20 @@ class SQLAlchemyUnitOfWork:
         self.patients = SQLAlchemyPatientRepository(self._session)
         self.encounters = SQLAlchemyEncounterRepository(self._session)
         self.cases = SQLAlchemyClinicalCaseRepository(self._session)
+        self.case_workspace = SQLAlchemyCaseWorkspaceReadRepository(self._session)
+        self.command_center = SQLAlchemyCommandCenterReadRepository(self._session)
         self.lifecycle_reads = SQLAlchemyClinicalLifecycleReadRepository(self._session)
         self.closure_evidence = SQLAlchemyCaseClosureEvidenceRepository(self._session)
         self.ecg_studies = SQLAlchemyECGStudyRepository(self._session)
         self.ecg_clinical = SQLAlchemyECGClinicalRepository(self._session)
         self.troponin_timelines = SQLAlchemyTroponinTimelineRepository(self._session)
+        self.troponin_evidence = SQLAlchemyTroponinEvidenceRepository(self._session)
         self.documentation = SQLAlchemyClinicalDocumentationRepository(self._session)
+        self.reasoning = SQLAlchemyClinicalReasoningRepository(self._session)
         self.workflows = SQLAlchemyClinicalWorkflowRepository(self._session)
         self.tasks = SQLAlchemyClinicalTaskRepository(self._session)
         self.alerts = SQLAlchemyAlertRepository(self._session)
+        self.history = SQLAlchemyCaseHistoryRepository(self._session)
         self.models = SQLAlchemyModelRegistryRepository(self._session)
         self.physician_decisions = SQLAlchemyPhysicianDecisionRepository(self._session)
         self.actors = SQLAlchemyActorAuthorizationRepository(self._session)

@@ -30,6 +30,9 @@ from vinami.shared.idempotency import (
     IdempotencyResult,
     command_fingerprint,
 )
+from vinami.workflow.application.definitions import load_demo_workflow_definition
+from vinami.workflow.domain.model import ClinicalWorkflow
+from vinami.workflow.ports.repository import ClinicalWorkflowRepository
 
 
 class ClinicalCaseUnitOfWork(Protocol):
@@ -40,6 +43,7 @@ class ClinicalCaseUnitOfWork(Protocol):
     lifecycle_reads: ClinicalLifecycleReadRepository
     actors: ActorRepository
     idempotency: IdempotencyRepository
+    workflows: ClinicalWorkflowRepository
 
     def __enter__(self) -> ClinicalCaseUnitOfWork: ...
 
@@ -208,6 +212,9 @@ class OpenClinicalCaseHandler:
             )
             response = _case_dto(clinical_case)
             unit_of_work.cases.add(clinical_case)
+            unit_of_work.workflows.add(
+                ClinicalWorkflow.start(clinical_case.id, load_demo_workflow_definition())
+            )
             unit_of_work.collect_events([clinical_case])
             unit_of_work.idempotency.add(
                 IdempotencyResult(

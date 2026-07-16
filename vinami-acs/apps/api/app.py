@@ -13,11 +13,17 @@ from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
+from apps.api.case_workspace import router as case_workspace_router
+from apps.api.clinical_reasoning import router as clinical_reasoning_router
+from apps.api.command_center import router as command_center_router
 from apps.api.ecg import router as ecg_router
 from apps.api.http import audit_request_outcome, authorize_for
+from apps.api.history import router as history_router
 from apps.api.identity import router as identity_router
 from apps.api.lifecycle import router as lifecycle_router
 from apps.api.triage_vitals import router as triage_vitals_router
+from apps.api.troponin import router as troponin_router
+from apps.api.workflow_operations import router as workflow_operations_router
 from vinami.identity.domain.security import Permission
 from vinami.identity.ports.errors import AuthenticationFailedError, AuthorizationDeniedError
 from vinami.shared.application_errors import (
@@ -30,6 +36,7 @@ from vinami.shared.container import AppContainer
 from vinami.shared.database import SchemaNotReadyError
 from vinami.shared.domain import DomainInvariantError, OptimisticConcurrencyError
 from vinami.shared.logging import log_event
+from vinami.troponin.domain.evidence import TroponinUnitValidationError
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -66,13 +73,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_problem(request: Request, _: RequestValidationError) -> JSONResponse:
+    async def validation_problem(request: Request, error: RequestValidationError) -> JSONResponse:
+        errors = []
+        for item in error.errors():
+            location = item.get("loc", ())
+            field = str(location[-1]) if location else "request"
+            if field == "unit":
+                code = "unit_required" if item.get("type") == "missing" else "incompatible_unit"
+                errors.append({"field": "unit", "code": code})
         return _problem(
             request,
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
             "Request validation failed",
             "The request does not satisfy the documented API contract.",
             "https://vinami.example/problems/validation",
+            errors=errors or None,
         )
 
     @app.exception_handler(ActorContextError)
@@ -153,6 +168,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "https://vinami.example/problems/domain-invariant",
         )
 
+    @app.exception_handler(TroponinUnitValidationError)
+    async def troponin_unit_problem(
+        request: Request, error: TroponinUnitValidationError
+    ) -> JSONResponse:
+        audit_request_outcome(request, "domain_rejection", "request:troponin_unit_rejected")
+        return _problem(
+            request,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "Invalid troponin unit",
+            str(error),
+            f"https://vinami.example/problems/{error.code}",
+            errors=[{"field": error.field, "code": error.code}],
+        )
+
     @app.exception_handler(IntegrityError)
     async def integrity_problem(request: Request, _: IntegrityError) -> JSONResponse:
         audit_request_outcome(request, "concurrency_conflict", "request:persistence_conflict")
@@ -207,11 +236,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(triage_vitals_router)
     app.include_router(identity_router)
     app.include_router(ecg_router)
+    app.include_router(troponin_router)
+    app.include_router(clinical_reasoning_router)
+    app.include_router(workflow_operations_router)
+    app.include_router(command_center_router)
+    app.include_router(case_workspace_router)
+    app.include_router(history_router)
 
     resources = (
         "triage",
         "vitals",
-        "troponin",
         "pathways",
         "workflows",
         "tasks",
@@ -299,6 +333,7 @@ def _problem(
     detail: str,
     problem_type: str,
     extra_headers: dict[str, str] | None = None,
+    errors: list[dict[str, str]] | None = None,
 ) -> JSONResponse:
     """Build one safe RFC 7807 document and preserve the request correlation identifier."""
     correlation = getattr(request.state, "correlation_id", None) or str(uuid4())
@@ -312,6 +347,7 @@ def _problem(
             "detail": detail,
             "instance": request.url.path,
             "correlation_id": correlation,
+            **({"errors": errors} if errors else {}),
         },
         headers={"X-Correlation-ID": correlation, **(extra_headers or {})},
     )

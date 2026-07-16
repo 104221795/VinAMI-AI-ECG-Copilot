@@ -73,7 +73,6 @@ exclude = ["migrations"]
 [[tool.mypy.overrides]]
 module = [
   "defusedxml",
-  "defusedxml.*",
   "prometheus_client",
   "redis",
   "redis.*",

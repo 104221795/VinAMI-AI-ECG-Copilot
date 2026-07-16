@@ -63,6 +63,7 @@ class CommandHeaders:
 
     actor: ActorContext
     idempotency_key: str
+    visible_locations: tuple[str, ...]
 
 
 def authenticate_request(
@@ -133,6 +134,7 @@ def command_headers_for(permission: Permission) -> Any:
         return CommandHeaders(
             actor=authorized.actor_context(request),
             idempotency_key=require_text(idempotency_key, "idempotency_key"),
+            visible_locations=tuple(authorized.identity.location_scope),
         )
 
     return command_headers

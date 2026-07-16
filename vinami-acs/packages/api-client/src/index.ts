@@ -35,6 +35,43 @@ export type ECGInterpretation = components["schemas"]["InterpretationResponse"];
 export type ECGAnalysisInput = components["schemas"]["RequestAnalysisBody"];
 export type ECGInterpretationInput =
   components["schemas"]["InterpretationBody"];
+export type ECGConnector = components["schemas"]["ConnectorResponse"];
+export type ECGImportInput = components["schemas"]["ImportBody"];
+export type ECGRetryInput = components["schemas"]["RetryIngestionBody"];
+export type ECGComparison = components["schemas"]["ComparisonResponse"];
+export type ECGComparisonInput = components["schemas"]["ComparisonBody"];
+export type ECGComparisonReview =
+  components["schemas"]["ComparisonReviewResponse"];
+export type ECGComparisonReviewInput =
+  components["schemas"]["ComparisonReviewBody"];
+export type ECGReminder = components["schemas"]["ReminderResponse"];
+export type ECGReminderInput = components["schemas"]["ReminderBody"];
+export type ECGReminderTransitionInput =
+  components["schemas"]["ReminderTransitionBody"];
+export type ClinicalReasoningWorkspace =
+  components["schemas"]["ClinicalReasoningWorkspaceResponse"];
+export type EvidenceSnapshotInput = components["schemas"]["SnapshotBody"];
+export type ClinicalAssessmentInput = components["schemas"]["AssessmentBody"];
+export type ClinicalAssessmentCorrectionInput =
+  components["schemas"]["AssessmentCorrectionBody"];
+export type ClinicalDecisionInput = components["schemas"]["DecisionBody"];
+export type ClinicalDecisionCorrectionInput =
+  components["schemas"]["DecisionCorrectionBody"];
+export type ClinicalDecisionRevocationInput =
+  components["schemas"]["DecisionRevocationBody"];
+export type WorkflowOperationsWorkspace =
+  components["schemas"]["WorkflowWorkspaceResponse"];
+export type WorkflowTask = components["schemas"]["TaskResponse"];
+export type WorkflowAlert = components["schemas"]["AlertResponse"];
+export type GenerateWorkflowTaskInput =
+  components["schemas"]["GenerateTaskBody"];
+export type WorkflowTaskActionInput = components["schemas"]["TaskActionBody"];
+export type WorkflowAlertActionInput = components["schemas"]["AlertActionBody"];
+export type CommandCenterPage =
+  components["schemas"]["CommandCenterPageResponse"];
+export type CompleteCaseWorkspace =
+  components["schemas"]["CompleteCaseWorkspaceResponse"];
+export type OutcomeInput = Record<string, unknown>;
 
 export type ApiErrorKind =
   | "authentication"
@@ -82,6 +119,32 @@ export interface CaseListQuery {
   location?: string;
 }
 
+export interface CommandCenterQuery {
+  page?: number;
+  page_size?: number;
+  priority?: "routine" | "urgent" | "critical";
+  workflow_state?:
+    | "NEW"
+    | "TRIAGE_IN_PROGRESS"
+    | "AWAITING_ECG"
+    | "ECG_UNDER_REVIEW"
+    | "AWAITING_TROPONIN"
+    | "OBSERVATION"
+    | "PHYSICIAN_REVIEW_REQUIRED"
+    | "PATHWAY_SELECTED"
+    | "TRANSFER_IN_PROGRESS"
+    | "CATH_LAB_REVIEW"
+    | "DISCHARGE_REVIEW"
+    | "CLOSED"
+    | "CANCELLED";
+  overdue?: boolean;
+  alert_status?: "active" | "acknowledged" | "unresolved" | "none";
+  evidence_status?: "current" | "missing" | "stale" | "technical_limit";
+  owner_id?: string;
+  sort?: "priority" | "opened_at" | "next_due_at" | "latest_activity";
+  direction?: "asc" | "desc";
+}
+
 export class VinamiApiClient {
   private readonly client: ReturnType<typeof createClient<paths>>;
   private readonly baseUrl: string;
@@ -116,6 +179,286 @@ export class VinamiApiClient {
       params: { query },
     });
     return unwrap(result);
+  }
+
+  async getCommandCenter(
+    query: CommandCenterQuery = {},
+  ): Promise<CommandCenterPage> {
+    return unwrap(
+      await this.client.GET("/api/v1/command-center/cases", {
+        params: { query },
+      }),
+    );
+  }
+
+  async getCompleteCaseWorkspace(
+    caseId: string,
+  ): Promise<CompleteCaseWorkspace> {
+    return unwrap(
+      await this.client.GET(
+        "/api/v1/clinical-cases/{case_id}/complete-workspace",
+        { params: { path: { case_id: caseId } } },
+      ),
+    );
+  }
+
+  async getTroponinWorkspace(caseId: string): Promise<unknown> {
+    return this.rawJson(`/api/v1/clinical-cases/${caseId}/troponin-workspace`);
+  }
+
+  async getTroponinAssays(): Promise<unknown> {
+    return this.rawJson("/api/v1/troponin-assays");
+  }
+
+  async getClinicalReasoningWorkspace(
+    caseId: string,
+  ): Promise<ClinicalReasoningWorkspace> {
+    return unwrap(
+      await this.client.GET(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning",
+        { params: { path: { case_id: caseId } } },
+      ),
+    );
+  }
+
+  async getWorkflowOperationsWorkspace(
+    caseId: string,
+  ): Promise<WorkflowOperationsWorkspace> {
+    return unwrap(
+      await this.client.GET(
+        "/api/v1/clinical-cases/{case_id}/workflow-operations",
+        { params: { path: { case_id: caseId } } },
+      ),
+    );
+  }
+
+  async generateWorkflowTask(
+    caseId: string,
+    body: GenerateWorkflowTaskInput,
+    idempotencyKey: string,
+  ): Promise<WorkflowTask> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/from-decisions",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async changeWorkflowTask(
+    caseId: string,
+    taskId: string,
+    action: "assign" | "acknowledge" | "start" | "complete" | "cancel",
+    body: WorkflowTaskActionInput,
+    idempotencyKey: string,
+  ): Promise<WorkflowTask> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/{task_id}/{action}",
+        {
+          params: {
+            path: { case_id: caseId, task_id: taskId, action },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async evaluateWorkflowOverdue(caseId: string, idempotencyKey: string) {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/workflow-operations/overdue-evaluations",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body: {},
+        },
+      ),
+    );
+  }
+
+  async changeWorkflowAlert(
+    caseId: string,
+    alertId: string,
+    action: "acknowledge" | "resolve",
+    body: WorkflowAlertActionInput,
+    idempotencyKey: string,
+  ): Promise<WorkflowAlert> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/workflow-operations/alerts/{alert_id}/{action}",
+        {
+          params: {
+            path: { case_id: caseId, alert_id: alertId, action },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async createEvidenceSnapshot(
+    caseId: string,
+    body: EvidenceSnapshotInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/snapshots",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async recordClinicalAssessment(
+    caseId: string,
+    body: ClinicalAssessmentInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async recordClinicalDecision(
+    caseId: string,
+    body: ClinicalDecisionInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async correctClinicalAssessment(
+    caseId: string,
+    assessmentId: string,
+    body: ClinicalAssessmentCorrectionInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments/{assessment_id}/corrections",
+        {
+          params: {
+            path: { case_id: caseId, assessment_id: assessmentId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async correctClinicalDecision(
+    caseId: string,
+    decisionId: string,
+    body: ClinicalDecisionCorrectionInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/corrections",
+        {
+          params: {
+            path: { case_id: caseId, decision_id: decisionId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async revokeClinicalDecision(
+    caseId: string,
+    decisionId: string,
+    body: ClinicalDecisionRevocationInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/revocations",
+        {
+          params: {
+            path: { case_id: caseId, decision_id: decisionId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  private async rawJson(path: string): Promise<unknown> {
+    const response = await this.safeFetch(`${this.baseUrl}${path}`, {
+      headers: this.defaultHeaders,
+    });
+    const payload: unknown = await response.json();
+    if (response.ok) return payload;
+    throw mapApiError(
+      response.status,
+      payload,
+      response.headers.get("x-correlation-id"),
+    );
+  }
+
+  private async postJson(
+    path: string,
+    body: unknown,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    const response = await this.safeFetch(`${this.baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        ...this.defaultHeaders,
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify(body),
+    });
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (response.ok) return payload;
+    throw mapApiError(
+      response.status,
+      payload,
+      response.headers.get("x-correlation-id"),
+    );
   }
 
   async getClinicalCase(caseId: string): Promise<ClinicalCase> {
@@ -155,6 +498,74 @@ export class VinamiApiClient {
       await this.client.GET("/api/v1/clinical-cases/{case_id}/audit", {
         params: { path: { case_id: caseId } },
       }),
+    );
+  }
+
+  async getTimelineHistory(
+    caseId: string,
+    query: Record<string, unknown> = {},
+  ): Promise<unknown> {
+    const suffix = queryString(query);
+    return this.rawJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/history/timeline${suffix}`,
+    );
+  }
+
+  async getAuditHistory(
+    caseId: string,
+    query: Record<string, unknown> = {},
+  ): Promise<unknown> {
+    const suffix = queryString(query);
+    return this.rawJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/history/audit${suffix}`,
+    );
+  }
+
+  async getOutcomeHistory(caseId: string): Promise<unknown> {
+    return this.rawJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/outcomes`,
+    );
+  }
+
+  async recordOutcome(
+    caseId: string,
+    body: OutcomeInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return this.postJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/outcomes`,
+      body,
+      idempotencyKey,
+    );
+  }
+
+  async correctOutcome(
+    caseId: string,
+    outcomeId: string,
+    body: OutcomeInput,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return this.postJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/outcomes/${encodeURIComponent(outcomeId)}/corrections`,
+      body,
+      idempotencyKey,
+    );
+  }
+
+  async getModelProvenance(caseId: string): Promise<unknown> {
+    return this.rawJson(
+      `/api/v1/clinical-cases/${encodeURIComponent(caseId)}/model-provenance`,
+    );
+  }
+
+  async requestResearchExport(
+    caseIds: string[],
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return this.postJson(
+      "/api/v1/research-exports",
+      { case_ids: caseIds },
+      idempotencyKey,
     );
   }
 
@@ -354,6 +765,122 @@ export class VinamiApiClient {
     return payload as ECGIngestionJob;
   }
 
+  async getECGConnectors(): Promise<ECGConnector[]> {
+    return unwrap(await this.client.GET("/api/v1/ecg-source-connectors"));
+  }
+
+  async importECGStudy(
+    caseId: string,
+    body: ECGImportInput,
+    idempotencyKey: string,
+  ): Promise<ECGIngestionJob> {
+    return unwrap(
+      await this.client.POST("/api/v1/clinical-cases/{case_id}/ecg-imports", {
+        params: {
+          path: { case_id: caseId },
+          header: { "Idempotency-Key": idempotencyKey },
+        },
+        body,
+      }),
+    );
+  }
+
+  async retryECGIngestion(
+    jobId: string,
+    body: ECGRetryInput,
+    idempotencyKey: string,
+  ): Promise<ECGIngestionJob> {
+    return unwrap(
+      await this.client.POST("/api/v1/ecg-ingestion-jobs/{job_id}/retry", {
+        params: {
+          path: { job_id: jobId },
+          header: { "Idempotency-Key": idempotencyKey },
+        },
+        body,
+      }),
+    );
+  }
+
+  async createECGComparison(
+    caseId: string,
+    body: ECGComparisonInput,
+    idempotencyKey: string,
+  ): Promise<ECGComparison> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/ecg-comparisons",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async recordECGComparisonReview(
+    comparisonId: string,
+    body: ECGComparisonReviewInput,
+    idempotencyKey: string,
+  ): Promise<ECGComparisonReview> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/ecg-comparisons/{comparison_id}/physician-reviews",
+        {
+          params: {
+            path: { comparison_id: comparisonId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async createECGReminder(
+    caseId: string,
+    body: ECGReminderInput,
+    idempotencyKey: string,
+  ): Promise<ECGReminder> {
+    return unwrap(
+      await this.client.POST(
+        "/api/v1/clinical-cases/{case_id}/repeat-ecg-reminders",
+        {
+          params: {
+            path: { case_id: caseId },
+            header: { "Idempotency-Key": idempotencyKey },
+          },
+          body,
+        },
+      ),
+    );
+  }
+
+  async transitionECGReminder(
+    reminderId: string,
+    action: "acknowledge" | "complete" | "cancel",
+    body: ECGReminderTransitionInput,
+    idempotencyKey: string,
+  ): Promise<ECGReminder> {
+    const paths = {
+      acknowledge:
+        "/api/v1/repeat-ecg-reminders/{reminder_id}/acknowledge" as const,
+      complete: "/api/v1/repeat-ecg-reminders/{reminder_id}/complete" as const,
+      cancel: "/api/v1/repeat-ecg-reminders/{reminder_id}/cancel" as const,
+    };
+    return unwrap(
+      await this.client.POST(paths[action], {
+        params: {
+          path: { reminder_id: reminderId },
+          header: { "Idempotency-Key": idempotencyKey },
+        },
+        body,
+      }),
+    );
+  }
+
   async getHealth(): Promise<Record<string, unknown>> {
     return recordResponse(unwrap(await this.client.GET("/health")));
   }
@@ -374,6 +901,17 @@ function recordResponse(value: unknown): Record<string, unknown> {
     null,
     false,
   );
+}
+
+function queryString(query: Record<string, unknown>): string {
+  const params = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, String(value));
+    }
+  });
+  const value = params.toString();
+  return value ? `?${value}` : "";
 }
 
 interface OpenApiResult<T> {

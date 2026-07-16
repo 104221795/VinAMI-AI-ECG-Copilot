@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from vinami.shared.domain import require_text, require_utc
+from vinami.shared.domain import DomainInvariantError, require_text, require_utc
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,15 +52,52 @@ class AuditEntry:
 
 @dataclass(frozen=True, slots=True)
 class Outcome:
-    """Recorded outcome fact; it is not derived by any rule in this sprint."""
+    """Append-only physician-authored outcome revision for one Clinical Case."""
 
     case_id: UUID
-    summary: str
+    outcome_type: str
+    outcome_timestamp: datetime
+    final_conclusion: str
     recorded_at: datetime
-    recorded_by: UUID | None
+    recorded_by: UUID
+    actor_role: str
+    revision_number: int
+    record_version: int
+    disposition: str | None = None
+    destination: str | None = None
+    cath_lab_review_outcome: str | None = None
+    intervention_reference: str | None = None
+    complications: str | None = None
+    follow_up_status: str | None = None
+    data_completeness: str = "documented"
+    source: str = "physician_documented"
+    uncertainty: str | None = None
+    unavailable_reason: str | None = None
+    supersedes_outcome_id: UUID | None = None
+    correction_reason: str | None = None
+    idempotency_key: str | None = None
+    correlation_id: UUID | None = None
+    causation_id: UUID | None = None
     id: UUID = field(default_factory=uuid4)
 
     def __post_init__(self) -> None:
-        """Preserve non-empty outcome text and UTC provenance."""
-        object.__setattr__(self, "summary", require_text(self.summary, "outcome summary"))
+        """Preserve outcome as an authored fact, not an inferred platform conclusion."""
+        object.__setattr__(self, "outcome_type", require_text(self.outcome_type, "outcome_type"))
+        object.__setattr__(
+            self, "final_conclusion", require_text(self.final_conclusion, "final_conclusion")
+        )
+        object.__setattr__(self, "actor_role", require_text(self.actor_role, "actor_role"))
+        object.__setattr__(self, "source", require_text(self.source, "source"))
+        object.__setattr__(
+            self, "data_completeness", require_text(self.data_completeness, "data_completeness")
+        )
+        object.__setattr__(
+            self, "outcome_timestamp", require_utc(self.outcome_timestamp, "outcome_timestamp")
+        )
         object.__setattr__(self, "recorded_at", require_utc(self.recorded_at, "recorded_at"))
+        if self.revision_number < 1:
+            raise DomainInvariantError("outcome revision_number must be positive")
+        if self.record_version < 1:
+            raise DomainInvariantError("outcome record_version must be positive")
+        if self.supersedes_outcome_id is not None and not self.correction_reason:
+            raise DomainInvariantError("outcome correction requires a correction reason")

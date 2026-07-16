@@ -113,6 +113,13 @@ class TimelineAuditProjectionHandler:
                         "metadata": event.metadata,
                     },
                     source_event_id=event.event_id,
+                    idempotency_key=_optional_string(event.metadata.get("idempotency_key")),
+                    authorization_result=_optional_string(
+                        event.metadata.get("authorization_result")
+                    )
+                    or "authorized",
+                    correction_status=_correction_status(event),
+                    source_record_version=event.aggregate_version,
                 )
             )
         if case_id is None:
@@ -143,6 +150,10 @@ class TimelineAuditProjectionHandler:
                         "metadata": event.metadata,
                     },
                     source_event_id=event.event_id,
+                    source_record_id=_source_record_id(event),
+                    source_record_version=event.aggregate_version,
+                    correction_status=_correction_status(event),
+                    data_classification="clinical",
                 )
             )
         if event.event_type == "ClinicalCaseOpened.v1":
@@ -187,6 +198,7 @@ def build_default_handler_registry() -> HandlerRegistry:
         "ECGIngestionRequested.v1",
         "ECGIngestionCompleted.v1",
         "ECGIngestionFailed.v1",
+        "ECGIngestionRetried.v1",
         "ECGStudyCreated.v1",
         "ECGAnalysisRequested.v1",
         "ECGAnalysisCompleted.v1",
@@ -196,10 +208,48 @@ def build_default_handler_registry() -> HandlerRegistry:
         "DynamicECGComparisonRequested.v1",
         "DynamicECGComparisonCompleted.v1",
         "DynamicECGComparisonFailed.v1",
+        "DynamicECGPhysicianReviewRecorded.v1",
+        "DynamicECGPhysicianReviewCorrected.v1",
         "RepeatECGReminderScheduled.v1",
         "RepeatECGReminderDue.v1",
         "RepeatECGReminderAcknowledged.v1",
         "RepeatECGReminderCompleted.v1",
+        "RepeatECGReminderCancelled.v1",
+        "TroponinResultRecorded.v1",
+        "TroponinResultImported.v1",
+        "TroponinResultPreliminaryReceived.v1",
+        "TroponinResultFinalized.v1",
+        "TroponinResultSourceAmended.v1",
+        "TroponinResultAmended.v1",
+        "LaboratoryImportRequested.v1",
+        "LaboratoryImportCompleted.v1",
+        "LaboratoryImportFailed.v1",
+        "LaboratoryImportRetried.v1",
+        "ClinicianTroponinReviewRecorded.v1",
+        "ClinicianTroponinReviewCorrected.v1",
+        "RepeatTroponinMeasurementRequested.v1",
+        "RepeatTroponinMeasurementAcknowledged.v1",
+        "RepeatTroponinMeasurementCompleted.v1",
+        "RepeatTroponinMeasurementCancelled.v1",
+        "ClinicalEvidenceSnapshotCreated.v1",
+        "PhysicianClinicalAssessmentRecorded.v1",
+        "PhysicianClinicalAssessmentCorrected.v1",
+        "PhysicianClinicalDecisionRecorded.v1",
+        "PhysicianClinicalDecisionCorrected.v1",
+        "PhysicianClinicalDecisionRevoked.v1",
+        "ClinicalTaskCreated.v1",
+        "ClinicalTaskTransitioned.v1",
+        "ClinicalTaskCompleted.v1",
+        "ClinicalTaskCancelled.v1",
+        "ClinicalTaskOverdue.v1",
+        "ClinicalTaskEscalated.v1",
+        "ClinicalAlertRaised.v1",
+        "ClinicalAlertAcknowledged.v1",
+        "ClinicalAlertResolved.v1",
+        "ClinicalAlertEscalated.v1",
+        "ClinicalOutcomeRecorded.v1",
+        "ClinicalOutcomeCorrected.v1",
+        "ResearchExportCompleted.v1",
     ):
         registry.register(TimelineAuditProjectionHandler(event_type))
     return registry
@@ -272,6 +322,10 @@ def _project_case_ancestors(case_id: UUID, event: EventEnvelope, session: Sessio
                     "metadata": ancestor.metadata_document,
                 },
                 source_event_id=ancestor.event_id,
+                source_record_id=ancestor.aggregate_id,
+                source_record_version=ancestor.aggregate_version,
+                correction_status=_event_correction_status(ancestor.event_type),
+                data_classification="clinical",
             )
         )
 
@@ -289,6 +343,7 @@ def _event_title(event_type: str) -> str:
         "ECGIngestionRequested.v1": "ECG ingestion requested",
         "ECGIngestionCompleted.v1": "ECG received and parsed",
         "ECGIngestionFailed.v1": "ECG ingestion requires review",
+        "ECGIngestionRetried.v1": "ECG ingestion retried",
         "ECGStudyCreated.v1": "ECG study created",
         "ECGQualityAssessed.v1": "ECG technical quality assessed",
         "ECGAnalysisRequested.v1": "AI-supported ECG analysis requested",
@@ -298,10 +353,68 @@ def _event_title(event_type: str) -> str:
         "PhysicianECGInterpretationCorrected.v1": "Physician ECG interpretation corrected",
         "DynamicECGComparisonCompleted.v1": "Serial ECG technical comparison completed",
         "DynamicECGComparisonFailed.v1": "Serial ECG pair was not comparable",
+        "DynamicECGPhysicianReviewRecorded.v1": "Physician reviewed serial ECG comparison",
+        "DynamicECGPhysicianReviewCorrected.v1": "Physician serial ECG review corrected",
         "RepeatECGReminderScheduled.v1": "Repeat ECG review requested",
         "RepeatECGReminderAcknowledged.v1": "Repeat ECG reminder acknowledged",
         "RepeatECGReminderCompleted.v1": "Repeat ECG completed",
+        "RepeatECGReminderCancelled.v1": "Repeat ECG reminder cancelled",
+        "ClinicalEvidenceSnapshotCreated.v1": "Clinical evidence snapshot created",
+        "PhysicianClinicalAssessmentRecorded.v1": "Physician clinical assessment recorded",
+        "PhysicianClinicalAssessmentCorrected.v1": "Physician clinical assessment corrected",
+        "PhysicianClinicalDecisionRecorded.v1": "Physician clinical decision recorded",
+        "PhysicianClinicalDecisionCorrected.v1": "Physician clinical decision corrected",
+        "PhysicianClinicalDecisionRevoked.v1": "Physician clinical decision revoked",
+        "ClinicalTaskCreated.v1": "Clinical task created",
+        "ClinicalTaskTransitioned.v1": "Clinical task status changed",
+        "ClinicalTaskCompleted.v1": "Clinical task completed",
+        "ClinicalTaskCancelled.v1": "Clinical task cancelled",
+        "ClinicalTaskOverdue.v1": "Clinical task overdue",
+        "ClinicalTaskEscalated.v1": "Clinical task escalated",
+        "ClinicalAlertRaised.v1": "Operational alert raised",
+        "ClinicalAlertAcknowledged.v1": "Operational alert acknowledged",
+        "ClinicalAlertResolved.v1": "Operational alert resolved",
+        "ClinicalAlertEscalated.v1": "Operational alert escalated",
+        "ClinicalOutcomeRecorded.v1": "Clinical outcome recorded",
+        "ClinicalOutcomeCorrected.v1": "Clinical outcome corrected",
+        "ResearchExportCompleted.v1": "Research export generated",
     }.get(event_type, event_type.removesuffix(".v1"))
+
+
+def _source_record_id(event: EventEnvelope) -> UUID:
+    for key in (
+        "outcome_id",
+        "result_id",
+        "analysis_id",
+        "assessment_id",
+        "decision_id",
+        "task_id",
+        "alert_id",
+        "study_id",
+        "snapshot_id",
+    ):
+        value = event.payload.get(key)
+        if isinstance(value, str):
+            try:
+                return UUID(value)
+            except ValueError:
+                continue
+    return event.aggregate_id
+
+
+def _correction_status(event: EventEnvelope) -> str:
+    payload = event.payload
+    if any(key in payload for key in ("supersedes_outcome_id", "corrects_decision_id")):
+        return "correction"
+    return _event_correction_status(event.event_type)
+
+
+def _event_correction_status(event_type: str) -> str:
+    if "Revoked" in event_type:
+        return "revocation"
+    if "Corrected" in event_type or "Amended" in event_type:
+        return "correction"
+    return "original"
 
 
 def _integer(value: object) -> int | None:

@@ -66,8 +66,17 @@ const populated: ECGWorkspaceView = {
     },
   ],
   interpretations: [],
+  ingestionJobs: [],
   comparisons: [],
+  comparisonReviews: [],
   reminders: [],
+  capabilities: {
+    hospital_ingestion: true,
+    dynamic_ecg: true,
+    repeat_ecg: true,
+  },
+  connectors: [],
+  dataFreshness: "2026-07-14T08:00:03Z",
   waveform: {
     studyReference: "DEMO-12L-001",
     samplingRateHz: 100,
@@ -85,13 +94,7 @@ describe("ECGWorkspace", () => {
   afterEach(cleanup);
 
   it("separates waveform evidence from ranked independent model outputs", () => {
-    render(
-      <ECGWorkspace
-        caseId={populated.caseId}
-        caseVersion={1}
-        initialValue={populated}
-      />,
-    );
+    render(<ECGWorkspace caseId={populated.caseId} initialValue={populated} />);
     expect(screen.getAllByRole("img", { name: /waveform/ })).toHaveLength(12);
     expect(screen.getByText("MI-related ECG pattern")).toBeInTheDocument();
     expect(
@@ -105,7 +108,6 @@ describe("ECGWorkspace", () => {
     render(
       <ECGWorkspace
         caseId={populated.caseId}
-        caseVersion={1}
         initialValue={{
           ...populated,
           studies: [],

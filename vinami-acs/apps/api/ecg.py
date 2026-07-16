@@ -24,12 +24,13 @@ from vinami.ecg.adapters.artifact_store import ArtifactValidationError
 from vinami.ecg.adapters.ingestion import UnsupportedECGSourceError
 from vinami.ecg.application.service import (
     IngestECG,
+    RecordComparisonReview,
     RecordInterpretation,
     RequestAnalysis,
     RequestComparison,
     ScheduleReminder,
 )
-from vinami.ecg.domain.clinical import ECGSourceType
+from vinami.ecg.domain.clinical import ECGSourceType, ReminderOrigin
 from vinami.ecg.ports.repository import (
     ECGAnalysisSnapshot,
     ECGFindingSnapshot,
@@ -38,6 +39,7 @@ from vinami.ecg.ports.repository import (
 )
 from vinami.identity.domain.security import Permission
 from vinami.shared.container import AppContainer
+from vinami.shared.domain import utc_now
 
 router = APIRouter(prefix="/api/v1")
 
@@ -99,8 +101,14 @@ class IngestionJobResponse(BaseModel):
     source_connector_id: str | None
     external_reference: str | None
     status: str
+    requested_by_actor_role: str
     requested_at: datetime
+    started_at: datetime | None
     completed_at: datetime | None
+    request_source: str
+    study_reference: str
+    acquisition_at: datetime
+    content_type: str
     artifact_id: UUID | None
     resulting_study_id: UUID | None
     parser_name: str | None
@@ -109,6 +117,7 @@ class IngestionJobResponse(BaseModel):
     failure_category: str | None
     failure_detail_safe: str | None
     retry_count: int
+    retry_of_job_id: UUID | None
     correlation_id: UUID
     record_version: int
 
@@ -210,6 +219,20 @@ class LeadComparisonResponse(BaseModel):
     baseline_shift_indicator: float
     missing_data_percentage: float
     quality_difference: str
+    sample_alignment_status: str
+
+
+class ModelScoreEvolutionResponse(BaseModel):
+    finding_code: str
+    previous_score: float
+    current_score: float
+    absolute_delta: float
+    previous_threshold_met: bool | None
+    current_threshold_met: bool | None
+    threshold_state_changed: bool | None
+    previous_model_version: str
+    current_model_version: str
+    compatibility_status: str
 
 
 class ComparisonResponse(BaseModel):
@@ -224,10 +247,14 @@ class ComparisonResponse(BaseModel):
     comparability_reasons: list[str]
     lead_comparisons: list[LeadComparisonResponse]
     technical_change_indicators: list[str]
-    model_score_deltas: list[list[Any]]
+    model_score_deltas: list[ModelScoreEvolutionResponse]
+    model_score_compatibility: str
     quality_context: str
+    requested_by_actor_role: str
     requested_at: datetime
+    started_at: datetime | None
     completed_at: datetime
+    physician_review_status: str
     correlation_id: UUID
     record_version: int
     safety_notice: str = "Technical ECG change indicator - physician interpretation required."
@@ -237,11 +264,13 @@ class ReminderBody(BaseModel):
     source_study_id: UUID
     reason: str = Field(min_length=1, max_length=2000)
     due_at: datetime
+    origin: ReminderOrigin = ReminderOrigin.PHYSICIAN_REQUEST
 
 
 class ReminderTransitionBody(BaseModel):
     expected_version: int = Field(ge=1)
     completed_study_id: UUID | None = None
+    cancellation_reason: str | None = Field(default=None, min_length=1, max_length=2000)
 
 
 class ReminderResponse(BaseModel):
@@ -249,13 +278,20 @@ class ReminderResponse(BaseModel):
     clinical_case_id: UUID
     source_study_id: UUID
     requested_by: UUID
+    requested_by_actor_role: str
+    origin: str
     reason: str
     due_at: datetime
     status: str
     acknowledged_by: UUID | None
     acknowledged_at: datetime | None
     completed_study_id: UUID | None
+    completed_at: datetime | None
+    cancelled_by: UUID | None
+    cancelled_at: datetime | None
+    cancellation_reason: str | None
     created_at: datetime
+    updated_at: datetime
     correlation_id: UUID
     record_version: int
 
@@ -267,6 +303,40 @@ class ConnectorResponse(BaseModel):
     available: bool
     capabilities: list[str]
     detail: str
+    connector_type: str
+    profile: str | None
+    version: str | None
+
+
+class ComparisonReviewBody(BaseModel):
+    review_status: str = Field(min_length=1, max_length=80)
+    interpretation: str = Field(min_length=1, max_length=12000)
+    occurred_at: datetime
+    expected_version: int = Field(ge=0)
+
+
+class ComparisonReviewCorrectionBody(ComparisonReviewBody):
+    correction_reason: str = Field(min_length=1, max_length=2000)
+
+
+class ComparisonReviewResponse(BaseModel):
+    review_id: UUID
+    comparison_id: UUID
+    actor_id: UUID
+    actor_role: str
+    review_status: str
+    interpretation: str
+    occurred_at: datetime
+    recorded_at: datetime
+    correlation_id: UUID
+    record_version: int
+    revision_number: int
+    supersedes_review_id: UUID | None
+    correction_reason: str | None
+
+
+class RetryIngestionBody(BaseModel):
+    expected_version: int = Field(ge=1)
 
 
 class WaveformLeadResponse(BaseModel):
@@ -293,8 +363,12 @@ class ECGWorkspaceResponse(BaseModel):
     quality: QualityResponse | None
     analyses: list[AnalysisResponse]
     interpretations: list[InterpretationResponse]
+    ingestion_jobs: list[IngestionJobResponse]
     comparisons: list[ComparisonResponse]
+    comparison_reviews: list[ComparisonReviewResponse]
     reminders: list[ReminderResponse]
+    capabilities: dict[str, bool]
+    data_freshness: datetime
     safety_notice: str
 
 
@@ -402,9 +476,26 @@ def import_ecg(
                 expected_case_version=body.expected_case_version,
             )
         )
-    except FileNotFoundError as error:
+    except TimeoutError as error:
+        raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, str(error)) from error
+    except ConnectionError as error:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(error)) from error
+    except FileNotFoundError as error:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(error)) from error
+    except UnsupportedECGSourceError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
     return _job(job)
+
+
+@router.get(
+    "/clinical-cases/{case_id}/ecg-imports",
+    response_model=list[IngestionJobResponse],
+    tags=["ecg-integration"],
+)
+def list_ecg_imports(
+    case_id: UUID, _auth: ECGRead, container: Container
+) -> list[IngestionJobResponse]:
+    return [_job(value) for value in container.ecg_queries().ingestion_jobs(case_id)]
 
 
 @router.get(
@@ -466,6 +557,30 @@ def get_ingestion(job_id: UUID, _auth: ECGRead, container: Container) -> Ingesti
     return _job(container.ecg_queries().ingestion_job(job_id))
 
 
+@router.post(
+    "/ecg-ingestion-jobs/{job_id}/retry",
+    response_model=IngestionJobResponse,
+    tags=["ecg-integration"],
+)
+def retry_ingestion(
+    job_id: UUID,
+    body: RetryIngestionBody,
+    headers: ECGWrite,
+    container: Container,
+) -> IngestionJobResponse:
+    try:
+        job, _ = container.ecg_application().retry_ingestion(
+            job_id, headers.actor, headers.idempotency_key, body.expected_version
+        )
+    except TimeoutError as error:
+        raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, str(error)) from error
+    except ConnectionError as error:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(error)) from error
+    except UnsupportedECGSourceError as error:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(error)) from error
+    return _job(job)
+
+
 @router.get(
     "/ecg-source-connectors", response_model=list[ConnectorResponse], tags=["ecg-integration"]
 )
@@ -478,6 +593,9 @@ def source_connectors(_auth: ECGRead, container: Container) -> list[ConnectorRes
             available=value.available,
             capabilities=list(value.capabilities),
             detail=value.detail,
+            connector_type=value.connector_type,
+            profile=value.profile,
+            version=value.version,
         )
         for value in container.ecg_queries().source_health()
     ]
@@ -643,6 +761,77 @@ def get_comparison(comparison_id: UUID, _auth: ECGRead, container: Container) ->
     return _comparison(container.ecg_queries().comparison(comparison_id))
 
 
+@router.post(
+    "/ecg-comparisons/{comparison_id}/physician-reviews",
+    response_model=ComparisonReviewResponse,
+    status_code=201,
+    tags=["dynamic-ecg"],
+)
+def record_comparison_review(
+    comparison_id: UUID,
+    body: ComparisonReviewBody,
+    headers: ECGInterpret,
+    container: Container,
+) -> ComparisonReviewResponse:
+    return _comparison_review(
+        container.ecg_application().record_comparison_review(
+            RecordComparisonReview(
+                actor=headers.actor,
+                idempotency_key=headers.idempotency_key,
+                comparison_id=comparison_id,
+                review_status=body.review_status,
+                interpretation=body.interpretation,
+                occurred_at=body.occurred_at,
+                expected_version=body.expected_version,
+            )
+        )
+    )
+
+
+@router.get(
+    "/ecg-comparisons/{comparison_id}/physician-reviews",
+    response_model=list[ComparisonReviewResponse],
+    tags=["dynamic-ecg"],
+)
+def list_comparison_reviews(
+    comparison_id: UUID, _auth: ECGRead, container: Container
+) -> list[ComparisonReviewResponse]:
+    return [
+        _comparison_review(value)
+        for value in container.ecg_queries().comparison_reviews(comparison_id)
+    ]
+
+
+@router.post(
+    "/ecg-comparisons/{comparison_id}/physician-reviews/{review_id}/corrections",
+    response_model=ComparisonReviewResponse,
+    status_code=201,
+    tags=["dynamic-ecg"],
+)
+def correct_comparison_review(
+    comparison_id: UUID,
+    review_id: UUID,
+    body: ComparisonReviewCorrectionBody,
+    headers: ECGInterpret,
+    container: Container,
+) -> ComparisonReviewResponse:
+    return _comparison_review(
+        container.ecg_application().record_comparison_review(
+            RecordComparisonReview(
+                actor=headers.actor,
+                idempotency_key=headers.idempotency_key,
+                comparison_id=comparison_id,
+                review_status=body.review_status,
+                interpretation=body.interpretation,
+                occurred_at=body.occurred_at,
+                expected_version=body.expected_version,
+                supersedes_review_id=review_id,
+                correction_reason=body.correction_reason,
+            )
+        )
+    )
+
+
 @router.get(
     "/clinical-cases/{case_id}/ecg-evolution",
     response_model=list[ComparisonResponse],
@@ -670,6 +859,7 @@ def schedule_reminder(
                 body.source_study_id,
                 body.reason,
                 body.due_at,
+                body.origin,
             )
         )
     )
@@ -682,6 +872,15 @@ def schedule_reminder(
 )
 def list_reminders(case_id: UUID, _auth: ECGRead, container: Container) -> list[ReminderResponse]:
     return [_reminder(value) for value in container.ecg_queries().reminders(case_id)]
+
+
+@router.get(
+    "/repeat-ecg-reminders/{reminder_id}",
+    response_model=ReminderResponse,
+    tags=["ecg-reminders"],
+)
+def get_reminder(reminder_id: UUID, _auth: ECGRead, container: Container) -> ReminderResponse:
+    return _reminder(container.ecg_queries().reminder(reminder_id))
 
 
 @router.post(
@@ -720,14 +919,36 @@ def complete_reminder(
     )
 
 
+@router.post(
+    "/repeat-ecg-reminders/{reminder_id}/cancel",
+    response_model=ReminderResponse,
+    tags=["ecg-reminders"],
+)
+def cancel_reminder(
+    reminder_id: UUID,
+    body: ReminderTransitionBody,
+    headers: ECGWrite,
+    container: Container,
+) -> ReminderResponse:
+    if body.cancellation_reason is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "cancellation_reason is required")
+    return _reminder(
+        container.ecg_application().cancel_reminder(
+            reminder_id,
+            body.cancellation_reason,
+            headers.actor,
+            headers.idempotency_key,
+            body.expected_version,
+        )
+    )
+
+
 @router.get(
     "/clinical-cases/{case_id}/ecg-workspace",
     response_model=ECGWorkspaceResponse,
     tags=["ecg-workspace"],
 )
-def get_workspace(
-    case_id: UUID, _auth: ECGRead, container: Container
-) -> ECGWorkspaceResponse:
+def get_workspace(case_id: UUID, _auth: ECGRead, container: Container) -> ECGWorkspaceResponse:
     value = container.ecg_queries().workspace(case_id)
     return ECGWorkspaceResponse(
         clinical_case_id=case_id,
@@ -736,8 +957,19 @@ def get_workspace(
         quality=_quality(value.quality) if value.quality else None,
         analyses=[_analysis(item) for item in value.analyses],
         interpretations=[_interpretation(item) for item in value.interpretations],
+        ingestion_jobs=[_job(item) for item in value.ingestion_jobs],
         comparisons=[_comparison(item) for item in value.comparisons],
+        comparison_reviews=[_comparison_review(item) for item in value.comparison_reviews],
         reminders=[_reminder(item) for item in value.reminders],
+        capabilities={
+            "local_dicom": True,
+            "mock_dicom_connector": True,
+            "canonical_xml": True,
+            "pdf_document": True,
+            "dynamic_ecg": len(value.studies) >= 2,
+            "repeat_ecg": bool(value.studies),
+        },
+        data_freshness=utc_now(),
         safety_notice=value.safety_notice,
     )
 
@@ -797,8 +1029,14 @@ def _job(value: Any) -> IngestionJobResponse:
         source_connector_id=value.source_connector_id,
         external_reference=value.external_reference,
         status=value.status.value,
+        requested_by_actor_role=value.requested_by_role,
         requested_at=value.requested_at,
+        started_at=value.started_at,
         completed_at=value.completed_at,
+        request_source=value.request_source,
+        study_reference=value.study_reference,
+        acquisition_at=value.acquisition_at,
+        content_type=value.content_type,
         artifact_id=value.artifact_id,
         resulting_study_id=value.resulting_study_id,
         parser_name=value.parser_name,
@@ -807,6 +1045,7 @@ def _job(value: Any) -> IngestionJobResponse:
         failure_category=value.failure_category,
         failure_detail_safe=value.failure_detail_safe,
         retry_count=value.retry_count,
+        retry_of_job_id=value.retry_of_job_id,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )
@@ -890,10 +1129,17 @@ def _comparison(value: Any) -> ComparisonResponse:
             for item in value.lead_comparisons
         ],
         technical_change_indicators=list(value.technical_change_indicators),
-        model_score_deltas=[list(item) for item in value.model_score_deltas],
+        model_score_deltas=[
+            ModelScoreEvolutionResponse.model_validate(item, from_attributes=True)
+            for item in value.model_score_deltas
+        ],
+        model_score_compatibility=value.model_score_compatibility,
         quality_context=value.quality_context,
+        requested_by_actor_role=value.requested_by_role,
         requested_at=value.requested_at,
+        started_at=value.started_at,
         completed_at=value.completed_at,
+        physician_review_status=value.physician_review_status,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )
@@ -905,13 +1151,24 @@ def _reminder(value: Any) -> ReminderResponse:
         clinical_case_id=value.clinical_case_id,
         source_study_id=value.source_study_id,
         requested_by=value.requested_by,
+        requested_by_actor_role=value.requested_by_role,
+        origin=value.origin.value,
         reason=value.reason,
         due_at=value.due_at,
         status=value.status.value,
         acknowledged_by=value.acknowledged_by,
         acknowledged_at=value.acknowledged_at,
         completed_study_id=value.completed_study_id,
+        completed_at=value.completed_at,
+        cancelled_by=value.cancelled_by,
+        cancelled_at=value.cancelled_at,
+        cancellation_reason=value.cancellation_reason,
         created_at=value.created_at,
+        updated_at=value.updated_at or value.created_at,
         correlation_id=value.correlation_id,
         record_version=value.record_version,
     )
+
+
+def _comparison_review(value: Any) -> ComparisonReviewResponse:
+    return ComparisonReviewResponse.model_validate(value, from_attributes=True)

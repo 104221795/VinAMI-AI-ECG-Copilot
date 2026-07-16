@@ -49,4 +49,15 @@ The worker scans persisted due timers, converts each to an idempotent `timer_due
 
 ## Current Limits
 
-The workflow is a research-MVP demonstration. It has no clinician-authored guideline content, no API/UI command surface yet, no external escalation integration, and no clinical validation. Its facts are deliberately generic workflow inputs, not a substitute for clinical interpretation.
+The workflow is a research-MVP demonstration. It has no clinician-authored guideline
+content, external escalation integration, or clinical validation. Its facts are
+deliberately generic workflow inputs, not a substitute for clinical interpretation.
+
+## R6 Operational Layer
+
+R6 exposes the persisted case workflow through versioned API commands and an API-only
+case workspace. Clinical tasks originate only from effective R5 physician decisions or
+validated workflow effects. Task assignment, acknowledgement, start, completion,
+cancellation, overdue evaluation, escalation, and alert handling are versioned and
+audited through the transactional outbox. Completion never closes a case or implies a
+diagnosis or successful treatment.

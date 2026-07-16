@@ -42,6 +42,9 @@ class SQLAlchemyCaseClosureEvidenceRepository:
             )
         )
         outcome_id = self._session.scalar(
-            select(OutcomeRecord.id).where(OutcomeRecord.case_id == case_id)
+            select(OutcomeRecord.id)
+            .where(OutcomeRecord.case_id == case_id)
+            .order_by(OutcomeRecord.revision_number.desc(), OutcomeRecord.id.desc())
+            .limit(1)
         )
         return CaseClosureEvidence(int(alerts or 0), int(tasks or 0), outcome_id)

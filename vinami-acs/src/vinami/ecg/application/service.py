@@ -11,17 +11,22 @@ from time import perf_counter
 from typing import Protocol
 from uuid import UUID, uuid4
 
+from vinami.clinical_case.domain.model import CaseStatus
 from vinami.clinical_case.ports.repository import ClinicalCaseRepository
 from vinami.ecg.domain.clinical import (
     BLOCKING_QUALITY,
     ComparabilityStatus,
     ComparisonStatus,
     DynamicECGComparison,
+    DynamicECGPhysicianReview,
     ECGIngestionJob,
     ECGQualityResult,
     ECGRepeatReminder,
     ECGSourceType,
+    ECGWaveform,
     LeadComparison,
+    ModelScoreEvolution,
+    ReminderOrigin,
     ReminderStatus,
     TechnicalQualityStatus,
 )
@@ -103,6 +108,8 @@ class IngestECG:
     source_connector_id: str | None = None
     external_reference: str | None = None
     expected_case_version: int | None = None
+    retry_job_id: UUID | None = None
+    expected_job_version: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +156,20 @@ class ScheduleReminder:
     source_study_id: UUID
     reason: str
     due_at: datetime
+    origin: ReminderOrigin = ReminderOrigin.PHYSICIAN_REQUEST
+
+
+@dataclass(frozen=True, slots=True)
+class RecordComparisonReview:
+    actor: ActorContext
+    idempotency_key: str
+    comparison_id: UUID
+    review_status: str
+    interpretation: str
+    occurred_at: datetime
+    expected_version: int
+    supersedes_review_id: UUID | None = None
+    correction_reason: str | None = None
 
 
 class ECGApplicationService:
@@ -180,12 +201,14 @@ class ECGApplicationService:
             "acquisition_at": command.acquisition_at.isoformat(),
             "content_type": command.content_type,
             "external_reference": command.external_reference,
+            "retry_job_id": str(command.retry_job_id) if command.retry_job_id else None,
         }
         fingerprint = command_fingerprint(payload)
         with self._uow() as uow:
             _validate_actor(uow, command.actor)
+            command_type = "RetryECGIngestion" if command.retry_job_id else "IngestECG"
             previous = _idempotent(
-                uow, command.actor, "IngestECG", command.idempotency_key, fingerprint
+                uow, command.actor, command_type, command.idempotency_key, fingerprint
             )
             if previous:
                 job = uow.ecg_clinical.get_ingestion_job(
@@ -209,27 +232,54 @@ class ECGApplicationService:
                 raise ResourceNotFoundError("encounter not found")
             context = _context(command.actor)
             now = utc_now()
-            job = ECGIngestionJob.request(
-                clinical_case_id=case.id,
-                source_type=command.source_type,
-                requested_by=command.actor.actor_id,
-                requested_at=now,
-                context=context,
-                source_connector_id=command.source_connector_id,
-                external_reference=command.external_reference,
-            )
-            uow.ecg_clinical.add_ingestion_job(job)
+            if command.retry_job_id is not None:
+                job = uow.ecg_clinical.get_ingestion_job(command.retry_job_id)
+                if job is None or job.clinical_case_id != command.clinical_case_id:
+                    raise ResourceNotFoundError("ECG ingestion job not found")
+                if (
+                    command.expected_job_version is not None
+                    and job.record_version != command.expected_job_version
+                ):
+                    raise OptimisticConcurrencyError("ECG ingestion job has a newer version")
+                job.mark_retry(now, context)
+                uow.ecg_clinical.save_ingestion_job(job)
+            else:
+                job = ECGIngestionJob.request(
+                    clinical_case_id=case.id,
+                    source_type=command.source_type,
+                    requested_by=command.actor.actor_id,
+                    requested_by_role=command.actor.actor_role,
+                    requested_at=now,
+                    request_source=command.actor.request_source,
+                    idempotency_key=command.idempotency_key,
+                    study_reference=command.study_reference,
+                    acquisition_at=command.acquisition_at,
+                    content_type=command.content_type,
+                    context=context,
+                    source_connector_id=command.source_connector_id,
+                    external_reference=command.external_reference,
+                )
+                uow.ecg_clinical.add_ingestion_job(job)
             try:
-                content = self._resolve_content(command)
+                job.start(now)
+                uow.ecg_clinical.save_ingestion_job(job)
+                content = self._resolve_content(command, job)
                 adapter = self._source(command.source_type)
                 adapter.validate_source(content, command.content_type)
-                raw = self._artifacts.write(
-                    content,
-                    artifact_kind="raw_source",
-                    content_type=command.content_type,
-                    original_filename=command.original_filename,
-                )
-                uow.ecg_clinical.add_artifact(raw)
+                if command.retry_job_id is not None and job.artifact_id is not None:
+                    raw = uow.ecg_clinical.get_artifact(job.artifact_id)
+                    if raw is None:
+                        raise ResourceConflictError("persisted ECG source artifact is unavailable")
+                else:
+                    raw = self._artifacts.write(
+                        content,
+                        artifact_kind="raw_source",
+                        content_type=command.content_type,
+                        original_filename=command.original_filename,
+                    )
+                    uow.ecg_clinical.add_artifact(raw)
+                    job.attach_source_artifact(raw.artifact_id)
+                    uow.ecg_clinical.save_ingestion_job(job)
                 parsed = adapter.parse(
                     content,
                     study_reference=require_text(command.study_reference, "study_reference"),
@@ -275,7 +325,7 @@ class ECGApplicationService:
                     acquisition_device=parsed.source_device
                     if isinstance(parsed, ParsedWaveform)
                     else None,
-                    acquisition_at=command.acquisition_at,
+                    acquisition_at=parsed.acquisition_at,
                     ingestion_at=now,
                     study_status="ready_for_review",
                     lead_configuration=f"{len(waveform.lead_names)}-lead"
@@ -348,7 +398,7 @@ class ECGApplicationService:
                 _store_idempotency(
                     uow,
                     command.actor,
-                    "IngestECG",
+                    command_type,
                     command.idempotency_key,
                     fingerprint,
                     job.id,
@@ -364,6 +414,35 @@ class ECGApplicationService:
                 uow.collect_events([job])
                 uow.commit()
                 raise
+
+    def retry_ingestion(
+        self,
+        job_id: UUID,
+        actor: ActorContext,
+        idempotency_key: str,
+        expected_version: int,
+    ) -> tuple[ECGIngestionJob, ECGStudySnapshot | None]:
+        with self._uow() as uow:
+            _validate_actor(uow, actor)
+            job = uow.ecg_clinical.get_ingestion_job(job_id)
+            if job is None:
+                raise ResourceNotFoundError("ECG ingestion job not found")
+        return self.ingest(
+            IngestECG(
+                actor=actor,
+                idempotency_key=idempotency_key,
+                clinical_case_id=job.clinical_case_id,
+                source_type=job.source_type,
+                study_reference=job.study_reference,
+                acquisition_at=job.acquisition_at,
+                content=None,
+                content_type=job.content_type,
+                source_connector_id=job.source_connector_id,
+                external_reference=job.external_reference,
+                retry_job_id=job.id,
+                expected_job_version=expected_version,
+            )
+        )
 
     def request_analysis(self, command: RequestAnalysis) -> ECGAnalysisSnapshot:
         fingerprint = command_fingerprint(
@@ -677,6 +756,10 @@ class ECGApplicationService:
                 return value
             baseline = uow.ecg_clinical.get_study(command.baseline_study_id)
             current = uow.ecg_clinical.get_study(command.current_study_id)
+            clinical_case = uow.cases.get(command.clinical_case_id)
+            if clinical_case is None:
+                raise ResourceNotFoundError("clinical case not found")
+            _require_active_case(clinical_case.status)
             if (
                 baseline is None
                 or current is None
@@ -684,13 +767,19 @@ class ECGApplicationService:
                 or current.clinical_case_id != command.clinical_case_id
             ):
                 raise ResourceNotFoundError("serial ECG study not found in this case")
-            reasons = _comparability_reasons(baseline, current)
+            baseline_waveform = uow.ecg_clinical.get_waveform(baseline.study_id)
+            current_waveform = uow.ecg_clinical.get_waveform(current.study_id)
+            comparability, reasons = _comparability(
+                baseline, current, baseline_waveform, current_waveform
+            )
             lead_values: tuple[LeadComparison, ...] = ()
             indicators: tuple[str, ...]
-            if reasons:
-                comparability = ComparabilityStatus.NON_COMPARABLE
+            if comparability is ComparabilityStatus.NON_COMPARABLE:
                 status = ComparisonStatus.NON_COMPARABLE
-                indicators = ("studies not comparable", "physician review required")
+                indicators = (
+                    "studies are not technically comparable",
+                    "physician review required",
+                )
             else:
                 baseline_samples = self._samples(baseline)
                 current_samples = self._samples(current)
@@ -704,32 +793,57 @@ class ECGApplicationService:
                     else ("no material technical change detected", "physician review required")
                 )
                 comparability = ComparabilityStatus.COMPARABLE
-                status = ComparisonStatus.COMPLETED
+                status = (
+                    ComparisonStatus.COMPLETED_WITH_WARNING
+                    if comparability is not ComparabilityStatus.COMPARABLE
+                    else ComparisonStatus.COMPLETED
+                )
             now = utc_now()
-            score_deltas = _score_deltas(
+            score_deltas, score_compatibility = _score_deltas(
                 uow.ecg_clinical.list_analyses(baseline.study_id),
                 uow.ecg_clinical.list_analyses(current.study_id),
             )
             value = DynamicECGComparison(
-                uuid4(),
-                command.clinical_case_id,
-                baseline.study_id,
-                current.study_id,
-                "technical-comparison-1.0.0",
-                current.preprocessing_version or "none",
-                status,
-                comparability,
-                tuple(reasons),
-                lead_values,
-                tuple(indicators),
-                score_deltas,
-                f"baseline={baseline.quality_status}; current={current.quality_status}",
-                command.actor.actor_id,
-                now,
-                now,
-                command.actor.correlation_id,
+                id=uuid4(),
+                clinical_case_id=command.clinical_case_id,
+                baseline_study_id=baseline.study_id,
+                current_study_id=current.study_id,
+                comparison_policy_version="technical-comparison-2.0.0",
+                preprocessing_version=current.preprocessing_version or "none",
+                status=status,
+                comparability_status=comparability,
+                comparability_reasons=tuple(reasons),
+                lead_comparisons=lead_values,
+                technical_change_indicators=tuple(indicators),
+                model_score_deltas=score_deltas,
+                quality_context=(
+                    f"baseline={baseline.quality_status}; current={current.quality_status}"
+                ),
+                requested_by=command.actor.actor_id,
+                requested_by_role=command.actor.actor_role,
+                requested_at=now,
+                started_at=now,
+                completed_at=now,
+                physician_review_status="pending",
+                model_score_compatibility=score_compatibility,
+                correlation_id=command.actor.correlation_id,
             )
             uow.ecg_clinical.add_comparison(value)
+            uow.stage_event(
+                _event(
+                    "DynamicECGComparisonRequested.v1",
+                    value.id,
+                    1,
+                    {
+                        "case_id": str(command.clinical_case_id),
+                        "comparison_id": str(value.id),
+                        "baseline_study_id": str(baseline.study_id),
+                        "current_study_id": str(current.study_id),
+                    },
+                    command.actor,
+                    "DynamicECGComparison",
+                )
+            )
             event_type = (
                 "DynamicECGComparisonCompleted.v1"
                 if status is not ComparisonStatus.NON_COMPARABLE
@@ -764,6 +878,108 @@ class ECGApplicationService:
             uow.commit()
             return value
 
+    def record_comparison_review(
+        self, command: RecordComparisonReview
+    ) -> DynamicECGPhysicianReview:
+        command.actor.require_physician()
+        fingerprint = command_fingerprint(
+            {
+                "comparison_id": str(command.comparison_id),
+                "review_status": command.review_status,
+                "interpretation": command.interpretation,
+                "occurred_at": command.occurred_at.isoformat(),
+                "expected_version": command.expected_version,
+                "supersedes_review_id": (
+                    str(command.supersedes_review_id) if command.supersedes_review_id else None
+                ),
+                "correction_reason": command.correction_reason,
+            }
+        )
+        action = (
+            "CorrectDynamicECGPhysicianReview"
+            if command.supersedes_review_id
+            else "RecordDynamicECGPhysicianReview"
+        )
+        with self._uow() as uow:
+            _validate_actor(uow, command.actor)
+            previous = _idempotent(uow, command.actor, action, command.idempotency_key, fingerprint)
+            if previous:
+                value = uow.ecg_clinical.get_comparison_review(
+                    UUID(str(previous.response_payload["review_id"]))
+                )
+                if value is None:
+                    raise ResourceConflictError("stored comparison review is unavailable")
+                return value
+            comparison = uow.ecg_clinical.get_comparison(command.comparison_id)
+            if comparison is None:
+                raise ResourceNotFoundError("dynamic ECG comparison not found")
+            clinical_case = uow.cases.get(comparison.clinical_case_id)
+            if clinical_case is None:
+                raise ResourceNotFoundError("clinical case not found")
+            _require_active_case(clinical_case.status)
+            history = uow.ecg_clinical.list_comparison_reviews(command.comparison_id)
+            current_version = history[0].record_version if history else 0
+            if current_version != command.expected_version:
+                raise OptimisticConcurrencyError("dynamic ECG review has a newer version")
+            if command.supersedes_review_id:
+                if not history or history[0].review_id != command.supersedes_review_id:
+                    raise ResourceConflictError(
+                        "only the latest comparison review can be corrected"
+                    )
+                require_text(command.correction_reason or "", "correction_reason")
+            elif history:
+                raise ResourceConflictError("comparison review already exists; create a correction")
+            now = utc_now()
+            value = DynamicECGPhysicianReview(
+                review_id=uuid4(),
+                comparison_id=command.comparison_id,
+                actor_id=command.actor.actor_id,
+                actor_role=command.actor.actor_role,
+                review_status=command.review_status,
+                interpretation=command.interpretation,
+                occurred_at=command.occurred_at,
+                recorded_at=now,
+                correlation_id=command.actor.correlation_id,
+                record_version=current_version + 1,
+                revision_number=len(history) + 1,
+                supersedes_review_id=command.supersedes_review_id,
+                correction_reason=command.correction_reason,
+            )
+            uow.ecg_clinical.add_comparison_review(value)
+            event_type = (
+                "DynamicECGPhysicianReviewCorrected.v1"
+                if command.supersedes_review_id
+                else "DynamicECGPhysicianReviewRecorded.v1"
+            )
+            uow.stage_event(
+                _event(
+                    event_type,
+                    value.review_id,
+                    value.record_version,
+                    {
+                        "case_id": str(comparison.clinical_case_id),
+                        "comparison_id": str(comparison.id),
+                        "review_id": str(value.review_id),
+                        "review_status": value.review_status,
+                        "resulting_version": value.record_version,
+                    },
+                    command.actor,
+                    "DynamicECGPhysicianReview",
+                )
+            )
+            _store_idempotency(
+                uow,
+                command.actor,
+                action,
+                command.idempotency_key,
+                fingerprint,
+                value.review_id,
+                {"review_id": str(value.review_id)},
+                now,
+            )
+            uow.commit()
+            return value
+
     def schedule_reminder(self, command: ScheduleReminder) -> ECGRepeatReminder:
         require_utc(command.due_at, "due_at")
         fingerprint = command_fingerprint(
@@ -793,6 +1009,10 @@ class ECGApplicationService:
             study = uow.ecg_clinical.get_study(command.source_study_id)
             if study is None or study.clinical_case_id != command.clinical_case_id:
                 raise ResourceNotFoundError("source ECG study not found")
+            clinical_case = uow.cases.get(command.clinical_case_id)
+            if clinical_case is None:
+                raise ResourceNotFoundError("clinical case not found")
+            _require_active_case(clinical_case.status)
             now = utc_now()
             value = ECGRepeatReminder(
                 uuid4(),
@@ -804,6 +1024,9 @@ class ECGApplicationService:
                 ReminderStatus.SCHEDULED,
                 now,
                 command.actor.correlation_id,
+                requested_by_role=command.actor.actor_role,
+                origin=command.origin,
+                updated_at=now,
             )
             uow.ecg_clinical.add_reminder(value)
             uow.stage_event(
@@ -854,6 +1077,23 @@ class ECGApplicationService:
             reminder_id, actor, idempotency_key, expected_version, study_id
         )
 
+    def cancel_reminder(
+        self,
+        reminder_id: UUID,
+        reason: str,
+        actor: ActorContext,
+        idempotency_key: str,
+        expected_version: int,
+    ) -> ECGRepeatReminder:
+        return self._transition_reminder(
+            reminder_id,
+            actor,
+            idempotency_key,
+            expected_version,
+            None,
+            cancellation_reason=reason,
+        )
+
     def _transition_reminder(
         self,
         reminder_id: UUID,
@@ -861,13 +1101,21 @@ class ECGApplicationService:
         key: str,
         expected_version: int,
         study_id: UUID | None,
+        cancellation_reason: str | None = None,
     ) -> ECGRepeatReminder:
-        action = "CompleteRepeatECGReminder" if study_id else "AcknowledgeRepeatECGReminder"
+        action = (
+            "CancelRepeatECGReminder"
+            if cancellation_reason is not None
+            else "CompleteRepeatECGReminder"
+            if study_id
+            else "AcknowledgeRepeatECGReminder"
+        )
         fingerprint = command_fingerprint(
             {
                 "reminder_id": str(reminder_id),
                 "study_id": str(study_id),
                 "expected_version": expected_version,
+                "cancellation_reason": cancellation_reason,
             }
         )
         with self._uow() as uow:
@@ -883,10 +1131,26 @@ class ECGApplicationService:
                 raise ResourceNotFoundError("repeat ECG reminder not found")
             if value.record_version != expected_version:
                 raise OptimisticConcurrencyError("repeat ECG reminder has a newer version")
-            if study_id:
+            clinical_case = uow.cases.get(value.clinical_case_id)
+            if clinical_case is None:
+                raise ResourceNotFoundError("clinical case not found")
+            _require_active_case(clinical_case.status)
+            if cancellation_reason is not None:
+                value.cancel(actor.actor_id, cancellation_reason, utc_now(), _context(actor))
+            elif study_id:
                 study = uow.ecg_clinical.get_study(study_id)
                 if study is None or study.clinical_case_id != value.clinical_case_id:
                     raise ResourceNotFoundError("completion ECG study not found")
+                source = uow.ecg_clinical.get_study(value.source_study_id)
+                if source is None:
+                    raise ResourceConflictError("source ECG study is unavailable")
+                if (study.acquisition_at, study.study_id) <= (
+                    source.acquisition_at,
+                    source.study_id,
+                ):
+                    raise ResourceConflictError(
+                        "repeat ECG completion requires a subsequent acquired study"
+                    )
                 value.complete(study_id, utc_now(), _context(actor))
             else:
                 value.acknowledge(actor.actor_id, utc_now(), _context(actor))
@@ -905,11 +1169,14 @@ class ECGApplicationService:
             uow.commit()
             return value
 
-    def _resolve_content(self, command: IngestECG) -> bytes:
+    def _resolve_content(self, command: IngestECG, job: ECGIngestionJob) -> bytes:
         if command.source_type is ECGSourceType.DICOM_CONNECTOR:
             if not command.external_reference:
                 raise ValueError("DICOM connector reference is required")
-            return self._dicom_connector.retrieve(command.external_reference)
+            return self._dicom_connector.retrieve(command.external_reference, job.retry_count)
+        if command.retry_job_id is not None and job.artifact_id is not None:
+            with self._artifacts.open(job.artifact_id) as stream:
+                return stream.read()
         if command.content is None:
             raise ValueError("ECG source content is required")
         return command.content
@@ -1024,6 +1291,12 @@ class ECGQueryService:
                 raise ResourceNotFoundError("ECG ingestion job not found")
             return value
 
+    def ingestion_jobs(self, case_id: UUID) -> tuple[ECGIngestionJob, ...]:
+        with self._uow() as uow:
+            if uow.cases.get(case_id) is None:
+                raise ResourceNotFoundError("clinical case not found")
+            return uow.ecg_clinical.list_ingestion_jobs(case_id)
+
     def analyses(self, study_id: UUID) -> tuple[ECGAnalysisSnapshot, ...]:
         with self._uow() as uow:
             if uow.ecg_clinical.get_study(study_id) is None:
@@ -1052,9 +1325,26 @@ class ECGQueryService:
                 raise ResourceNotFoundError("dynamic ECG comparison not found")
             return value
 
+    def comparison_reviews(self, comparison_id: UUID) -> tuple[DynamicECGPhysicianReview, ...]:
+        with self._uow() as uow:
+            if uow.ecg_clinical.get_comparison(comparison_id) is None:
+                raise ResourceNotFoundError("dynamic ECG comparison not found")
+            return uow.ecg_clinical.list_comparison_reviews(comparison_id)
+
     def reminders(self, case_id: UUID) -> tuple[ECGRepeatReminder, ...]:
         with self._uow() as uow:
-            return uow.ecg_clinical.list_reminders(case_id)
+            values = uow.ecg_clinical.list_reminders(case_id)
+            for value in values:
+                value.status = value.effective_status(utc_now())
+            return values
+
+    def reminder(self, reminder_id: UUID) -> ECGRepeatReminder:
+        with self._uow() as uow:
+            value = uow.ecg_clinical.get_reminder(reminder_id)
+            if value is None:
+                raise ResourceNotFoundError("repeat ECG reminder not found")
+            value.status = value.effective_status(utc_now())
+            return value
 
     def workspace(self, case_id: UUID) -> ECGWorkspaceSnapshot:
         with self._uow() as uow:
@@ -1062,6 +1352,15 @@ class ECGQueryService:
             if uow.cases.get(case_id) is None:
                 raise ResourceNotFoundError("clinical case not found")
             current = studies[-1] if studies else None
+            comparisons = uow.ecg_clinical.list_comparisons(case_id)
+            comparison_reviews = tuple(
+                review
+                for comparison in comparisons
+                for review in uow.ecg_clinical.list_comparison_reviews(comparison.id)
+            )
+            reminders = uow.ecg_clinical.list_reminders(case_id)
+            for reminder in reminders:
+                reminder.status = reminder.effective_status(utc_now())
             return ECGWorkspaceSnapshot(
                 clinical_case_id=case_id,
                 studies=studies,
@@ -1071,8 +1370,10 @@ class ECGQueryService:
                 interpretations=uow.ecg_clinical.list_interpretations(current.study_id)
                 if current
                 else (),
-                comparisons=uow.ecg_clinical.list_comparisons(case_id),
-                reminders=uow.ecg_clinical.list_reminders(case_id),
+                ingestion_jobs=uow.ecg_clinical.list_ingestion_jobs(case_id),
+                comparisons=comparisons,
+                comparison_reviews=comparison_reviews,
+                reminders=reminders,
                 safety_notice="Model scores are not clinical probabilities.",
             )
 
@@ -1111,19 +1412,48 @@ def _findings(
     )
 
 
-def _comparability_reasons(left: ECGStudySnapshot, right: ECGStudySnapshot) -> list[str]:
-    reasons = []
+def _comparability(
+    left: ECGStudySnapshot,
+    right: ECGStudySnapshot,
+    left_waveform: ECGWaveform | None,
+    right_waveform: ECGWaveform | None,
+) -> tuple[ComparabilityStatus, list[str]]:
+    reasons: list[str] = []
+    blocking = False
     if not left.waveform_available or not right.waveform_available:
-        reasons.append("structured_waveform_unavailable")
+        reasons.append("waveform_unavailable")
+        blocking = True
     if left.sampling_rate_hz != right.sampling_rate_hz:
-        reasons.append("sampling_rate_mismatch")
+        reasons.append("sampling_rate_incompatible")
+        blocking = True
     if left.amplitude_unit != right.amplitude_unit:
-        reasons.append("amplitude_unit_mismatch")
+        reasons.append("units_incompatible")
+        blocking = True
     if left.lead_configuration != right.lead_configuration:
-        reasons.append("lead_configuration_mismatch")
+        reasons.append("lead_availability_changed")
     if left.preprocessing_version != right.preprocessing_version:
-        reasons.append("preprocessing_version_mismatch")
-    return reasons
+        reasons.append("preprocessing_mismatch")
+        blocking = True
+    if left.quality_status in BLOCKING_QUALITY or right.quality_status in BLOCKING_QUALITY:
+        reasons.append("poor_quality")
+    left_calibration = getattr(left_waveform, "calibration", None)
+    right_calibration = getattr(right_waveform, "calibration", None)
+    if left_calibration and right_calibration and left_calibration != right_calibration:
+        reasons.append("calibration_incompatible")
+        blocking = True
+    left_leads = set(getattr(left_waveform, "lead_names", ()))
+    right_leads = set(getattr(right_waveform, "lead_names", ()))
+    overlap = len(left_leads & right_leads)
+    if left_leads and right_leads and overlap < 6:
+        reasons.append("insufficient_lead_overlap")
+        blocking = True
+    if blocking:
+        return ComparabilityStatus.NON_COMPARABLE, reasons
+    if left_leads != right_leads:
+        return ComparabilityStatus.PARTIALLY_COMPARABLE, reasons
+    if reasons:
+        return ComparabilityStatus.COMPARABLE_WITH_WARNING, reasons
+    return ComparabilityStatus.COMPARABLE, reasons
 
 
 def _compare_leads(
@@ -1160,20 +1490,49 @@ def _compare_leads(
 
 def _score_deltas(
     left: tuple[ECGAnalysisSnapshot, ...], right: tuple[ECGAnalysisSnapshot, ...]
-) -> tuple[tuple[str, float, float, float], ...]:
-    if (
-        not left
-        or not right
-        or left[0].model_name != right[0].model_name
-        or left[0].model_version != right[0].model_version
-    ):
-        return ()
+) -> tuple[tuple[ModelScoreEvolution, ...], str]:
+    if not left or not right:
+        return (), "analysis_unavailable"
+    if left[0].model_name != right[0].model_name:
+        return (), "model_family_mismatch"
+    if left[0].model_version != right[0].model_version:
+        return (), "model_version_mismatch"
+    if left[0].preprocessing_version != right[0].preprocessing_version:
+        return (), "preprocessing_mismatch"
+    if left[0].label_mapping_version != right[0].label_mapping_version:
+        return (), "label_mapping_mismatch"
     before = {item.finding_code: item.model_score for item in left[0].findings}
     after = {item.finding_code: item.model_score for item in right[0].findings}
-    return tuple(
-        (label, before[label], after[label], round(after[label] - before[label], 6))
-        for label in sorted(set(before) & set(after))
+    before_findings = {item.finding_code: item for item in left[0].findings}
+    after_findings = {item.finding_code: item for item in right[0].findings}
+    if set(before) != set(after):
+        return (), "label_mapping_mismatch"
+    values = tuple(
+        ModelScoreEvolution(
+            finding_code=label,
+            previous_score=before[label],
+            current_score=after[label],
+            absolute_delta=round(after[label] - before[label], 6),
+            previous_threshold_met=before_findings[label].threshold_met,
+            current_threshold_met=after_findings[label].threshold_met,
+            threshold_state_changed=(
+                before_findings[label].threshold_met != after_findings[label].threshold_met
+                if before_findings[label].threshold_met is not None
+                and after_findings[label].threshold_met is not None
+                else None
+            ),
+            previous_model_version=left[0].model_version,
+            current_model_version=right[0].model_version,
+            compatibility_status="compatible",
+        )
+        for label in sorted(before)
     )
+    return values, "compatible"
+
+
+def _require_active_case(status: CaseStatus) -> None:
+    if status is CaseStatus.CLOSED:
+        raise ResourceConflictError("closed clinical case does not accept ECG commands")
 
 
 def _validate_actor(uow: ECGUnitOfWork, actor: ActorContext) -> None:
@@ -1242,6 +1601,9 @@ def _store_idempotency(
 
 
 def _safe_failure(error: Exception) -> str:
-    if isinstance(error, (ValueError, FileNotFoundError, TimeoutError, ResourceConflictError)):
+    if isinstance(
+        error,
+        (ValueError, FileNotFoundError, TimeoutError, ConnectionError, ResourceConflictError),
+    ):
         return str(error)[:500]
     return "ECG operation failed; review the correlation identifier."

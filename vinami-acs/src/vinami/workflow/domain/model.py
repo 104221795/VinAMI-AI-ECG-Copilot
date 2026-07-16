@@ -35,9 +35,34 @@ from vinami.workflow.domain.engine import WorkflowEngine
 class TaskStatus(StrEnum):
     """Operational task state."""
 
+    PENDING = "pending"
+    ASSIGNED = "assigned"
+    ACKNOWLEDGED = "acknowledged"
+    IN_PROGRESS = "in_progress"
     OPEN = "open"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    OVERDUE = "overdue"
+
+
+class TaskPriority(StrEnum):
+    """Operational urgency without implying diagnostic certainty."""
+
+    ROUTINE = "routine"
+    PRIORITY = "priority"
+    URGENT = "urgent"
+
+
+@dataclass(frozen=True, slots=True)
+class TaskTransition:
+    """Immutable task lifecycle transition."""
+
+    transition_id: UUID
+    from_status: TaskStatus
+    to_status: TaskStatus
+    actor_id: UUID
+    occurred_at: datetime
+    reason: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +93,23 @@ class ClinicalTask(AggregateRoot):
     completed_at: datetime | None = None
     completed_by: UUID | None = None
     outcome: str | None = None
+    workflow_id: UUID | None = None
+    originating_decision_id: UUID | None = None
+    source_type: str = "legacy"
+    source_id: UUID | None = None
+    priority: TaskPriority = TaskPriority.ROUTINE
+    version: int = 1
+    created_by: UUID | None = None
+    acknowledged_at: datetime | None = None
+    acknowledged_by: UUID | None = None
+    started_at: datetime | None = None
+    started_by: UUID | None = None
+    cancelled_at: datetime | None = None
+    cancelled_by: UUID | None = None
+    cancellation_reason: str | None = None
+    overdue_at: datetime | None = None
+    escalation_level: int = 0
+    transition_history: list[TaskTransition] = field(default_factory=list)
 
     @classmethod
     def create(
@@ -78,16 +120,28 @@ class ClinicalTask(AggregateRoot):
         task_id: UUID | None = None,
         assignment: TaskAssignment | None = None,
         due_at: datetime | None = None,
+        workflow_id: UUID | None = None,
+        originating_decision_id: UUID | None = None,
+        source_type: str = "legacy",
+        source_id: UUID | None = None,
+        priority: TaskPriority = TaskPriority.ROUTINE,
+        created_by: UUID | None = None,
     ) -> ClinicalTask:
         """Create human work without interpreting evidence or activating treatment."""
         task = cls(
             id=task_id or uuid4(),
             case_id=case_id,
             task_type=require_text(task_type, "task_type"),
-            status=TaskStatus.OPEN,
+            status=TaskStatus.OPEN if source_type == "legacy" else TaskStatus.PENDING,
             created_at=require_utc(created_at or utc_now(), "created_at"),
             assignment=assignment,
             due_at=require_utc(due_at, "due_at") if due_at else None,
+            workflow_id=workflow_id,
+            originating_decision_id=originating_decision_id,
+            source_type=require_text(source_type, "task source_type"),
+            source_id=source_id,
+            priority=priority,
+            created_by=created_by,
         )
         task._record_event(
             "TaskCreated.v1",
@@ -96,18 +150,124 @@ class ClinicalTask(AggregateRoot):
         )
         return task
 
+    def assign(self, assignment: TaskAssignment, actor_id: UUID) -> None:
+        """Assign pending work to a user or team."""
+        if self.status not in {TaskStatus.PENDING, TaskStatus.OPEN, TaskStatus.ASSIGNED}:
+            raise DomainInvariantError("only pending work can be assigned")
+        prior = self.status
+        self.assignment = assignment
+        self.status = TaskStatus.ASSIGNED
+        self._transition(prior, self.status, actor_id, assignment.assigned_at)
+
+    def acknowledge(self, actor_id: UUID, at: datetime | None = None) -> None:
+        """Acknowledge assigned work without claiming completion."""
+        if self.status is not TaskStatus.ASSIGNED:
+            raise DomainInvariantError("only an assigned task can be acknowledged")
+        occurred_at = require_utc(at or utc_now(), "acknowledged_at")
+        self.acknowledged_at = occurred_at
+        self.acknowledged_by = actor_id
+        self.status = TaskStatus.ACKNOWLEDGED
+        self._transition(TaskStatus.ASSIGNED, self.status, actor_id, occurred_at)
+
+    def start_work(self, actor_id: UUID, at: datetime | None = None) -> None:
+        """Start acknowledged work."""
+        if self.status not in {TaskStatus.ACKNOWLEDGED, TaskStatus.OVERDUE}:
+            raise DomainInvariantError("only acknowledged or overdue work can be started")
+        occurred_at = require_utc(at or utc_now(), "started_at")
+        prior = self.status
+        self.started_at = occurred_at
+        self.started_by = actor_id
+        self.status = TaskStatus.IN_PROGRESS
+        self._transition(prior, self.status, actor_id, occurred_at)
+
+    def mark_overdue(self, actor_id: UUID, at: datetime | None = None) -> None:
+        """Mark unfinished time-bound work overdue from authoritative backend time."""
+        occurred_at = require_utc(at or utc_now(), "overdue_at")
+        if self.due_at is None or occurred_at < self.due_at:
+            raise DomainInvariantError("task is not due")
+        if self.status in {TaskStatus.COMPLETED, TaskStatus.CANCELLED, TaskStatus.OVERDUE}:
+            raise DomainInvariantError("task cannot be marked overdue from its current status")
+        prior = self.status
+        self.overdue_at = occurred_at
+        self.status = TaskStatus.OVERDUE
+        self._transition(prior, self.status, actor_id, occurred_at)
+
+    def escalate(self, actor_id: UUID, at: datetime | None = None) -> None:
+        """Increase escalation for authoritative overdue work."""
+        if self.status is not TaskStatus.OVERDUE:
+            raise DomainInvariantError("only overdue work can be escalated")
+        occurred_at = require_utc(at or utc_now(), "escalated_at")
+        self.escalation_level += 1
+        self.version += 1
+        self._record_event(
+            "ClinicalTaskEscalated.v1",
+            self.version,
+            {
+                "task_id": str(self.id),
+                "case_id": str(self.case_id),
+                "escalation_level": self.escalation_level,
+                "occurred_at": occurred_at.isoformat(),
+            },
+            EventContext.start(actor_id=actor_id),
+        )
+
     def complete(self, actor_id: UUID, outcome: str, completed_at: datetime | None = None) -> None:
         """Complete an open task with actor and outcome provenance."""
-        if self.status is not TaskStatus.OPEN:
-            raise DomainInvariantError("only an open task can be completed")
+        if self.status not in {TaskStatus.IN_PROGRESS, TaskStatus.OPEN}:
+            raise DomainInvariantError("only an in-progress task can be completed")
+        prior = self.status
         self.status = TaskStatus.COMPLETED
         self.completed_by = actor_id
         self.completed_at = require_utc(completed_at or utc_now(), "completed_at")
         self.outcome = require_text(outcome, "task outcome")
+        self._transition(prior, self.status, actor_id, self.completed_at, self.outcome)
         self._record_event(
-            "TaskCompleted.v1",
-            1,
+            "ClinicalTaskCompleted.v1",
+            self.version,
             {"task_id": str(self.id), "case_id": str(self.case_id), "actor_id": str(actor_id)},
+            EventContext.start(actor_id=actor_id),
+        )
+
+    def cancel(self, actor_id: UUID, reason: str, at: datetime | None = None) -> None:
+        """Cancel unfinished work with mandatory provenance."""
+        if self.status in {TaskStatus.COMPLETED, TaskStatus.CANCELLED}:
+            raise DomainInvariantError("completed or cancelled work cannot be cancelled")
+        occurred_at = require_utc(at or utc_now(), "cancelled_at")
+        prior = self.status
+        self.status = TaskStatus.CANCELLED
+        self.cancelled_at = occurred_at
+        self.cancelled_by = actor_id
+        self.cancellation_reason = require_text(reason, "cancellation_reason")
+        self._transition(prior, self.status, actor_id, occurred_at, self.cancellation_reason)
+        self._record_event(
+            "ClinicalTaskCancelled.v1",
+            self.version,
+            {"task_id": str(self.id), "case_id": str(self.case_id), "reason": reason},
+            EventContext.start(actor_id=actor_id),
+        )
+
+    def _transition(
+        self,
+        prior: TaskStatus,
+        current: TaskStatus,
+        actor_id: UUID,
+        occurred_at: datetime,
+        reason: str | None = None,
+    ) -> None:
+        self.version += 1
+        self.transition_history.append(
+            TaskTransition(uuid4(), prior, current, actor_id, occurred_at, reason)
+        )
+        self._record_event(
+            "ClinicalTaskTransitioned.v1",
+            self.version,
+            {
+                "task_id": str(self.id),
+                "case_id": str(self.case_id),
+                "from_status": prior.value,
+                "to_status": current.value,
+                "reason": reason,
+            },
             EventContext.start(actor_id=actor_id),
         )
 

@@ -1,9 +1,11 @@
 import "server-only";
-import type { CaseListQuery } from "@vinami/api-client";
-import type { CaseQueueView } from "@web/entities/clinical-case/model";
+import type { CommandCenterQuery } from "@vinami/api-client";
 import { createServerApiClient } from "@web/shared/api/client";
-import { loadCaseQueueWith } from "./data";
+import { loadCommandCenterWith } from "./data";
+import type { CommandCenterPageView } from "./model";
 
-export function loadCaseQueue(query: CaseListQuery): Promise<CaseQueueView> {
-  return loadCaseQueueWith(createServerApiClient(), query);
+export function loadCommandCenter(
+  query: CommandCenterQuery,
+): Promise<CommandCenterPageView> {
+  return loadCommandCenterWith(createServerApiClient(), query);
 }

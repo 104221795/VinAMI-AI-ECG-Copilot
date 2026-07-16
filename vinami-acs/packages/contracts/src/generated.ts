@@ -79,6 +79,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Workspace */
+        get: operations["workspace_api_v1_clinical_cases__case_id__clinical_reasoning_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Assessment */
+        post: operations["record_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/assessments/{assessment_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Assessment */
+        post: operations["correct_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments__assessment_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Decision */
+        post: operations["record_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Decision */
+        post: operations["correct_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/decisions/{decision_id}/revocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Decision */
+        post: operations["revoke_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__revocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/clinical-reasoning/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Snapshot */
+        post: operations["create_snapshot_api_v1_clinical_cases__case_id__clinical_reasoning_snapshots_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/complete-workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Complete Case Workspace
+         * @description Return the visible effective case state from one backend projection.
+         */
+        get: operations["get_complete_case_workspace_api_v1_clinical_cases__case_id__complete_workspace_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clinical-cases/{case_id}/ecg-comparisons": {
         parameters: {
             query?: never;
@@ -121,7 +260,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Ecg Imports */
+        get: operations["list_ecg_imports_api_v1_clinical_cases__case_id__ecg_imports_get"];
         put?: never;
         /** Import Ecg */
         post: operations["import_ecg_api_v1_clinical_cases__case_id__ecg_imports_post"];
@@ -178,6 +318,23 @@ export interface paths {
         put?: never;
         /** Schedule Reminder */
         post: operations["schedule_reminder_api_v1_clinical_cases__case_id__repeat_ecg_reminders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/repeat-troponin-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Repeat Requests */
+        get: operations["list_repeat_requests_api_v1_clinical_cases__case_id__repeat_troponin_requests_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -286,6 +443,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clinical-cases/{case_id}/troponin-deltas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Deltas */
+        get: operations["get_deltas_api_v1_clinical_cases__case_id__troponin_deltas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Imports */
+        get: operations["list_imports_api_v1_clinical_cases__case_id__troponin_imports_get"];
+        put?: never;
+        /** Import Result */
+        post: operations["import_result_api_v1_clinical_cases__case_id__troponin_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Results */
+        get: operations["list_results_api_v1_clinical_cases__case_id__troponin_results_get"];
+        put?: never;
+        /** Record Result */
+        post: operations["record_result_api_v1_clinical_cases__case_id__troponin_results_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reviews */
+        get: operations["list_reviews_api_v1_clinical_cases__case_id__troponin_reviews_get"];
+        put?: never;
+        /** Record Review */
+        post: operations["record_review_api_v1_clinical_cases__case_id__troponin_reviews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-reviews/{review_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Review */
+        post: operations["correct_review_api_v1_clinical_cases__case_id__troponin_reviews__review_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Series */
+        get: operations["get_series_api_v1_clinical_cases__case_id__troponin_series_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/troponin-workspace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Workspace */
+        get: operations["get_workspace_api_v1_clinical_cases__case_id__troponin_workspace_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clinical-cases/{case_id}/vital-observation-sets": {
         parameters: {
             query?: never;
@@ -354,6 +633,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clinical-cases/{case_id}/workflow-operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Workspace */
+        get: operations["workspace_api_v1_clinical_cases__case_id__workflow_operations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/alerts/{alert_id}/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Alert */
+        post: operations["change_alert_api_v1_clinical_cases__case_id__workflow_operations_alerts__alert_id___action__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/overdue-evaluations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Evaluate Overdue */
+        post: operations["evaluate_overdue_api_v1_clinical_cases__case_id__workflow_operations_overdue_evaluations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/{task_id}/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Task */
+        post: operations["change_task_api_v1_clinical_cases__case_id__workflow_operations_tasks__task_id___action__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/workflow-operations/tasks/from-decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Task */
+        post: operations["generate_task_api_v1_clinical_cases__case_id__workflow_operations_tasks_from_decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/command-center/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Command Center Cases
+         * @description Return only cases visible to the verified identity's location scope.
+         */
+        get: operations["list_command_center_cases_api_v1_command_center_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ecg-analyses/{analysis_id}": {
         parameters: {
             query?: never;
@@ -405,6 +789,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ecg-comparisons/{comparison_id}/physician-reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Comparison Reviews */
+        get: operations["list_comparison_reviews_api_v1_ecg_comparisons__comparison_id__physician_reviews_get"];
+        put?: never;
+        /** Record Comparison Review */
+        post: operations["record_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ecg-comparisons/{comparison_id}/physician-reviews/{review_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct Comparison Review */
+        post: operations["correct_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews__review_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ecg-ingestion-jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -416,6 +835,23 @@ export interface paths {
         get: operations["get_ingestion_api_v1_ecg_ingestion_jobs__job_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ecg-ingestion-jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Ingestion */
+        post: operations["retry_ingestion_api_v1_ecg_ingestion_jobs__job_id__retry_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -668,6 +1104,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/laboratory-connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Connectors */
+        get: operations["list_connectors_api_v1_laboratory_connectors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/laboratory-connectors/{connector_id}/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Connector Health */
+        get: operations["connector_health_api_v1_laboratory_connectors__connector_id__health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/laboratory-import-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Import */
+        get: operations["get_import_api_v1_laboratory_import_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/laboratory-import-jobs/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Import */
+        post: operations["retry_import_api_v1_laboratory_import_jobs__job_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/model-registry": {
         parameters: {
             query?: never;
@@ -779,6 +1283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/repeat-ecg-reminders/{reminder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Reminder */
+        get: operations["get_reminder_api_v1_repeat_ecg_reminders__reminder_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/repeat-ecg-reminders/{reminder_id}/acknowledge": {
         parameters: {
             query?: never;
@@ -796,6 +1317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/repeat-ecg-reminders/{reminder_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Reminder */
+        post: operations["cancel_reminder_api_v1_repeat_ecg_reminders__reminder_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/repeat-ecg-reminders/{reminder_id}/complete": {
         parameters: {
             query?: never;
@@ -807,6 +1345,57 @@ export interface paths {
         put?: never;
         /** Complete Reminder */
         post: operations["complete_reminder_api_v1_repeat_ecg_reminders__reminder_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/repeat-troponin-requests/{request_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge Repeat */
+        post: operations["acknowledge_repeat_api_v1_repeat_troponin_requests__request_id__acknowledge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/repeat-troponin-requests/{request_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Repeat */
+        post: operations["cancel_repeat_api_v1_repeat_troponin_requests__request_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/repeat-troponin-requests/{request_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Repeat */
+        post: operations["complete_repeat_api_v1_repeat_troponin_requests__request_id__complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -853,20 +1442,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/troponin": {
+    "/api/v1/troponin-assays": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List Troponin
-         * @description Provide a stable paginated surface pending context-specific query handlers.
-         */
-        get: operations["list_troponin_api_v1_troponin_get"];
+        /** List Assays */
+        get: operations["list_assays_api_v1_troponin_assays_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/troponin-assays/{assay_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Assay */
+        get: operations["get_assay_api_v1_troponin_assays__assay_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/troponin-results/{result_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Result */
+        get: operations["get_result_api_v1_troponin_results__result_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/troponin-results/{result_id}/amendments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Amend Result */
+        post: operations["amend_result_api_v1_troponin_results__result_id__amendments_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -957,6 +1594,65 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AlertActionBody
+         * @description Optimistically versioned alert transition request.
+         */
+        AlertActionBody: {
+            /** Expected Version */
+            expected_version: number;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * AlertResponse
+         * @description Generated-client operational alert contract.
+         */
+        AlertResponse: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /**
+             * Alert Id
+             * Format: uuid
+             */
+            alert_id: string;
+            /** Alert Type */
+            alert_type: string;
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Escalation Level */
+            escalation_level: number;
+            /** History */
+            history: {
+                [key: string]: unknown;
+            }[];
+            /** Message */
+            message: string;
+            /**
+             * Raised At
+             * Format: date-time
+             */
+            raised_at: string;
+            /** Resolution Reason */
+            resolution_reason: string | null;
+            /** Resolved At */
+            resolved_at: string | null;
+            /** Severity */
+            severity: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Task Id */
+            task_id: string | null;
+            /** Version */
+            version: number;
+            /** Workflow Id */
+            workflow_id: string | null;
+        };
         /** AnalysisResponse */
         AnalysisResponse: {
             /**
@@ -1047,6 +1743,50 @@ export interface components {
             size_bytes: number;
             /** State */
             state: string;
+        };
+        /** AssessmentBody */
+        AssessmentBody: {
+            /** Additional Information Required */
+            additional_information_required?: string | null;
+            /** Contradictory Evidence */
+            contradictory_evidence?: string[];
+            /** Expected Snapshot Version */
+            expected_snapshot_version: number;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /** Summary */
+            summary: string;
+            /** Supporting Evidence */
+            supporting_evidence?: string[];
+            /** Uncertainty */
+            uncertainty: string;
+        };
+        /** AssessmentCorrectionBody */
+        AssessmentCorrectionBody: {
+            /** Additional Information Required */
+            additional_information_required?: string | null;
+            /** Contradictory Evidence */
+            contradictory_evidence?: string[];
+            /** Correction Reason */
+            correction_reason: string;
+            /** Expected Assessment Version */
+            expected_assessment_version: number;
+            /** Expected Snapshot Version */
+            expected_snapshot_version: number;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /** Summary */
+            summary: string;
+            /** Supporting Evidence */
+            supporting_evidence?: string[];
+            /** Uncertainty */
+            uncertainty: string;
         };
         /**
          * AuditEntryResponse
@@ -1208,11 +1948,211 @@ export interface components {
             updated_at: string;
         };
         /**
+         * ClinicalDecisionType
+         * @description Documented physician plans supported by the R5 workspace.
+         * @enum {string}
+         */
+        ClinicalDecisionType: "continue_observation" | "request_repeat_ecg" | "request_repeat_troponin" | "request_additional_information" | "request_cardiology_review" | "request_cath_lab_review" | "maintain_current_plan" | "other_documented_plan";
+        /**
          * ClinicalPriority
          * @description Operational priority label chosen by a human workflow command.
          * @enum {string}
          */
         ClinicalPriority: "routine" | "urgent" | "critical";
+        /**
+         * ClinicalReasoningWorkspaceResponse
+         * @description Generated-client contract for the server-computed R5 workspace.
+         */
+        ClinicalReasoningWorkspaceResponse: {
+            /** Assessments */
+            assessments: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Case Version */
+            case_version: number;
+            /** Decisions */
+            decisions: {
+                [key: string]: unknown;
+            }[];
+            /** Safety Notice */
+            safety_notice: string;
+            /** Snapshot */
+            snapshot: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * CommandCenterAlertResponse
+         * @description Unresolved R6 alert summary.
+         */
+        CommandCenterAlertResponse: {
+            /**
+             * Alert Id
+             * Format: uuid
+             */
+            alert_id: string;
+            /** Alert Type */
+            alert_type: string;
+            /** Escalation Level */
+            escalation_level: number;
+            /**
+             * Raised At
+             * Format: date-time
+             */
+            raised_at: string;
+            /** Severity */
+            severity: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * CommandCenterCaseResponse
+         * @description One physician-facing operational queue row and quick-view payload.
+         */
+        CommandCenterCaseResponse: {
+            /** Active Task Count */
+            active_task_count: number;
+            /** Age Band */
+            age_band: string | null;
+            /** Alerts */
+            alerts: components["schemas"]["CommandCenterAlertResponse"][];
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Case Priority */
+            case_priority: string;
+            /** Case Status */
+            case_status: string;
+            /** Case Version */
+            case_version: number;
+            /** Decision Id */
+            decision_id: string | null;
+            /** Decision Rationale */
+            decision_rationale: string | null;
+            /** Decision Recorded At */
+            decision_recorded_at: string | null;
+            /** Decision Type */
+            decision_type: string | null;
+            /**
+             * Encounter Id
+             * Format: uuid
+             */
+            encounter_id: string;
+            /** Evidence Freshness */
+            evidence_freshness: {
+                [key: string]: string;
+            };
+            /** Evidence Status */
+            evidence_status: string;
+            /**
+             * Latest Activity At
+             * Format: date-time
+             */
+            latest_activity_at: string;
+            /** Location */
+            location: string;
+            /** Missing Evidence */
+            missing_evidence: string[];
+            /** Next Due At */
+            next_due_at: string | null;
+            /** Oldest Overdue At */
+            oldest_overdue_at: string | null;
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /** Operational Priority */
+            operational_priority: string;
+            /** Overdue Task Count */
+            overdue_task_count: number;
+            /** Owner Team Id */
+            owner_team_id: string | null;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /**
+             * Patient Id
+             * Format: uuid
+             */
+            patient_id: string;
+            /** Patient Reference */
+            patient_reference: string;
+            /** Priority Reason */
+            priority_reason: string;
+            /** Sex At Birth */
+            sex_at_birth: string | null;
+            /** Snapshot Created At */
+            snapshot_created_at: string | null;
+            /** Snapshot Id */
+            snapshot_id: string | null;
+            /** Tasks */
+            tasks: components["schemas"]["CommandCenterTaskResponse"][];
+            /** Technical Limits */
+            technical_limits: string[];
+            /** Unresolved Alert Count */
+            unresolved_alert_count: number;
+            /** Update Token */
+            update_token: string;
+            /** Workflow Id */
+            workflow_id: string | null;
+            /** Workflow State */
+            workflow_state: string | null;
+            /** Workflow Version */
+            workflow_version: number | null;
+        };
+        /**
+         * CommandCenterPageResponse
+         * @description Filtered and stably ordered active-case page.
+         */
+        CommandCenterPageResponse: {
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
+            /** Items */
+            items: components["schemas"]["CommandCenterCaseResponse"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * CommandCenterTaskResponse
+         * @description Active R6 task summary.
+         */
+        CommandCenterTaskResponse: {
+            /** Due At */
+            due_at: string | null;
+            /** Escalation Level */
+            escalation_level: number;
+            /** Overdue At */
+            overdue_at: string | null;
+            /** Owner Team Id */
+            owner_team_id: string | null;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /** Priority */
+            priority: string;
+            /** Status */
+            status: string;
+            /**
+             * Task Id
+             * Format: uuid
+             */
+            task_id: string;
+            /** Task Type */
+            task_type: string;
+        };
         /** ComparisonBody */
         ComparisonBody: {
             /**
@@ -1266,8 +2206,12 @@ export interface components {
             current_study_id: string;
             /** Lead Comparisons */
             lead_comparisons: components["schemas"]["LeadComparisonResponse"][];
+            /** Model Score Compatibility */
+            model_score_compatibility: string;
             /** Model Score Deltas */
-            model_score_deltas: unknown[][];
+            model_score_deltas: components["schemas"]["ModelScoreEvolutionResponse"][];
+            /** Physician Review Status */
+            physician_review_status: string;
             /** Preprocessing Version */
             preprocessing_version: string;
             /** Quality Context */
@@ -1279,15 +2223,206 @@ export interface components {
              * Format: date-time
              */
             requested_at: string;
+            /** Requested By Actor Role */
+            requested_by_actor_role: string;
             /**
              * Safety Notice
              * @default Technical ECG change indicator - physician interpretation required.
              */
             safety_notice: string;
+            /** Started At */
+            started_at: string | null;
             /** Status */
             status: string;
             /** Technical Change Indicators */
             technical_change_indicators: string[];
+        };
+        /** ComparisonReviewBody */
+        ComparisonReviewBody: {
+            /** Expected Version */
+            expected_version: number;
+            /** Interpretation */
+            interpretation: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Review Status */
+            review_status: string;
+        };
+        /** ComparisonReviewCorrectionBody */
+        ComparisonReviewCorrectionBody: {
+            /** Correction Reason */
+            correction_reason: string;
+            /** Expected Version */
+            expected_version: number;
+            /** Interpretation */
+            interpretation: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Review Status */
+            review_status: string;
+        };
+        /** ComparisonReviewResponse */
+        ComparisonReviewResponse: {
+            /**
+             * Actor Id
+             * Format: uuid
+             */
+            actor_id: string;
+            /** Actor Role */
+            actor_role: string;
+            /**
+             * Comparison Id
+             * Format: uuid
+             */
+            comparison_id: string;
+            /** Correction Reason */
+            correction_reason: string | null;
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /** Interpretation */
+            interpretation: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Record Version */
+            record_version: number;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /**
+             * Review Id
+             * Format: uuid
+             */
+            review_id: string;
+            /** Review Status */
+            review_status: string;
+            /** Revision Number */
+            revision_number: number;
+            /** Supersedes Review Id */
+            supersedes_review_id: string | null;
+        };
+        /**
+         * CompleteCaseWorkspaceResponse
+         * @description Integrated current-state projection with source provenance and no ORM leakage.
+         */
+        CompleteCaseWorkspaceResponse: {
+            /** Age Band */
+            age_band: string | null;
+            /** Alerts */
+            alerts: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Case Priority */
+            case_priority: string;
+            /** Case Status */
+            case_status: string;
+            /** Case Version */
+            case_version: number;
+            /** Ecg */
+            ecg: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Encounter Id
+             * Format: uuid
+             */
+            encounter_id: string;
+            /** Encounter Status */
+            encounter_status: string;
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
+            /** Evidence Snapshot */
+            evidence_snapshot: {
+                [key: string]: unknown;
+            } | null;
+            /** Evidence Status */
+            evidence_status: string;
+            /**
+             * Last Updated At
+             * Format: date-time
+             */
+            last_updated_at: string;
+            /** Location */
+            location: string;
+            /** Missing Evidence */
+            missing_evidence: string[];
+            /**
+             * Opened At
+             * Format: date-time
+             */
+            opened_at: string;
+            /** Opening Reason */
+            opening_reason: string;
+            /**
+             * Patient Id
+             * Format: uuid
+             */
+            patient_id: string;
+            /** Patient Name */
+            patient_name: string | null;
+            /** Patient Reference */
+            patient_reference: string;
+            /** Physician Assessment */
+            physician_assessment: {
+                [key: string]: unknown;
+            } | null;
+            /** Physician Decision */
+            physician_decision: {
+                [key: string]: unknown;
+            } | null;
+            /** Sex At Birth */
+            sex_at_birth: string | null;
+            /** Stale Evidence */
+            stale_evidence: string[];
+            /** Tasks */
+            tasks: {
+                [key: string]: unknown;
+            }[];
+            /** Technical Limits */
+            technical_limits: string[];
+            /** Timeline */
+            timeline: {
+                [key: string]: unknown;
+            }[];
+            /** Triage */
+            triage: {
+                [key: string]: unknown;
+            } | null;
+            /** Troponin */
+            troponin: {
+                [key: string]: unknown;
+            };
+            /** Update Token */
+            update_token: string;
+            /** Vitals */
+            vitals: {
+                [key: string]: unknown;
+            } | null;
+            /** Workflow */
+            workflow: {
+                [key: string]: unknown;
+            } | null;
         };
         /** ConnectorResponse */
         ConnectorResponse: {
@@ -1297,12 +2432,18 @@ export interface components {
             capabilities: string[];
             /** Connector Id */
             connector_id: string;
+            /** Connector Type */
+            connector_type: string;
             /** Detail */
             detail: string;
             /** Display Name */
             display_name: string;
+            /** Profile */
+            profile: string | null;
             /** Source Type */
             source_type: string;
+            /** Version */
+            version: string | null;
         };
         /** CorrectionBody */
         CorrectionBody: {
@@ -1420,6 +2561,92 @@ export interface components {
          * @enum {string}
          */
         DataQualityStatus: "accepted" | "questionable" | "unknown";
+        /** DecisionBody */
+        DecisionBody: {
+            /**
+             * Assessment Id
+             * Format: uuid
+             */
+            assessment_id: string;
+            decision_type: components["schemas"]["ClinicalDecisionType"];
+            /** Evidence References */
+            evidence_references: string[];
+            /** Expected Assessment Version */
+            expected_assessment_version: number;
+            /** Expected Snapshot Version */
+            expected_snapshot_version: number;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /** Uncertainty */
+            uncertainty: string;
+        };
+        /** DecisionCorrectionBody */
+        DecisionCorrectionBody: {
+            /**
+             * Assessment Id
+             * Format: uuid
+             */
+            assessment_id: string;
+            /** Correction Reason */
+            correction_reason: string;
+            decision_type: components["schemas"]["ClinicalDecisionType"];
+            /** Evidence References */
+            evidence_references: string[];
+            /** Expected Assessment Version */
+            expected_assessment_version: number;
+            /** Expected Decision Version */
+            expected_decision_version: number;
+            /** Expected Snapshot Version */
+            expected_snapshot_version: number;
+            /** Rationale */
+            rationale: string;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /** Uncertainty */
+            uncertainty: string;
+        };
+        /** DecisionRevocationBody */
+        DecisionRevocationBody: {
+            /**
+             * Assessment Id
+             * Format: uuid
+             */
+            assessment_id: string;
+            decision_type: components["schemas"]["ClinicalDecisionType"];
+            /** Evidence References */
+            evidence_references: string[];
+            /** Expected Assessment Version */
+            expected_assessment_version: number;
+            /** Expected Decision Version */
+            expected_decision_version: number;
+            /** Expected Snapshot Version */
+            expected_snapshot_version: number;
+            /**
+             * Operation
+             * @default revoke
+             * @constant
+             */
+            operation: "revoke";
+            /** Rationale */
+            rationale: string;
+            /** Revocation Reason */
+            revocation_reason: string;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /** Uncertainty */
+            uncertainty: string;
+        };
         /**
          * ECGSourceType
          * @enum {string}
@@ -1495,14 +2722,27 @@ export interface components {
         ECGWorkspaceResponse: {
             /** Analyses */
             analyses: components["schemas"]["AnalysisResponse"][];
+            /** Capabilities */
+            capabilities: {
+                [key: string]: boolean;
+            };
             /**
              * Clinical Case Id
              * Format: uuid
              */
             clinical_case_id: string;
+            /** Comparison Reviews */
+            comparison_reviews: components["schemas"]["ComparisonReviewResponse"][];
             /** Comparisons */
             comparisons: components["schemas"]["ComparisonResponse"][];
             current_study: components["schemas"]["ECGStudyResponse"] | null;
+            /**
+             * Data Freshness
+             * Format: date-time
+             */
+            data_freshness: string;
+            /** Ingestion Jobs */
+            ingestion_jobs: components["schemas"]["IngestionJobResponse"][];
             /** Interpretations */
             interpretations: components["schemas"]["InterpretationResponse"][];
             quality: components["schemas"]["QualityResponse"] | null;
@@ -1579,6 +2819,25 @@ export interface components {
             /** Threshold Met */
             threshold_met: boolean | null;
         };
+        /**
+         * GenerateTaskBody
+         * @description Request operational work from one persisted physician decision.
+         */
+        GenerateTaskBody: {
+            /**
+             * Decision Id
+             * Format: uuid
+             */
+            decision_id: string;
+            /** Due At */
+            due_at?: string | null;
+            /** Expected Decision Version */
+            expected_decision_version: number;
+            /** Expected Workflow Version */
+            expected_workflow_version: number;
+            /** @default routine */
+            priority: components["schemas"]["TaskPriority"];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1639,6 +2898,11 @@ export interface components {
         };
         /** IngestionJobResponse */
         IngestionJobResponse: {
+            /**
+             * Acquisition At
+             * Format: date-time
+             */
+            acquisition_at: string;
             /** Artifact Id */
             artifact_id: string | null;
             /**
@@ -1648,6 +2912,8 @@ export interface components {
             clinical_case_id: string;
             /** Completed At */
             completed_at: string | null;
+            /** Content Type */
+            content_type: string;
             /**
              * Correlation Id
              * Format: uuid
@@ -1670,21 +2936,31 @@ export interface components {
             parser_version: string | null;
             /** Record Version */
             record_version: number;
+            /** Request Source */
+            request_source: string;
             /**
              * Requested At
              * Format: date-time
              */
             requested_at: string;
+            /** Requested By Actor Role */
+            requested_by_actor_role: string;
             /** Resulting Study Id */
             resulting_study_id: string | null;
             /** Retry Count */
             retry_count: number;
+            /** Retry Of Job Id */
+            retry_of_job_id: string | null;
             /** Source Connector Id */
             source_connector_id: string | null;
             /** Source Type */
             source_type: string;
+            /** Started At */
+            started_at: string | null;
             /** Status */
             status: string;
+            /** Study Reference */
+            study_reference: string;
             /** Warnings */
             warnings: string[];
         };
@@ -1790,6 +3066,8 @@ export interface components {
             normalized_difference: number;
             /** Quality Difference */
             quality_difference: string;
+            /** Sample Alignment Status */
+            sample_alignment_status: string;
             /** Waveform Similarity */
             waveform_similarity: number;
         };
@@ -1799,6 +3077,29 @@ export interface components {
             description: string;
             /** Identifier */
             identifier: string;
+        };
+        /** ModelScoreEvolutionResponse */
+        ModelScoreEvolutionResponse: {
+            /** Absolute Delta */
+            absolute_delta: number;
+            /** Compatibility Status */
+            compatibility_status: string;
+            /** Current Model Version */
+            current_model_version: string;
+            /** Current Score */
+            current_score: number;
+            /** Current Threshold Met */
+            current_threshold_met: boolean | null;
+            /** Finding Code */
+            finding_code: string;
+            /** Previous Model Version */
+            previous_model_version: string;
+            /** Previous Score */
+            previous_score: number;
+            /** Previous Threshold Met */
+            previous_threshold_met: boolean | null;
+            /** Threshold State Changed */
+            threshold_state_changed: boolean | null;
         };
         /**
          * ObservationState
@@ -1829,6 +3130,11 @@ export interface components {
             opening_reason: string;
             priority: components["schemas"]["ClinicalPriority"];
         };
+        /**
+         * OverdueEvaluationBody
+         * @description Request server-authoritative due-time evaluation.
+         */
+        OverdueEvaluationBody: Record<string, never>;
         /**
          * PaginatedClinicalCasesResponse
          * @description Deterministic page of active cases.
@@ -2020,6 +3326,8 @@ export interface components {
              * Format: date-time
              */
             due_at: string;
+            /** @default physician_request */
+            origin: components["schemas"]["ReminderOrigin"];
             /** Reason */
             reason: string;
             /**
@@ -2028,17 +3336,30 @@ export interface components {
              */
             source_study_id: string;
         };
+        /**
+         * ReminderOrigin
+         * @enum {string}
+         */
+        ReminderOrigin: "physician_request" | "technical_quality" | "demonstration_policy";
         /** ReminderResponse */
         ReminderResponse: {
             /** Acknowledged At */
             acknowledged_at: string | null;
             /** Acknowledged By */
             acknowledged_by: string | null;
+            /** Cancellation Reason */
+            cancellation_reason: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /** Cancelled By */
+            cancelled_by: string | null;
             /**
              * Clinical Case Id
              * Format: uuid
              */
             clinical_case_id: string;
+            /** Completed At */
+            completed_at: string | null;
             /** Completed Study Id */
             completed_study_id: string | null;
             /**
@@ -2056,6 +3377,8 @@ export interface components {
              * Format: date-time
              */
             due_at: string;
+            /** Origin */
+            origin: string;
             /** Reason */
             reason: string;
             /** Record Version */
@@ -2070,6 +3393,8 @@ export interface components {
              * Format: uuid
              */
             requested_by: string;
+            /** Requested By Actor Role */
+            requested_by_actor_role: string;
             /**
              * Source Study Id
              * Format: uuid
@@ -2077,9 +3402,16 @@ export interface components {
             source_study_id: string;
             /** Status */
             status: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /** ReminderTransitionBody */
         ReminderTransitionBody: {
+            /** Cancellation Reason */
+            cancellation_reason?: string | null;
             /** Completed Study Id */
             completed_study_id?: string | null;
             /** Expected Version */
@@ -2092,6 +3424,11 @@ export interface components {
              * @default mock
              */
             provider_name: string;
+        };
+        /** RetryIngestionBody */
+        RetryIngestionBody: {
+            /** Expected Version */
+            expected_version: number;
         };
         /**
          * SafeDemographicSummaryModel
@@ -2108,6 +3445,11 @@ export interface components {
              * @example female
              */
             sex_at_birth?: string | null;
+        };
+        /** SnapshotBody */
+        SnapshotBody: {
+            /** Expected Case Version */
+            expected_case_version: number;
         };
         /**
          * StartEncounterRequest
@@ -2142,6 +3484,95 @@ export interface components {
             /** Note */
             note?: string | null;
             state: components["schemas"]["ObservationState"];
+        };
+        /**
+         * TaskActionBody
+         * @description Optimistically versioned task transition request.
+         */
+        TaskActionBody: {
+            /** Expected Version */
+            expected_version: number;
+            /** Owner Team Id */
+            owner_team_id?: string | null;
+            /** Owner User Id */
+            owner_user_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * TaskPriority
+         * @description Operational urgency without implying diagnostic certainty.
+         * @enum {string}
+         */
+        TaskPriority: "routine" | "priority" | "urgent";
+        /**
+         * TaskResponse
+         * @description Generated-client task contract.
+         */
+        TaskResponse: {
+            /** Acknowledged At */
+            acknowledged_at: string | null;
+            /** Cancellation Reason */
+            cancellation_reason: string | null;
+            /** Cancelled At */
+            cancelled_at: string | null;
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Created By */
+            created_by: string | null;
+            /** Due At */
+            due_at: string | null;
+            /** Escalation Level */
+            escalation_level: number;
+            /** History */
+            history: {
+                [key: string]: unknown;
+            }[];
+            /** Originating Decision */
+            originating_decision?: {
+                [key: string]: unknown;
+            } | null;
+            /** Originating Decision Id */
+            originating_decision_id: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Overdue At */
+            overdue_at: string | null;
+            /** Owner Team Id */
+            owner_team_id: string | null;
+            /** Owner User Id */
+            owner_user_id: string | null;
+            /** Priority */
+            priority: string;
+            /** Source Id */
+            source_id: string | null;
+            /** Source Type */
+            source_type: string;
+            /** Started At */
+            started_at: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Task Id
+             * Format: uuid
+             */
+            task_id: string;
+            /** Task Type */
+            task_type: string;
+            /** Version */
+            version: number;
+            /** Workflow Id */
+            workflow_id: string | null;
         };
         /**
          * TimelineEventResponse
@@ -2299,6 +3730,163 @@ export interface components {
             missing_documentation: components["schemas"]["MissingDocumentationItemResponse"][];
             /** Recent Vitals */
             recent_vitals: components["schemas"]["VitalObservationSetResponse"][];
+        };
+        /** TroponinAmendmentBody */
+        TroponinAmendmentBody: {
+            /** Amendment Reason */
+            amendment_reason: string;
+            /** Expected Version */
+            expected_version: number;
+            /** Result Status */
+            result_status: string;
+            /**
+             * Resulted At
+             * Format: date-time
+             */
+            resulted_at: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: string;
+        };
+        /** TroponinImportBody */
+        TroponinImportBody: {
+            /** Connector Id */
+            connector_id: string;
+            /** Expected Case Version */
+            expected_case_version: number;
+            /** External Reference */
+            external_reference: string;
+        };
+        /** TroponinRepeatTransitionBody */
+        TroponinRepeatTransitionBody: {
+            /** Completed Result Id */
+            completed_result_id?: string | null;
+            /** Expected Version */
+            expected_version: number;
+            /** Reason */
+            reason?: string | null;
+        };
+        /** TroponinResultBody */
+        TroponinResultBody: {
+            /** Accession Number */
+            accession_number?: string | null;
+            /** Analyte */
+            analyte: string;
+            /** Assay Code */
+            assay_code: string;
+            /** Expected Case Version */
+            expected_case_version: number;
+            /** Note */
+            note?: string | null;
+            /** Quality Flags */
+            quality_flags?: string[];
+            /** Reference Limit Source */
+            reference_limit_source?: string | null;
+            /** Reference Limit Unit */
+            reference_limit_unit?: string | null;
+            /** Reference Limit Value */
+            reference_limit_value?: string | null;
+            /** Result Status */
+            result_status: string;
+            /**
+             * Resulted At
+             * Format: date-time
+             */
+            resulted_at: string;
+            /** Source Result Id */
+            source_result_id?: string;
+            /** Source System */
+            source_system: string;
+            /**
+             * Specimen Collected At
+             * Format: date-time
+             */
+            specimen_collected_at: string;
+            /** Specimen Type */
+            specimen_type: string;
+            /** Unit */
+            unit: string;
+            /**
+             * Value
+             * @description Base-10 decimal string
+             */
+            value: string;
+        };
+        /** TroponinRetryImportBody */
+        TroponinRetryImportBody: {
+            /** Expected Version */
+            expected_version: number;
+        };
+        /** TroponinReviewBody */
+        TroponinReviewBody: {
+            /** Expected Case Version */
+            expected_case_version: number;
+            /**
+             * Incompatibility Acknowledged
+             * @default false
+             */
+            incompatibility_acknowledged: boolean;
+            /** Note */
+            note?: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /**
+             * Quality Limitation Acknowledged
+             * @default false
+             */
+            quality_limitation_acknowledged: boolean;
+            /** Referenced Result Ids */
+            referenced_result_ids: string[];
+            /** Repeat Measurement Reason */
+            repeat_measurement_reason?: string | null;
+            /**
+             * Repeat Measurement Requested
+             * @default false
+             */
+            repeat_measurement_requested: boolean;
+            /** Review Status */
+            review_status: string;
+        };
+        /** TroponinReviewCorrectionBody */
+        TroponinReviewCorrectionBody: {
+            /** Corrected Note */
+            corrected_note?: string | null;
+            /** Correction Reason */
+            correction_reason: string;
+            /** Expected Case Version */
+            expected_case_version: number;
+            /** Expected Review Version */
+            expected_review_version: number;
+            /**
+             * Incompatibility Acknowledged
+             * @default false
+             */
+            incompatibility_acknowledged: boolean;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /**
+             * Quality Limitation Acknowledged
+             * @default false
+             */
+            quality_limitation_acknowledged: boolean;
+            /** Referenced Result Ids */
+            referenced_result_ids: string[];
+            /** Repeat Measurement Reason */
+            repeat_measurement_reason?: string | null;
+            /**
+             * Repeat Measurement Requested
+             * @default false
+             */
+            repeat_measurement_requested: boolean;
+            /** Review Status */
+            review_status: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -2466,6 +4054,35 @@ export interface components {
             source_amplitude_unit: string;
             /** Study Reference */
             study_reference: string;
+        };
+        /**
+         * WorkflowState
+         * @description Explicit lifecycle states for a suspected ACS case workflow.
+         * @enum {string}
+         */
+        WorkflowState: "NEW" | "TRIAGE_IN_PROGRESS" | "AWAITING_ECG" | "ECG_UNDER_REVIEW" | "AWAITING_TROPONIN" | "OBSERVATION" | "PHYSICIAN_REVIEW_REQUIRED" | "PATHWAY_SELECTED" | "TRANSFER_IN_PROGRESS" | "CATH_LAB_REVIEW" | "DISCHARGE_REVIEW" | "CLOSED" | "CANCELLED";
+        /**
+         * WorkflowWorkspaceResponse
+         * @description Authoritative case-level R6 workspace contract.
+         */
+        WorkflowWorkspaceResponse: {
+            /** Alerts */
+            alerts: components["schemas"]["AlertResponse"][];
+            /**
+             * Case Id
+             * Format: uuid
+             */
+            case_id: string;
+            /** Case Version */
+            case_version: number;
+            /** Safety Notice */
+            safety_notice: string;
+            /** Tasks */
+            tasks: components["schemas"]["TaskResponse"][];
+            /** Workflow */
+            workflow: {
+                [key: string]: unknown;
+            };
         };
     };
     responses: never;
@@ -2721,6 +4338,329 @@ export interface operations {
             };
         };
     };
+    workspace_api_v1_clinical_cases__case_id__clinical_reasoning_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicalReasoningWorkspaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_assessment_api_v1_clinical_cases__case_id__clinical_reasoning_assessments__assessment_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                assessment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentCorrectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                decision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionCorrectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_decision_api_v1_clinical_cases__case_id__clinical_reasoning_decisions__decision_id__revocations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                decision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRevocationBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_snapshot_api_v1_clinical_cases__case_id__clinical_reasoning_snapshots_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SnapshotBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_complete_case_workspace_api_v1_clinical_cases__case_id__complete_workspace_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompleteCaseWorkspaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_comparisons_api_v1_clinical_cases__case_id__ecg_comparisons_get: {
         parameters: {
             query?: never;
@@ -2816,6 +4756,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComparisonResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ecg_imports_api_v1_clinical_cases__case_id__ecg_imports_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestionJobResponse"][];
                 };
             };
             /** @description Validation Error */
@@ -3038,6 +5012,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReminderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_repeat_requests_api_v1_clinical_cases__case_id__repeat_troponin_requests_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -3448,6 +5458,391 @@ export interface operations {
             };
         };
     };
+    get_deltas_api_v1_clinical_cases__case_id__troponin_deltas_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_imports_api_v1_clinical_cases__case_id__troponin_imports_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_result_api_v1_clinical_cases__case_id__troponin_imports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinImportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_results_api_v1_clinical_cases__case_id__troponin_results_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_result_api_v1_clinical_cases__case_id__troponin_results_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinResultBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reviews_api_v1_clinical_cases__case_id__troponin_reviews_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_review_api_v1_clinical_cases__case_id__troponin_reviews_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinReviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_review_api_v1_clinical_cases__case_id__troponin_reviews__review_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinReviewCorrectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_series_api_v1_clinical_cases__case_id__troponin_series_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workspace_api_v1_clinical_cases__case_id__troponin_workspace_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     record_vitals_api_v1_clinical_cases__case_id__vital_observation_sets_post: {
         parameters: {
             query?: never;
@@ -3741,6 +6136,249 @@ export interface operations {
             };
         };
     };
+    workspace_api_v1_clinical_cases__case_id__workflow_operations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowWorkspaceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_alert_api_v1_clinical_cases__case_id__workflow_operations_alerts__alert_id___action__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                alert_id: string;
+                action: "acknowledge" | "resolve";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertActionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evaluate_overdue_api_v1_clinical_cases__case_id__workflow_operations_overdue_evaluations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverdueEvaluationBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_task_api_v1_clinical_cases__case_id__workflow_operations_tasks__task_id___action__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                task_id: string;
+                action: "assign" | "acknowledge" | "start" | "complete" | "cancel";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskActionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_task_api_v1_clinical_cases__case_id__workflow_operations_tasks_from_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateTaskBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_command_center_cases_api_v1_command_center_cases_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                priority?: ("routine" | "urgent" | "critical") | null;
+                workflow_state?: components["schemas"]["WorkflowState"] | null;
+                overdue?: boolean | null;
+                alert_status?: ("active" | "acknowledged" | "unresolved" | "none") | null;
+                evidence_status?: ("current" | "missing" | "stale" | "technical_limit") | null;
+                owner_id?: string | null;
+                sort?: "priority" | "opened_at" | "next_due_at" | "latest_activity";
+                direction?: "asc" | "desc";
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommandCenterPageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_analysis_api_v1_ecg_analyses__analysis_id__get: {
         parameters: {
             query?: never;
@@ -3849,6 +6487,121 @@ export interface operations {
             };
         };
     };
+    list_comparison_reviews_api_v1_ecg_comparisons__comparison_id__physician_reviews_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                comparison_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonReviewResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                comparison_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComparisonReviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_comparison_review_api_v1_ecg_comparisons__comparison_id__physician_reviews__review_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                comparison_id: string;
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComparisonReviewCorrectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComparisonReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_ingestion_api_v1_ecg_ingestion_jobs__job_id__get: {
         parameters: {
             query?: never;
@@ -3862,6 +6615,46 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IngestionJobResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_ingestion_api_v1_ecg_ingestion_jobs__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetryIngestionBody"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -4498,6 +7291,154 @@ export interface operations {
             };
         };
     };
+    list_connectors_api_v1_laboratory_connectors_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    connector_health_api_v1_laboratory_connectors__connector_id__health_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                connector_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_import_api_v1_laboratory_import_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_import_api_v1_laboratory_import_jobs__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinRetryImportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_model_registry_api_v1_model_registry_get: {
         parameters: {
             query?: {
@@ -4768,7 +7709,81 @@ export interface operations {
             };
         };
     };
+    get_reminder_api_v1_repeat_ecg_reminders__reminder_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                reminder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     acknowledge_reminder_api_v1_repeat_ecg_reminders__reminder_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                reminder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReminderTransitionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReminderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_reminder_api_v1_repeat_ecg_reminders__reminder_id__cancel_post: {
         parameters: {
             query?: never;
             header?: {
@@ -4835,6 +7850,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReminderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_repeat_api_v1_repeat_troponin_requests__request_id__acknowledge_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinRepeatTransitionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_repeat_api_v1_repeat_troponin_requests__request_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinRepeatTransitionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_repeat_api_v1_repeat_troponin_requests__request_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinRepeatTransitionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -4924,13 +8065,9 @@ export interface operations {
             };
         };
     };
-    list_troponin_api_v1_troponin_get: {
+    list_assays_api_v1_troponin_assays_get: {
         parameters: {
-            query?: {
-                page?: number;
-                page_size?: number;
-                resource_name?: string;
-            };
+            query?: never;
             header?: {
                 /** @description Configured synthetic identity key; development mode only */
                 "X-Development-Identity"?: string | null;
@@ -4942,6 +8079,120 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_assay_api_v1_troponin_assays__assay_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                assay_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_result_api_v1_troponin_results__result_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                result_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    amend_result_api_v1_troponin_results__result_id__amendments_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                result_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TroponinAmendmentBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
