@@ -8,7 +8,11 @@ const allowedPaths = [
   /^api\/v1\/identity\/session$/,
   /^api\/v1\/clinical-cases$/,
   /^api\/v1\/command-center\/cases$/,
-  /^api\/v1\/clinical-cases\/[0-9a-f-]+(?:\/timeline|\/audit|\/triage|\/triage\/history|\/vitals|\/vitals\/latest|\/triage-vitals-summary|\/complete-workspace)?$/,
+  /^api\/v1\/clinical-cases\/[0-9a-f-]+(?:\/timeline|\/audit|\/triage|\/triage\/history|\/vitals|\/vitals\/latest|\/triage-vitals-summary|\/complete-workspace|\/outcomes|\/model-provenance)?$/,
+  /^api\/v1\/clinical-cases\/[0-9a-f-]+\/history\/(?:timeline|audit)$/,
+  /^api\/v1\/research-exports\/[0-9a-f-]+$/,
+  /^api\/v1\/realtime\/events\/snapshot$/,
+  /^api\/v1\/integration\/(?:messages|connectors\/status)$/,
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/clinical-reasoning$/,
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/workflow-operations$/,
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/ecg-workspace$/,
@@ -49,6 +53,11 @@ const allowedCommandPaths = [
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/workflow-operations\/(?:tasks\/from-decisions|overdue-evaluations)$/,
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/workflow-operations\/tasks\/[0-9a-f-]+\/(?:assign|acknowledge|start|complete|cancel)$/,
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/workflow-operations\/alerts\/[0-9a-f-]+\/(?:acknowledge|resolve)$/,
+  /^api\/v1\/clinical-cases\/[0-9a-f-]+\/outcomes$/,
+  /^api\/v1\/clinical-cases\/[0-9a-f-]+\/outcomes\/[0-9a-f-]+\/corrections$/,
+  /^api\/v1\/research-exports$/,
+  /^api\/v1\/integration\/simulated\/(?:laboratory-results|ecg-studies)$/,
+  /^api\/v1\/integration\/messages\/[0-9a-f-]+\/retry$/,
 ];
 
 export async function GET(

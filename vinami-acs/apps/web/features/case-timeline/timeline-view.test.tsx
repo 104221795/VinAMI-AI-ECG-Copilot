@@ -13,6 +13,10 @@ const events = [
     actorId: null,
     correlationId: "corr-1",
     causationId: null,
+    sourceRecordId: null,
+    sourceRecordVersion: 1,
+    correctionStatus: "original",
+    dataClassification: "clinical",
   },
   {
     id: "2",
@@ -24,12 +28,20 @@ const events = [
     actorId: null,
     correlationId: "corr-2",
     causationId: null,
+    sourceRecordId: null,
+    sourceRecordVersion: 1,
+    correctionStatus: "original",
+    dataClassification: "clinical",
   },
 ];
 
 describe("TimelineView", () => {
   it("supports deterministic chronological order", () => {
-    render(<TimelineView events={events} />);
+    render(
+      <TimelineView
+        value={{ items: events, page: 1, pageSize: 25, total: 2 }}
+      />,
+    );
     expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(
       "Clinical case opened",
     );

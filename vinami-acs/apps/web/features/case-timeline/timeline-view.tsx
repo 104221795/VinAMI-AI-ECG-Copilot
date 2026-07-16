@@ -17,7 +17,9 @@ export function TimelineView({ value }: { value: TimelineEventPageView }) {
   const ordered = useMemo(
     () =>
       events
-        .filter((event) => status === "all" || event.correctionStatus === status)
+        .filter(
+          (event) => status === "all" || event.correctionStatus === status,
+        )
         .sort((left, right) =>
           order === "newest"
             ? right.occurredAt.localeCompare(left.occurredAt)

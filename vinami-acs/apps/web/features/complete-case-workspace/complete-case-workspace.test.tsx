@@ -150,8 +150,17 @@ describe("R8 CompleteCaseWorkspace", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Physician review required")).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: "Follow-up Scheduling" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/no hospital calendar engine/i),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("link", { name: "Open ECG workspace" }),
     ).toHaveAttribute("href", `/cases/${caseId}/ecg`);
+    expect(
+      screen.getByRole("link", { name: "Open Triage / Vitals" }),
+    ).toHaveAttribute("href", `/cases/${caseId}/documentation`);
     expect(screen.getByRole("link", { name: "Audit" })).toHaveAttribute(
       "href",
       `/cases/${caseId}/audit`,

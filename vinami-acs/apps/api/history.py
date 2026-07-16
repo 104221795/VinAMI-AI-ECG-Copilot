@@ -24,7 +24,7 @@ from vinami.audit.application.history import (
     RequestResearchExportCommand,
 )
 from vinami.audit.domain.model import Outcome
-from vinami.audit.ports.history import ModelProvenance, Page, ResearchExport
+from vinami.audit.ports.history import ModelProvenance, ResearchExport
 from vinami.identity.domain.security import Permission
 from vinami.shared.container import AppContainer
 
@@ -225,6 +225,56 @@ def _container(request: Request) -> AppContainer:
     return cast(AppContainer, request.app.state.container)
 
 
+def _timeline_item(item: dict[str, object]) -> TimelineHistoryItem:
+    return TimelineHistoryItem(
+        timeline_event_id=cast(UUID, item["timeline_event_id"]),
+        clinical_case_id=cast(UUID, item["clinical_case_id"]),
+        event_type=cast(str, item["event_type"]),
+        title=cast(str, item["title"]),
+        occurred_at=cast(datetime, item["occurred_at"]),
+        recorded_at=cast(datetime, item["recorded_at"]),
+        source=cast(str, item["source"]),
+        actor_id=cast(UUID | None, item["actor_id"]),
+        correlation_id=cast(UUID, item["correlation_id"]),
+        causation_id=cast(UUID | None, item["causation_id"]),
+        source_record_id=cast(UUID | None, item["source_record_id"]),
+        source_record_version=cast(int | None, item["source_record_version"]),
+        correction_status=cast(str, item["correction_status"]),
+        supersedes_timeline_event_id=cast(UUID | None, item["supersedes_timeline_event_id"]),
+        revokes_timeline_event_id=cast(UUID | None, item["revokes_timeline_event_id"]),
+        data_classification=cast(str, item["data_classification"]),
+    )
+
+
+def _audit_item(item: dict[str, object]) -> AuditHistoryItem:
+    return AuditHistoryItem(
+        audit_id=cast(UUID, item["audit_id"]),
+        actor_id=cast(UUID | None, item["actor_id"]),
+        actor_role=cast(str | None, item["actor_role"]),
+        identity_subject=cast(str | None, item["identity_subject"]),
+        actor_roles=cast(tuple[str, ...], item["actor_roles"]),
+        applied_permission=cast(str | None, item["applied_permission"]),
+        identity_provider=cast(str | None, item["identity_provider"]),
+        authentication_method=cast(str | None, item["authentication_method"]),
+        session_reference=cast(str | None, item["session_reference"]),
+        action=cast(str, item["action"]),
+        resource_type=cast(str, item["resource_type"]),
+        resource_id=cast(UUID, item["resource_id"]),
+        request_source=cast(str, item["request_source"]),
+        correlation_id=cast(UUID, item["correlation_id"]),
+        causation_id=cast(UUID | None, item["causation_id"]),
+        prior_version=cast(int | None, item["prior_version"]),
+        resulting_version=cast(int | None, item["resulting_version"]),
+        outcome=cast(str, item["outcome"]),
+        reason=cast(str | None, item["reason"]),
+        recorded_at=cast(datetime, item["recorded_at"]),
+        idempotency_key=cast(str | None, item["idempotency_key"]),
+        authorization_result=cast(str | None, item["authorization_result"]),
+        correction_status=cast(str, item["correction_status"]),
+        source_record_version=cast(int | None, item["source_record_version"]),
+    )
+
+
 ContainerDependency = Annotated[AppContainer, Depends(_container)]
 TimelineRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.TIMELINE_READ))]
 AuditRead = Annotated[AuthorizedIdentity, Depends(authorize_for(Permission.AUDIT_READ))]
@@ -259,7 +309,12 @@ def get_timeline_history(
         event_type,
         correction_status,
     )
-    return TimelineHistoryPage(**_page(result))
+    return TimelineHistoryPage(
+        items=[_timeline_item(item) for item in result.items],
+        page=result.page,
+        page_size=result.page_size,
+        total=result.total,
+    )
 
 
 @router.get(
@@ -286,7 +341,12 @@ def get_audit_history(
         action,
         outcome,
     )
-    return AuditHistoryPage(**_page(result))
+    return AuditHistoryPage(
+        items=[_audit_item(item) for item in result.items],
+        page=result.page,
+        page_size=result.page_size,
+        total=result.total,
+    )
 
 
 @router.get(
@@ -304,7 +364,10 @@ def get_outcomes(
     return OutcomeHistoryResponse(
         current=responses[0] if responses else None,
         revisions=responses,
-        safety_notice="Outcome records are physician-authored or explicitly sourced. They are not inferred from AI, tasks or workflow completion.",
+        safety_notice=(
+            "Outcome records are physician-authored or explicitly sourced. "
+            "They are not inferred from AI, tasks or workflow completion."
+        ),
     )
 
 
@@ -430,15 +493,6 @@ def _visible_locations(headers: CommandHeaders) -> tuple[str, ...]:
     return headers.visible_locations
 
 
-def _page(value: Page) -> dict[str, object]:
-    return {
-        "items": list(value.items),
-        "page": value.page,
-        "page_size": value.page_size,
-        "total": value.total,
-    }
-
-
 def _outcome(value: Outcome) -> OutcomeResponse:
     return OutcomeResponse(
         outcome_id=value.id,
@@ -490,7 +544,10 @@ def _provenance(value: ModelProvenance) -> ModelProvenanceResponse:
         status=value.status,
         warnings=value.warnings,
         record_version=value.record_version,
-        safety_notice="Model outputs are research-use scores and attention artifacts, not diagnoses or validated clinical probabilities.",
+        safety_notice=(
+            "Model outputs are research-use scores and attention artifacts, "
+            "not diagnoses or validated clinical probabilities."
+        ),
     )
 
 
@@ -512,5 +569,8 @@ def _export(value: ResearchExport) -> ResearchExportResponse:
         content_csv=value.content_csv,
         correlation_id=value.correlation_id,
         metadata=value.metadata,
-        safety_notice="Research exports are pseudonymized MVP artifacts and do not imply clinical validation or automated model learning.",
+        safety_notice=(
+            "Research exports are pseudonymized MVP artifacts and do not imply "
+            "clinical validation or automated model learning."
+        ),
     )

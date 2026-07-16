@@ -14,6 +14,9 @@ import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatTimestamp, safeDemographics } from "@web/shared/formatting";
 import { useConnectivity } from "@web/shared/hooks/use-connectivity";
+import { IntegrationStatusPanel } from "@web/features/realtime/integration-status-panel";
+import { RealtimeStatus } from "@web/features/realtime/connection-status";
+import { useRealtimeUpdates } from "@web/features/realtime/use-realtime-updates";
 import { loadCompleteCaseWorkspaceWith } from "./data";
 import type { CompleteCaseWorkspaceView } from "./model";
 
@@ -30,6 +33,13 @@ export function CompleteCaseWorkspace({
   initialValue: CompleteCaseWorkspaceView;
 }) {
   const online = useConnectivity();
+  const realtime = useRealtimeUpdates({
+    caseId,
+    invalidate: [
+      ["r8-complete-case-workspace", caseId],
+      ["r10-integration-status"],
+    ],
+  });
   const query = useQuery({
     queryKey: ["r8-complete-case-workspace", caseId],
     queryFn: () =>
@@ -76,6 +86,11 @@ export function CompleteCaseWorkspace({
       {stale && (
         <StaleDataBanner updatedLabel={formatTimestamp(value.evaluated_at)} />
       )}
+      <RealtimeStatus
+        state={realtime.state}
+        lastUpdateAt={realtime.lastUpdateAt}
+        notification={realtime.notification}
+      />
       <header className="vm-case-workspace__header">
         <div>
           <p className="vm-eyebrow">Suspected ACS clinical case</p>
@@ -108,6 +123,7 @@ export function CompleteCaseWorkspace({
         className="vm-case-workspace__nav"
         aria-label="Case workspace navigation"
       >
+        <Link href={`/cases/${caseId}/documentation`}>Triage / Vitals</Link>
         <Link href={`/cases/${caseId}/ecg`}>ECG</Link>
         <Link href={`/cases/${caseId}/troponin`}>Troponin</Link>
         <Link href={`/cases/${caseId}/clinical-reasoning`}>
@@ -146,7 +162,8 @@ export function CompleteCaseWorkspace({
       <div className="vm-case-workspace__grid">
         <Panel
           title="Triage and latest vitals"
-          ownerLabel="Triage module owned evidence"
+          link={`/cases/${caseId}/documentation`}
+          linkLabel="Open Triage / Vitals"
         >
           {value.triage ? (
             <>
@@ -369,6 +386,36 @@ export function CompleteCaseWorkspace({
             <Empty label="No active tasks or unresolved alerts" />
           )}
         </Panel>
+
+        <Panel
+          title="Follow-up Scheduling"
+          link={`/cases/${caseId}/timeline`}
+          linkLabel="Review Timeline / Outcome"
+        >
+          <div className="vm-scheduling-summary">
+            <span>
+              <strong>1</strong>
+              Physician follow-up recommendation
+            </span>
+            <span>
+              <strong>2</strong>
+              Administrative appointment request
+            </span>
+            <span>
+              <strong>3</strong>
+              Staff confirmation and reminder
+            </span>
+            <span>
+              <strong>4</strong>
+              Rescheduled, missed/no-show or completed follow-up
+            </span>
+          </div>
+          <p className="vm-inline-notice">
+            Scheduling is represented for workflow review only. This MVP has no
+            hospital calendar engine and does not route emergency findings into
+            normal follow-up scheduling.
+          </p>
+        </Panel>
       </div>
 
       <section
@@ -403,6 +450,7 @@ export function CompleteCaseWorkspace({
           .
         </p>
       </section>
+      <IntegrationStatusPanel />
       <footer className="vm-case-workspace__footer">
         Research-use prototype. This workspace presents backend-owned evidence
         and navigation; it does not create clinical authority.

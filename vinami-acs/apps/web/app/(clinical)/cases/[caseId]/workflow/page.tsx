@@ -25,7 +25,11 @@ export default async function WorkflowPage({
     ]);
     return (
       <>
-        <CaseWorkspaceHeader value={caseValue} active="workflow" />
+        <CaseWorkspaceHeader
+          value={caseValue}
+          active="workflow"
+          workflowStatus={workflow.workflow.state}
+        />
         <WorkflowOperationsWorkspace
           caseId={caseId}
           actorId={identity.actorId}

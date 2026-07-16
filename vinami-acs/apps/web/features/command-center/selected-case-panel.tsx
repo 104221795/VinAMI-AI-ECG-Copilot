@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
   Button,
   ClinicalCard,
@@ -158,14 +159,25 @@ export function SelectedCasePanel({
           className="vm-workspace-links"
           aria-label="Selected case workspaces"
         >
-          <Link href={`/cases/${row.case_id}/clinical-reasoning`}>
+          <WorkspaceLink href={`/cases/${row.case_id}/documentation`}>
+            Triage / Vitals
+          </WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/clinical-reasoning`}>
             Clinical Reasoning
-          </Link>
-          <Link href={`/cases/${row.case_id}/ecg`}>ECG</Link>
-          <Link href={`/cases/${row.case_id}/troponin`}>Troponin</Link>
-          <Link href={`/cases/${row.case_id}/workflow`}>Workflow</Link>
-          <Link href={`/cases/${row.case_id}/timeline`}>Timeline</Link>
-          <Link href={`/cases/${row.case_id}/audit`}>Audit</Link>
+          </WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/ecg`}>ECG</WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/troponin`}>
+            Troponin
+          </WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/workflow`}>
+            Workflow
+          </WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/timeline`}>
+            Timeline
+          </WorkspaceLink>
+          <WorkspaceLink href={`/cases/${row.case_id}/audit`}>
+            Audit
+          </WorkspaceLink>
         </nav>
         <p className="vm-safety-note">
           Operational overview only. AI output does not determine priority or
@@ -188,4 +200,33 @@ function formatCode(value: string) {
     .split("_")
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function WorkspaceLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      onMouseDown={(event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.altKey ||
+          event.shiftKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+        window.location.assign(href);
+      }}
+    >
+      {children}
+    </Link>
+  );
 }

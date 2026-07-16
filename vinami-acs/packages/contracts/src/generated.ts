@@ -306,6 +306,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/clinical-cases/{case_id}/history/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get detailed immutable case Audit */
+        get: operations["get_audit_history_api_v1_clinical_cases__case_id__history_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/history/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get consolidated immutable case Timeline */
+        get: operations["get_timeline_history_api_v1_clinical_cases__case_id__history_timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/model-provenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get persisted model and evidence provenance for a case */
+        get: operations["get_model_provenance_api_v1_clinical_cases__case_id__model_provenance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/outcomes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current outcome and immutable revisions */
+        get: operations["get_outcomes_api_v1_clinical_cases__case_id__outcomes_get"];
+        put?: never;
+        /** Record the initial Clinical Outcome */
+        post: operations["record_outcome_api_v1_clinical_cases__case_id__outcomes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/clinical-cases/{case_id}/outcomes/{outcome_id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Append a Clinical Outcome correction */
+        post: operations["correct_outcome_api_v1_clinical_cases__case_id__outcomes__outcome_id__corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clinical-cases/{case_id}/repeat-ecg-reminders": {
         parameters: {
             query?: never;
@@ -1104,6 +1190,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integration/connectors/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Integration Connector Status */
+        get: operations["integration_connector_status_api_v1_integration_connectors_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Integration Messages */
+        get: operations["list_integration_messages_api_v1_integration_messages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/messages/{message_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Integration Message */
+        post: operations["retry_integration_message_api_v1_integration_messages__message_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/simulated/ecg-studies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulate Ecg Study */
+        post: operations["simulate_ecg_study_api_v1_integration_simulated_ecg_studies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/integration/simulated/laboratory-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulate Laboratory Result */
+        post: operations["simulate_laboratory_result_api_v1_integration_simulated_laboratory_results_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/laboratory-connectors": {
         parameters: {
             query?: never;
@@ -1283,6 +1454,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/realtime/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Server-sent backend notifications; clients must refetch authoritative APIs */
+        get: operations["realtime_events_api_v1_realtime_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/realtime/events/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Realtime Snapshot */
+        get: operations["realtime_snapshot_api_v1_realtime_events_snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/repeat-ecg-reminders/{reminder_id}": {
         parameters: {
             query?: never;
@@ -1396,6 +1601,40 @@ export interface paths {
         put?: never;
         /** Complete Repeat */
         post: operations["complete_repeat_api_v1_repeat_troponin_requests__request_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate an authorized research-use case export */
+        post: operations["request_research_export_api_v1_research_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/research-exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get research-use export metadata and generated payload */
+        get: operations["get_research_export_api_v1_research_exports__export_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1845,6 +2084,80 @@ export interface components {
             resulting_version: number | null;
             /** Session Reference */
             session_reference: string | null;
+        };
+        /** AuditHistoryItem */
+        AuditHistoryItem: {
+            /** Action */
+            action: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Actor Role */
+            actor_role: string | null;
+            /** Actor Roles */
+            actor_roles: string[];
+            /** Applied Permission */
+            applied_permission: string | null;
+            /**
+             * Audit Id
+             * Format: uuid
+             */
+            audit_id: string;
+            /** Authentication Method */
+            authentication_method: string | null;
+            /** Authorization Result */
+            authorization_result: string | null;
+            /** Causation Id */
+            causation_id: string | null;
+            /** Correction Status */
+            correction_status: string;
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /** Idempotency Key */
+            idempotency_key: string | null;
+            /** Identity Provider */
+            identity_provider: string | null;
+            /** Identity Subject */
+            identity_subject: string | null;
+            /** Outcome */
+            outcome: string;
+            /** Prior Version */
+            prior_version: number | null;
+            /** Reason */
+            reason: string | null;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Request Source */
+            request_source: string;
+            /**
+             * Resource Id
+             * Format: uuid
+             */
+            resource_id: string;
+            /** Resource Type */
+            resource_type: string;
+            /** Resulting Version */
+            resulting_version: number | null;
+            /** Session Reference */
+            session_reference: string | null;
+            /** Source Record Version */
+            source_record_version: number | null;
+        };
+        /** AuditHistoryPage */
+        AuditHistoryPage: {
+            /** Items */
+            items: components["schemas"]["AuditHistoryItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
         };
         /** Body_create_ecg_study_api_v1_clinical_cases__case_id__ecg_studies_post */
         Body_create_ecg_study_api_v1_clinical_cases__case_id__ecg_studies_post: {
@@ -2964,6 +3277,57 @@ export interface components {
             /** Warnings */
             warnings: string[];
         };
+        /** IntegrationMessageResponse */
+        IntegrationMessageResponse: {
+            /** Causation Id */
+            causation_id: string | null;
+            /** Clinical Case Id */
+            clinical_case_id: string | null;
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /** Dead Letter Reason */
+            dead_letter_reason: string | null;
+            /** External Message Id */
+            external_message_id: string;
+            /** Linked Record Ids */
+            linked_record_ids: string[];
+            /**
+             * Message Id
+             * Format: uuid
+             */
+            message_id: string;
+            /** Message Type */
+            message_type: string;
+            /** Processed At */
+            processed_at: string | null;
+            /**
+             * Received At
+             * Format: date-time
+             */
+            received_at: string;
+            /** Record Version */
+            record_version: number;
+            /** Retry Count */
+            retry_count: number;
+            /**
+             * Safety Notice
+             * @default Simulated integration messages are not physician decisions or workflow authority.
+             */
+            safety_notice: string;
+            /** Schema Version */
+            schema_version: string;
+            /** Simulated */
+            simulated: boolean;
+            /** Source System */
+            source_system: string;
+            /** Status */
+            status: string;
+            /** Validation Errors */
+            validation_errors: string[];
+        };
         /** InterpretationBody */
         InterpretationBody: {
             /** Agreement Status */
@@ -3078,6 +3442,60 @@ export interface components {
             /** Identifier */
             identifier: string;
         };
+        /** ModelProvenanceResponse */
+        ModelProvenanceResponse: {
+            /**
+             * Analysis Id
+             * Format: uuid
+             */
+            analysis_id: string;
+            /** Executed At */
+            executed_at: string | null;
+            /** Explanation Artifact Id */
+            explanation_artifact_id: string | null;
+            /** Explanation Status */
+            explanation_status: string;
+            /** Input Artifact Checksum */
+            input_artifact_checksum: string;
+            /**
+             * Input Artifact Id
+             * Format: uuid
+             */
+            input_artifact_id: string;
+            /** Input Quality */
+            input_quality: string;
+            /** Label Mapping Version */
+            label_mapping_version: string;
+            /** Model Checksum */
+            model_checksum: string | null;
+            /** Model Name */
+            model_name: string;
+            /** Model Version */
+            model_version: string;
+            /** Preprocessing Version */
+            preprocessing_version: string;
+            /** Provider Name */
+            provider_name: string;
+            /** Provider Version */
+            provider_version: string;
+            /** Record Version */
+            record_version: number;
+            /** Safety Notice */
+            safety_notice: string;
+            /** Status */
+            status: string;
+            /**
+             * Study Id
+             * Format: uuid
+             */
+            study_id: string;
+            /** Synthetic */
+            synthetic: boolean;
+            /** Threshold Version */
+            threshold_version: string | null;
+            /** Warnings */
+            warnings: string[];
+        };
         /** ModelScoreEvolutionResponse */
         ModelScoreEvolutionResponse: {
             /** Absolute Delta */
@@ -3129,6 +3547,158 @@ export interface components {
              */
             opening_reason: string;
             priority: components["schemas"]["ClinicalPriority"];
+        };
+        /** OutcomeBody */
+        OutcomeBody: {
+            /** Cath Lab Review Outcome */
+            cath_lab_review_outcome?: string | null;
+            /** Complications */
+            complications?: string | null;
+            /**
+             * Data Completeness
+             * @default documented
+             */
+            data_completeness: string;
+            /** Destination */
+            destination?: string | null;
+            /** Disposition */
+            disposition?: string | null;
+            /** Final Conclusion */
+            final_conclusion: string;
+            /** Follow Up Status */
+            follow_up_status?: string | null;
+            /** Intervention Reference */
+            intervention_reference?: string | null;
+            /**
+             * Outcome Timestamp
+             * Format: date-time
+             */
+            outcome_timestamp: string;
+            /** Outcome Type */
+            outcome_type: string;
+            /**
+             * Source
+             * @default physician_documented
+             */
+            source: string;
+            /** Unavailable Reason */
+            unavailable_reason?: string | null;
+            /** Uncertainty */
+            uncertainty?: string | null;
+        };
+        /** OutcomeCorrectionBody */
+        OutcomeCorrectionBody: {
+            /** Cath Lab Review Outcome */
+            cath_lab_review_outcome?: string | null;
+            /** Complications */
+            complications?: string | null;
+            /** Correction Reason */
+            correction_reason: string;
+            /**
+             * Data Completeness
+             * @default documented
+             */
+            data_completeness: string;
+            /** Destination */
+            destination?: string | null;
+            /** Disposition */
+            disposition?: string | null;
+            /** Final Conclusion */
+            final_conclusion: string;
+            /** Follow Up Status */
+            follow_up_status?: string | null;
+            /** Intervention Reference */
+            intervention_reference?: string | null;
+            /**
+             * Outcome Timestamp
+             * Format: date-time
+             */
+            outcome_timestamp: string;
+            /** Outcome Type */
+            outcome_type: string;
+            /**
+             * Source
+             * @default physician_documented
+             */
+            source: string;
+            /** Unavailable Reason */
+            unavailable_reason?: string | null;
+            /** Uncertainty */
+            uncertainty?: string | null;
+        };
+        /** OutcomeHistoryResponse */
+        OutcomeHistoryResponse: {
+            current: components["schemas"]["OutcomeResponse"] | null;
+            /** Revisions */
+            revisions: components["schemas"]["OutcomeResponse"][];
+            /** Safety Notice */
+            safety_notice: string;
+        };
+        /** OutcomeResponse */
+        OutcomeResponse: {
+            /** Actor Role */
+            actor_role: string;
+            /** Cath Lab Review Outcome */
+            cath_lab_review_outcome: string | null;
+            /** Causation Id */
+            causation_id: string | null;
+            /**
+             * Clinical Case Id
+             * Format: uuid
+             */
+            clinical_case_id: string;
+            /** Complications */
+            complications: string | null;
+            /** Correction Reason */
+            correction_reason: string | null;
+            /** Correlation Id */
+            correlation_id: string | null;
+            /** Data Completeness */
+            data_completeness: string;
+            /** Destination */
+            destination: string | null;
+            /** Disposition */
+            disposition: string | null;
+            /** Final Conclusion */
+            final_conclusion: string;
+            /** Follow Up Status */
+            follow_up_status: string | null;
+            /** Intervention Reference */
+            intervention_reference: string | null;
+            /**
+             * Outcome Id
+             * Format: uuid
+             */
+            outcome_id: string;
+            /**
+             * Outcome Timestamp
+             * Format: date-time
+             */
+            outcome_timestamp: string;
+            /** Outcome Type */
+            outcome_type: string;
+            /** Record Version */
+            record_version: number;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /**
+             * Recorded By
+             * Format: uuid
+             */
+            recorded_by: string;
+            /** Revision Number */
+            revision_number: number;
+            /** Source */
+            source: string;
+            /** Supersedes Outcome Id */
+            supersedes_outcome_id: string | null;
+            /** Unavailable Reason */
+            unavailable_reason: string | null;
+            /** Uncertainty */
+            uncertainty: string | null;
         };
         /**
          * OverdueEvaluationBody
@@ -3231,6 +3801,39 @@ export interface components {
             status: string;
             /** Suppress Score Emphasis */
             suppress_score_emphasis: boolean;
+        };
+        /** RealtimeNotificationResponse */
+        RealtimeNotificationResponse: {
+            /**
+             * Aggregate Id
+             * Format: uuid
+             */
+            aggregate_id: string;
+            /** Aggregate Type */
+            aggregate_type: string;
+            /** Case Id */
+            case_id: string | null;
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /**
+             * Event Id
+             * Format: uuid
+             */
+            event_id: string;
+            /** Event Type */
+            event_type: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /** Resource Hint */
+            resource_hint: string;
+            /** Safety Notice */
+            safety_notice: string;
         };
         /**
          * RecordTriageAssessmentRequest
@@ -3425,8 +4028,73 @@ export interface components {
              */
             provider_name: string;
         };
+        /** ResearchExportBody */
+        ResearchExportBody: {
+            /** Case Ids */
+            case_ids: string[];
+        };
+        /** ResearchExportResponse */
+        ResearchExportResponse: {
+            /** Case Ids */
+            case_ids: string[];
+            /** Checksum Sha256 */
+            checksum_sha256: string;
+            /** Completed At */
+            completed_at: string | null;
+            /** Content Csv */
+            content_csv: string;
+            /** Content Json */
+            content_json: {
+                [key: string]: unknown;
+            };
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /**
+             * Export Id
+             * Format: uuid
+             */
+            export_id: string;
+            /** Filters */
+            filters: {
+                [key: string]: unknown;
+            };
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Pseudonymization Method */
+            pseudonymization_method: string;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /**
+             * Requested By
+             * Format: uuid
+             */
+            requested_by: string;
+            /** Requested By Role */
+            requested_by_role: string;
+            /** Row Count */
+            row_count: number;
+            /** Safety Notice */
+            safety_notice: string;
+            /** Schema Version */
+            schema_version: string;
+            /** Status */
+            status: string;
+        };
         /** RetryIngestionBody */
         RetryIngestionBody: {
+            /** Expected Version */
+            expected_version: number;
+        };
+        /** RetryIntegrationBody */
+        RetryIntegrationBody: {
             /** Expected Version */
             expected_version: number;
         };
@@ -3445,6 +4113,118 @@ export interface components {
              * @example female
              */
             sex_at_birth?: string | null;
+        };
+        /** SimulatedECGMessageBody */
+        SimulatedECGMessageBody: {
+            /**
+             * Acquisition At
+             * Format: date-time
+             */
+            acquisition_at: string;
+            /**
+             * Clinical Case Id
+             * Format: uuid
+             */
+            clinical_case_id: string;
+            /** Expected Case Version */
+            expected_case_version: number;
+            /** External Message Id */
+            external_message_id: string;
+            /** Failure Mode */
+            failure_mode?: string | null;
+            /**
+             * Poor Quality
+             * @default false
+             */
+            poor_quality: boolean;
+            /**
+             * Schema Version
+             * @default vinami-ecg-device-study.v1
+             */
+            schema_version: string;
+            /**
+             * Source System
+             * @default simulated-ecg-device-r10
+             */
+            source_system: string;
+            /** Study Reference */
+            study_reference: string;
+        };
+        /** SimulatedLabResultBody */
+        SimulatedLabResultBody: {
+            /** Accession Number */
+            accession_number?: string | null;
+            /** Amendment Of Message Id */
+            amendment_of_message_id?: string | null;
+            /** Amendment Reason */
+            amendment_reason?: string | null;
+            /**
+             * Analyte
+             * @default cardiac_troponin_i
+             */
+            analyte: string;
+            /**
+             * Assay Code
+             * @default DEMO-HS-CTNI-01
+             */
+            assay_code: string;
+            /**
+             * Clinical Case Id
+             * Format: uuid
+             */
+            clinical_case_id: string;
+            /** Expected Case Version */
+            expected_case_version: number;
+            /** External Message Id */
+            external_message_id: string;
+            /** Failure Mode */
+            failure_mode?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Quality Flags */
+            quality_flags?: string[];
+            /** Reference Limit Source */
+            reference_limit_source?: string | null;
+            /** Reference Limit Unit */
+            reference_limit_unit?: string | null;
+            /** Reference Limit Value */
+            reference_limit_value?: string | null;
+            /**
+             * Result Status
+             * @default final
+             */
+            result_status: string;
+            /**
+             * Resulted At
+             * Format: date-time
+             */
+            resulted_at: string;
+            /**
+             * Schema Version
+             * @default vinami-hl7-lab-result.v1
+             */
+            schema_version: string;
+            /** Source Result Id */
+            source_result_id: string;
+            /**
+             * Source System
+             * @default simulated-lis-r10
+             */
+            source_system: string;
+            /**
+             * Specimen Collected At
+             * Format: date-time
+             */
+            specimen_collected_at: string;
+            /**
+             * Specimen Type
+             * @default plasma
+             */
+            specimen_type: string;
+            /** Unit */
+            unit: string;
+            /** Value */
+            value: string;
         };
         /** SnapshotBody */
         SnapshotBody: {
@@ -3614,6 +4394,67 @@ export interface components {
             timeline_event_id: string;
             /** Title */
             title: string;
+        };
+        /** TimelineHistoryItem */
+        TimelineHistoryItem: {
+            /** Actor Id */
+            actor_id: string | null;
+            /** Causation Id */
+            causation_id: string | null;
+            /**
+             * Clinical Case Id
+             * Format: uuid
+             */
+            clinical_case_id: string;
+            /** Correction Status */
+            correction_status: string;
+            /**
+             * Correlation Id
+             * Format: uuid
+             */
+            correlation_id: string;
+            /** Data Classification */
+            data_classification: string;
+            /** Event Type */
+            event_type: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Revokes Timeline Event Id */
+            revokes_timeline_event_id: string | null;
+            /** Source */
+            source: string;
+            /** Source Record Id */
+            source_record_id: string | null;
+            /** Source Record Version */
+            source_record_version: number | null;
+            /** Supersedes Timeline Event Id */
+            supersedes_timeline_event_id: string | null;
+            /**
+             * Timeline Event Id
+             * Format: uuid
+             */
+            timeline_event_id: string;
+            /** Title */
+            title: string;
+        };
+        /** TimelineHistoryPage */
+        TimelineHistoryPage: {
+            /** Items */
+            items: components["schemas"]["TimelineHistoryItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
         };
         /**
          * TriageAssessmentResponse
@@ -4947,6 +5788,503 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_audit_history_api_v1_clinical_cases__case_id__history_audit_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                action?: string | null;
+                outcome?: string | null;
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditHistoryPage"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_timeline_history_api_v1_clinical_cases__case_id__history_timeline_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                event_type?: string | null;
+                correction_status?: string | null;
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimelineHistoryPage"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_model_provenance_api_v1_clinical_cases__case_id__model_provenance_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelProvenanceResponse"][];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_outcomes_api_v1_clinical_cases__case_id__outcomes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeHistoryResponse"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    record_outcome_api_v1_clinical_cases__case_id__outcomes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutcomeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeResponse"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    correct_outcome_api_v1_clinical_cases__case_id__outcomes__outcome_id__corrections_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                case_id: string;
+                outcome_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutcomeCorrectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutcomeResponse"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
@@ -7291,6 +8629,192 @@ export interface operations {
             };
         };
     };
+    integration_connector_status_api_v1_integration_connectors_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_integration_messages_api_v1_integration_messages_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                source_system?: string | null;
+                limit?: number;
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationMessageResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_integration_message_api_v1_integration_messages__message_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetryIntegrationBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationMessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_ecg_study_api_v1_integration_simulated_ecg_studies_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatedECGMessageBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationMessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_laboratory_result_api_v1_integration_simulated_laboratory_results_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulatedLabResultBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntegrationMessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_connectors_api_v1_laboratory_connectors_get: {
         parameters: {
             query?: never;
@@ -7709,6 +9233,75 @@ export interface operations {
             };
         };
     };
+    realtime_events_api_v1_realtime_events_get: {
+        parameters: {
+            query?: {
+                case_id?: string | null;
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    realtime_snapshot_api_v1_realtime_events_snapshot_get: {
+        parameters: {
+            query?: {
+                last_event_id?: string | null;
+                case_id?: string | null;
+            };
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RealtimeNotificationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_reminder_api_v1_repeat_ecg_reminders__reminder_id__get: {
         parameters: {
             query?: never;
@@ -7985,6 +9578,168 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_research_export_api_v1_research_exports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Persistent command deduplication key */
+                "Idempotency-Key"?: string | null;
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResearchExportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchExportResponse"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    get_research_export_api_v1_research_exports__export_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchExportResponse"];
+                };
+            };
+            /** @description Malformed command context */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Verified identity lacks permission */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Lifecycle or idempotency conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
         };

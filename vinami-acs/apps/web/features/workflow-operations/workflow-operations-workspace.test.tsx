@@ -134,6 +134,15 @@ describe("WorkflowOperationsWorkspace", () => {
       screen.getByRole("heading", { name: "Repeat ECG" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", {
+        name: "Evidence and physician-directed operations",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Follow-up scheduling")).toBeInTheDocument();
+    expect(
+      screen.getByText(/hospital calendar integration/i),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText("Physician request for cath-lab review"),
     ).toBeInTheDocument();
 

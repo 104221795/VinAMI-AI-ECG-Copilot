@@ -6,6 +6,7 @@ import {
   FileClock,
   HeartPulse,
   ListTodo,
+  NotebookText,
   Stethoscope,
   ServerCog,
   ShieldCheck,
@@ -45,10 +46,28 @@ export function ClinicalSidebar() {
           <div className="vm-case-nav">
             <p className="vm-nav-label">Selected case</p>
             <Link
-              href={`/cases/${caseId}/workflow`}
-              className={navClass(pathname.endsWith("/workflow"))}
+              href={`/cases/${caseId}`}
+              className={navClass(pathname === `/cases/${caseId}`)}
             >
-              <ListTodo size={18} /> Tasks and Alerts
+              <Activity size={18} /> Overview
+            </Link>
+            <Link
+              href={`/cases/${caseId}/documentation`}
+              className={navClass(pathname.endsWith("/documentation"))}
+            >
+              <NotebookText size={18} /> Triage / Vitals
+            </Link>
+            <Link
+              href={`/cases/${caseId}/ecg`}
+              className={navClass(pathname.endsWith("/ecg"))}
+            >
+              <HeartPulse size={18} /> ECG
+            </Link>
+            <Link
+              href={`/cases/${caseId}/troponin`}
+              className={navClass(pathname.endsWith("/troponin"))}
+            >
+              <ClipboardList size={18} /> Troponin
             </Link>
             <Link
               href={`/cases/${caseId}/clinical-reasoning`}
@@ -57,10 +76,10 @@ export function ClinicalSidebar() {
               <Stethoscope size={18} /> Clinical Reasoning
             </Link>
             <Link
-              href={`/cases/${caseId}`}
-              className={navClass(pathname === `/cases/${caseId}`)}
+              href={`/cases/${caseId}/workflow`}
+              className={navClass(pathname.endsWith("/workflow"))}
             >
-              <Activity size={18} /> Overview
+              <ListTodo size={18} /> Workflow
             </Link>
             <Link
               href={`/cases/${caseId}/timeline`}

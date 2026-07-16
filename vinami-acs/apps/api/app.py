@@ -17,9 +17,10 @@ from apps.api.case_workspace import router as case_workspace_router
 from apps.api.clinical_reasoning import router as clinical_reasoning_router
 from apps.api.command_center import router as command_center_router
 from apps.api.ecg import router as ecg_router
-from apps.api.http import audit_request_outcome, authorize_for
 from apps.api.history import router as history_router
+from apps.api.http import audit_request_outcome, authorize_for
 from apps.api.identity import router as identity_router
+from apps.api.integration import router as integration_router
 from apps.api.lifecycle import router as lifecycle_router
 from apps.api.triage_vitals import router as triage_vitals_router
 from apps.api.troponin import router as troponin_router
@@ -242,6 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(command_center_router)
     app.include_router(case_workspace_router)
     app.include_router(history_router)
+    app.include_router(integration_router)
 
     resources = (
         "triage",

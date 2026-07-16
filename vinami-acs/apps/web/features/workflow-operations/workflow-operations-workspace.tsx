@@ -21,6 +21,7 @@ import {
   type WorkflowOperationsView,
   type WorkflowTaskView,
 } from "./model";
+import { ClinicalWorkflowBoard } from "./clinical-workflow-board";
 
 const taskLabels: Record<string, string> = {
   repeat_ecg: "Repeat ECG",
@@ -215,6 +216,14 @@ export function WorkflowOperationsWorkspace({
         />
         <Metric label="Completed / cancelled" value={historicalTasks.length} />
       </div>
+
+      <ClinicalWorkflowBoard
+        caseId={caseId}
+        value={value}
+        decisions={decisions}
+        activeTasks={activeTasks}
+        alerts={value.alerts.filter((alert) => alert.status !== "resolved")}
+      />
 
       <section className="vm-card">
         <div className="vm-card__body">

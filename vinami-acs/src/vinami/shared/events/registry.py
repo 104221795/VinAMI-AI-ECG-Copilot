@@ -130,6 +130,9 @@ class EventRegistry:
             "ClinicalOutcomeRecorded.v1",
             "ClinicalOutcomeCorrected.v1",
             "ResearchExportCompleted.v1",
+            "IntegrationMessageReceived.v1",
+            "IntegrationMessageProcessed.v1",
+            "IntegrationMessageFailed.v1",
         ):
             registry.register(event_type)
         return registry

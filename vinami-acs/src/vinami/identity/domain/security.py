@@ -42,6 +42,8 @@ class Permission(StrEnum):
     AUDIT_READ = "audit:read"
     OUTCOME_WRITE = "outcome:write"
     RESEARCH_EXPORT_CREATE = "research_export:create"
+    INTEGRATION_READ = "integration:read"
+    INTEGRATION_WRITE = "integration:write"
     IDENTITY_INSPECT = "identity:inspect"
     SYSTEM_READ = "system:read"
 
@@ -59,6 +61,7 @@ _READ_PERMISSIONS = frozenset(
         Permission.TROPONIN_READ,
         Permission.CLINICAL_REASONING_READ,
         Permission.WORKFLOW_READ,
+        Permission.INTEGRATION_READ,
     }
 )
 _MUTATION_PERMISSIONS = frozenset(
@@ -87,6 +90,7 @@ ROLE_PERMISSIONS = MappingProxyType(
             Permission.CLINICAL_DECISION_WRITE,
             Permission.OUTCOME_WRITE,
             Permission.RESEARCH_EXPORT_CREATE,
+            Permission.INTEGRATION_WRITE,
         },
         ClinicalRole.NURSE: _READ_PERMISSIONS | _MUTATION_PERMISSIONS,
         ClinicalRole.TECHNICIAN: _READ_PERMISSIONS | {Permission.ECG_WRITE, Permission.TASK_WRITE},
@@ -97,6 +101,7 @@ ROLE_PERMISSIONS = MappingProxyType(
             Permission.AUDIT_READ,
             Permission.IDENTITY_INSPECT,
             Permission.RESEARCH_EXPORT_CREATE,
+            Permission.INTEGRATION_READ,
             Permission.SYSTEM_READ,
         },
         ClinicalRole.SYSTEM_SERVICE: frozenset(Permission),

@@ -108,7 +108,7 @@ class ResearchExportRecord(Base):
         ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
     )
     requested_by_role: Mapped[str] = mapped_column(String(80), nullable=False)
-    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, index=True)
+    requested_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
     case_ids: Mapped[list[str]] = mapped_column(JSONDocument, nullable=False)
     filters: Mapped[dict[str, object]] = mapped_column(JSONDocument, nullable=False)

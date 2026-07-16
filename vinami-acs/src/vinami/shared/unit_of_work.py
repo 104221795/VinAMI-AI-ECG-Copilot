@@ -23,6 +23,7 @@ from vinami.clinical_case.adapters.read_models import (
 from vinami.ecg.adapters.persistence import SQLAlchemyECGStudyRepository
 from vinami.ecg.adapters.r3_persistence import SQLAlchemyECGClinicalRepository
 from vinami.identity.adapters.authorization import SQLAlchemyActorAuthorizationRepository
+from vinami.integration.adapters.persistence import SQLAlchemyIntegrationMessageRepository
 from vinami.model_registry.adapters.persistence import SQLAlchemyModelRegistryRepository
 from vinami.patient.adapters.persistence import (
     SQLAlchemyEncounterRepository,
@@ -85,6 +86,7 @@ class SQLAlchemyUnitOfWork:
         self.tasks = SQLAlchemyClinicalTaskRepository(self._session)
         self.alerts = SQLAlchemyAlertRepository(self._session)
         self.history = SQLAlchemyCaseHistoryRepository(self._session)
+        self.integration_messages = SQLAlchemyIntegrationMessageRepository(self._session)
         self.models = SQLAlchemyModelRegistryRepository(self._session)
         self.physician_decisions = SQLAlchemyPhysicianDecisionRepository(self._session)
         self.actors = SQLAlchemyActorAuthorizationRepository(self._session)

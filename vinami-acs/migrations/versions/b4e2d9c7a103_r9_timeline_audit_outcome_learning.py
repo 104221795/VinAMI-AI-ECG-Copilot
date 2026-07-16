@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from vinami.shared.persistence import JSONDocument
 
 revision: str = "b4e2d9c7a103"
 down_revision: str | None = "a9e6c4d2b781"
@@ -100,6 +101,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_outcomes_case_revision", "outcomes", ["case_id", "revision_number"])
     op.create_index("ix_outcomes_correlation_id", "outcomes", ["correlation_id"])
+    op.create_index("ix_outcomes_causation_id", "outcomes", ["causation_id"])
 
     op.create_table(
         "clinical_research_exports",
@@ -115,16 +117,16 @@ def upgrade() -> None:
         sa.Column("requested_by_role", sa.String(80), nullable=False),
         sa.Column("requested_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("completed_at", sa.DateTime(timezone=True)),
-        sa.Column("case_ids", sa.JSON(), nullable=False),
-        sa.Column("filters", sa.JSON(), nullable=False),
+        sa.Column("case_ids", JSONDocument, nullable=False),
+        sa.Column("filters", JSONDocument, nullable=False),
         sa.Column("row_count", sa.Integer(), nullable=False),
         sa.Column("pseudonymization_method", sa.String(160), nullable=False),
         sa.Column("checksum_sha256", sa.String(64), nullable=False),
-        sa.Column("content_json", sa.JSON(), nullable=False),
+        sa.Column("content_json", JSONDocument, nullable=False),
         sa.Column("content_csv", sa.Text(), nullable=False),
         sa.Column("idempotency_key", sa.String(200), nullable=False),
         sa.Column("correlation_id", sa.Uuid(), nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("metadata", JSONDocument, nullable=False),
         sa.UniqueConstraint(
             "requested_by", "idempotency_key", name="uq_research_export_actor_key"
         ),
@@ -144,6 +146,7 @@ def downgrade() -> None:
     op.drop_index("ix_research_exports_requested", table_name="clinical_research_exports")
     op.drop_table("clinical_research_exports")
 
+    op.drop_index("ix_outcomes_causation_id", table_name="outcomes")
     op.drop_index("ix_outcomes_correlation_id", table_name="outcomes")
     op.drop_index("ix_outcomes_case_revision", table_name="outcomes")
     op.drop_constraint("uq_outcome_case_revision", "outcomes", type_="unique")

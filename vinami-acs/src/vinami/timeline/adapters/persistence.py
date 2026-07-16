@@ -37,9 +37,9 @@ class TimelineEventRecord(Base):
     source_event_id: Mapped[UUID | None] = mapped_column(UUIDType, nullable=True)
     source_record_id: Mapped[UUID | None] = mapped_column(UUIDType, nullable=True, index=True)
     source_record_version: Mapped[int | None] = mapped_column(nullable=True)
-    correction_status: Mapped[str] = mapped_column(String(40), nullable=False, default="original")
+    correction_status: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="original", index=True
+    )
     supersedes_timeline_event_id: Mapped[UUID | None] = mapped_column(UUIDType, nullable=True)
     revokes_timeline_event_id: Mapped[UUID | None] = mapped_column(UUIDType, nullable=True)
-    data_classification: Mapped[str] = mapped_column(
-        String(80), nullable=False, default="clinical"
-    )
+    data_classification: Mapped[str] = mapped_column(String(80), nullable=False, default="clinical")

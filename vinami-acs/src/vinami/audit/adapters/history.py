@@ -6,7 +6,6 @@ import csv
 import hashlib
 import io
 import json
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -277,11 +276,13 @@ class SQLAlchemyCaseHistoryRepository:
                     "model_provenance": [
                         _provenance_document(item) for item in self.model_provenance(case.id)
                     ],
-                    "missing_data_semantics": "missing fields are omitted only when no persisted source record exists",
+                    "missing_data_semantics": (
+                        "missing fields are omitted only when no persisted source record exists"
+                    ),
                 }
             )
         now = utc_now()
-        content_json = {
+        content_json: dict[str, object] = {
             "schema_version": "vinami.research_export.r9.v1",
             "requested_at": now.isoformat(),
             "pseudonymization": {
@@ -354,32 +355,35 @@ class SQLAlchemyCaseHistoryRepository:
     def _export_evidence(self, case_id: UUID) -> dict[str, object]:
         triage_count = int(
             self._session.scalar(
-                select(func.count()).select_from(TriageAssessmentRecord).where(
-                    TriageAssessmentRecord.clinical_case_id == case_id
-                )
+                select(func.count())
+                .select_from(TriageAssessmentRecord)
+                .where(TriageAssessmentRecord.clinical_case_id == case_id)
             )
             or 0
         )
         vital_count = int(
             self._session.scalar(
-                select(func.count()).select_from(VitalObservationSetRecord).where(
-                    VitalObservationSetRecord.clinical_case_id == case_id
-                )
+                select(func.count())
+                .select_from(VitalObservationSetRecord)
+                .where(VitalObservationSetRecord.clinical_case_id == case_id)
             )
             or 0
         )
         ecg_count = int(
             self._session.scalar(
-                select(func.count()).select_from(ECGStudyDetailRecord).where(
-                    ECGStudyDetailRecord.clinical_case_id == case_id
-                )
+                select(func.count())
+                .select_from(ECGStudyDetailRecord)
+                .where(ECGStudyDetailRecord.clinical_case_id == case_id)
             )
             or 0
         )
         troponin_rows = self._session.scalars(
             select(TroponinEvidenceRecord)
             .where(TroponinEvidenceRecord.clinical_case_id == case_id)
-            .order_by(TroponinEvidenceRecord.specimen_collected_at, TroponinEvidenceRecord.result_id)
+            .order_by(
+                TroponinEvidenceRecord.specimen_collected_at,
+                TroponinEvidenceRecord.result_id,
+            )
         ).all()
         snapshot = self._session.scalar(
             select(ClinicalEvidenceSnapshotRecord)

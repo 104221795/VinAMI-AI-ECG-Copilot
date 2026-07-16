@@ -558,6 +558,38 @@ export class VinamiApiClient {
     );
   }
 
+  async getIntegrationMessages(
+    query: Record<string, unknown> = {},
+  ): Promise<unknown> {
+    return this.rawJson(`/api/v1/integration/messages${queryString(query)}`);
+  }
+
+  async getIntegrationConnectorStatus(): Promise<unknown> {
+    return this.rawJson("/api/v1/integration/connectors/status");
+  }
+
+  async simulateLaboratoryResult(
+    body: Record<string, unknown>,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return this.postJson(
+      "/api/v1/integration/simulated/laboratory-results",
+      body,
+      idempotencyKey,
+    );
+  }
+
+  async simulateECGStudy(
+    body: Record<string, unknown>,
+    idempotencyKey: string,
+  ): Promise<unknown> {
+    return this.postJson(
+      "/api/v1/integration/simulated/ecg-studies",
+      body,
+      idempotencyKey,
+    );
+  }
+
   async requestResearchExport(
     caseIds: string[],
     idempotencyKey: string,

@@ -14,6 +14,9 @@ import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatRelative } from "@web/shared/formatting";
 import { useConnectivity } from "@web/shared/hooks/use-connectivity";
+import { IntegrationStatusPanel } from "@web/features/realtime/integration-status-panel";
+import { RealtimeStatus } from "@web/features/realtime/connection-status";
+import { useRealtimeUpdates } from "@web/features/realtime/use-realtime-updates";
 import { useState } from "react";
 import { ActiveCaseTable } from "./active-case-table";
 import { loadCommandCenterWith } from "./data";
@@ -37,6 +40,9 @@ export function CommandCenter({
   const online = useConnectivity();
   const [state, setState] = useState(initialState);
   const serverQuery = toServerQuery(state);
+  const realtime = useRealtimeUpdates({
+    invalidate: [["r7-command-center"], ["r10-integration-status"]],
+  });
   const query = useQuery({
     queryKey: ["r7-command-center", serverQuery],
     queryFn: () => loadCommandCenterWith(createBrowserApiClient(), serverQuery),
@@ -70,8 +76,8 @@ export function CommandCenter({
   };
   if (!online && !query.data)
     return <OfflineState onRetry={() => query.refetch()} />;
-  if (query.isLoading) return <LoadingSkeleton lines={10} />;
-  if (query.isError) {
+  if (query.isLoading && !query.data) return <LoadingSkeleton lines={10} />;
+  if (query.isError && !query.data) {
     const error = presentError(query.error);
     return (
       <ErrorState
@@ -82,6 +88,7 @@ export function CommandCenter({
   }
   const data = query.data;
   if (!data) return null;
+  const inlineError = query.isError ? presentError(query.error) : null;
   const stale =
     Date.now() - new Date(data.evaluated_at).getTime() > 60_000 || !online;
   const selected = data.items.find((item) => item.case_id === state.selected);
@@ -97,6 +104,28 @@ export function CommandCenter({
     <>
       {stale && (
         <StaleDataBanner updatedLabel={formatRelative(data.evaluated_at)} />
+      )}
+      <RealtimeStatus
+        state={realtime.state}
+        lastUpdateAt={realtime.lastUpdateAt}
+        notification={realtime.notification}
+      />
+      {inlineError && (
+        <div className="vm-banner vm-banner--critical" role="alert">
+          <div>
+            <strong>Using cached operational data</strong>
+            <p>{inlineError.description}</p>
+          </div>
+          {inlineError.retryable && (
+            <button
+              className="vm-button"
+              type="button"
+              onClick={() => query.refetch()}
+            >
+              Retry
+            </button>
+          )}
+        </div>
       )}
       <section className="vm-command-summary" aria-label="Operational summary">
         <MetricTile
@@ -163,6 +192,7 @@ export function CommandCenter({
           onClear={() => updateUrl({ ...state, selected: undefined })}
         />
       </div>
+      <IntegrationStatusPanel />
     </>
   );
 }

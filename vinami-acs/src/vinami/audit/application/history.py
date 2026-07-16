@@ -41,6 +41,8 @@ class CaseHistoryUnitOfWork(Protocol):
 class IdempotentCaseHistoryUnitOfWork(CaseHistoryUnitOfWork, Protocol):
     idempotency: IdempotencyRepository
 
+    def __enter__(self) -> IdempotentCaseHistoryUnitOfWork: ...
+
 
 class UnitOfWorkFactory(Protocol):
     def __call__(self) -> IdempotentCaseHistoryUnitOfWork: ...
@@ -431,8 +433,11 @@ def _outcome_payload(outcome: Outcome) -> dict[str, object]:
     }
 
 
-def _command_payload(command: object) -> dict[str, object]:
+R9Command = RecordOutcomeCommand | CorrectOutcomeCommand | RequestResearchExportCommand
+
+
+def _command_payload(command: R9Command) -> dict[str, object]:
     document = asdict(command)
     document.pop("actor", None)
     document.pop("command_id", None)
-    return document
+    return {str(key): value for key, value in document.items()}

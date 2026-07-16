@@ -53,6 +53,9 @@ from vinami.identity.adapters.oidc import OIDCIdentityProvider
 from vinami.identity.application.authorization import ExplicitAuthorizationPolicy
 from vinami.identity.ports.authorization import AuthorizationPolicy
 from vinami.identity.ports.provider import IdentityBinding, IdentityProvider
+from vinami.integration.adapters.realtime import SQLAlchemyRealtimeEventRepository
+from vinami.integration.application.realtime import RealtimeQueryService
+from vinami.integration.application.service import IntegrationApplicationService
 from vinami.reasoning.application.service import (
     ClinicalReasoningApplicationService,
     ClinicalReasoningQueryService,
@@ -218,8 +221,20 @@ class AppContainer:
 
     def case_history_application(self) -> CaseHistoryApplicationService:
         """Compose R9 outcome and research export commands."""
-        return CaseHistoryApplicationService(
-            cast(CaseHistoryUnitOfWorkFactory, self.unit_of_work)
+        return CaseHistoryApplicationService(cast(CaseHistoryUnitOfWorkFactory, self.unit_of_work))
+
+    def integration_application(self) -> IntegrationApplicationService:
+        """Compose R10 simulated hospital integration commands."""
+        return IntegrationApplicationService(
+            self.unit_of_work,
+            self.troponin_application(),
+            self.ecg_application(),
+        )
+
+    def realtime_queries(self) -> RealtimeQueryService:
+        """Compose R10 server-sent notification queries."""
+        return RealtimeQueryService(
+            SQLAlchemyRealtimeEventRepository(self.database.session_factory)
         )
 
 

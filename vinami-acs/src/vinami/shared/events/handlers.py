@@ -250,6 +250,9 @@ def build_default_handler_registry() -> HandlerRegistry:
         "ClinicalOutcomeRecorded.v1",
         "ClinicalOutcomeCorrected.v1",
         "ResearchExportCompleted.v1",
+        "IntegrationMessageReceived.v1",
+        "IntegrationMessageProcessed.v1",
+        "IntegrationMessageFailed.v1",
     ):
         registry.register(TimelineAuditProjectionHandler(event_type))
     return registry
@@ -378,6 +381,9 @@ def _event_title(event_type: str) -> str:
         "ClinicalOutcomeRecorded.v1": "Clinical outcome recorded",
         "ClinicalOutcomeCorrected.v1": "Clinical outcome corrected",
         "ResearchExportCompleted.v1": "Research export generated",
+        "IntegrationMessageReceived.v1": "Integration message received",
+        "IntegrationMessageProcessed.v1": "Integration message processed",
+        "IntegrationMessageFailed.v1": "Integration message failed",
     }.get(event_type, event_type.removesuffix(".v1"))
 
 
@@ -392,6 +398,7 @@ def _source_record_id(event: EventEnvelope) -> UUID:
         "alert_id",
         "study_id",
         "snapshot_id",
+        "message_id",
     ):
         value = event.payload.get(key)
         if isinstance(value, str):
@@ -404,7 +411,9 @@ def _source_record_id(event: EventEnvelope) -> UUID:
 
 def _correction_status(event: EventEnvelope) -> str:
     payload = event.payload
-    if any(key in payload for key in ("supersedes_outcome_id", "corrects_decision_id")):
+    if any(
+        payload.get(key) is not None for key in ("supersedes_outcome_id", "corrects_decision_id")
+    ):
         return "correction"
     return _event_correction_status(event.event_type)
 

@@ -25,6 +25,19 @@ import type {
   ResearchExportView,
 } from "./model";
 
+interface OutcomeFormState {
+  outcome_type: string;
+  outcome_timestamp: string;
+  final_conclusion: string;
+  disposition: string;
+  destination: string;
+  data_completeness: string;
+  source: string;
+  uncertainty: string;
+  unavailable_reason: string;
+  correction_reason: string;
+}
+
 export function CaseHistoryPanel({
   caseId,
   initialOutcomes,
@@ -81,7 +94,9 @@ export function CaseHistoryPanel({
           );
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["r9-outcomes", caseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["r9-outcomes", caseId],
+      });
       setForm((value) => ({
         ...value,
         final_conclusion: "",
@@ -154,7 +169,7 @@ export function CaseHistoryPanel({
           />
           {saveOutcome.isError && (
             <p className="vm-error-text">
-              {presentError(saveOutcome.error).message}
+              {presentError(saveOutcome.error).description}
             </p>
           )}
           <div className="vm-r9-revisions">
@@ -164,7 +179,9 @@ export function CaseHistoryPanel({
                 <strong>Revision {item.revisionNumber}</strong>
                 <span>{formatTimestamp(item.recordedAt)}</span>
                 <p>{item.finalConclusion}</p>
-                {item.correctionReason && <small>{item.correctionReason}</small>}
+                {item.correctionReason && (
+                  <small>{item.correctionReason}</small>
+                )}
               </article>
             ))}
           </div>
@@ -176,7 +193,9 @@ export function CaseHistoryPanel({
         <header className="vm-card__header">
           <div>
             <h2>Model and Evidence Provenance</h2>
-            <p>Trace provider, model version, input quality and explanations.</p>
+            <p>
+              Trace provider, model version, input quality and explanations.
+            </p>
           </div>
         </header>
         <div className="vm-card__body">
@@ -230,7 +249,7 @@ export function CaseHistoryPanel({
         <div className="vm-card__body">
           {exportMutation.isError && (
             <p className="vm-error-text">
-              {presentError(exportMutation.error).message}
+              {presentError(exportMutation.error).description}
             </p>
           )}
           {exportResult ? (
@@ -265,13 +284,14 @@ function OutcomeForm({
   onChange,
   onSubmit,
 }: {
-  value: Record<string, string>;
+  value: OutcomeFormState;
   correcting: boolean;
   busy: boolean;
-  onChange: (value: Record<string, string>) => void;
+  onChange: (value: OutcomeFormState) => void;
   onSubmit: () => void;
 }) {
-  const update = (key: string, next: string) => onChange({ ...value, [key]: next });
+  const update = (key: keyof OutcomeFormState, next: string) =>
+    onChange({ ...value, [key]: next });
   const disabled =
     busy ||
     !value.final_conclusion.trim() ||
@@ -308,9 +328,7 @@ function OutcomeForm({
         <span>Final physician-documented conclusion</span>
         <textarea
           value={value.final_conclusion}
-          onChange={(event) =>
-            update("final_conclusion", event.target.value)
-          }
+          onChange={(event) => update("final_conclusion", event.target.value)}
         />
       </label>
       <label>
@@ -346,7 +364,7 @@ function OutcomeForm({
   );
 }
 
-function cleanPayload(value: Record<string, string>): Record<string, unknown> {
+function cleanPayload(value: OutcomeFormState): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(value)
       .filter(([key, item]) => key !== "correction_reason" || item.trim())

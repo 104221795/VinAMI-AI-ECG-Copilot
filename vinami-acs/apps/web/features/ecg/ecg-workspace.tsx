@@ -69,6 +69,10 @@ export function ECGWorkspace({
     value.analyses.find(
       (analysis) => analysis.studyId === value.currentStudy?.studyId,
     ) ?? null;
+  const latestInterpretation =
+    value.interpretations.find(
+      (item) => item.studyId === value.currentStudy?.studyId,
+    ) ?? null;
 
   async function refresh() {
     setValue(await loadECGWorkspaceWith(api, caseId));
@@ -417,6 +421,12 @@ export function ECGWorkspace({
             </ClinicalCard>
           </div>
 
+          <AIPathPanel
+            value={value}
+            latestAnalysis={latestAnalysis}
+            latestInterpretation={latestInterpretation}
+          />
+
           <ClinicalCard title="AI-supported multi-label findings">
             {latestAnalysis ? (
               <AnalysisPanel
@@ -538,6 +548,110 @@ export function ECGWorkspace({
         </div>
       )}
     </section>
+  );
+}
+
+function AIPathPanel({
+  value,
+  latestAnalysis,
+  latestInterpretation,
+}: {
+  value: ECGWorkspaceView;
+  latestAnalysis: ECGWorkspaceView["analyses"][number] | null;
+  latestInterpretation: ECGWorkspaceView["interpretations"][number] | null;
+}) {
+  const study = value.currentStudy;
+  const machineStatus = latestAnalysis
+    ? latestAnalysis.status
+    : study?.waveformAvailable
+      ? "pending"
+      : "technically limited";
+  const providerLabel = latestAnalysis
+    ? latestAnalysis.synthetic
+      ? `Synthetic/mock provider: ${latestAnalysis.providerName}`
+      : `Provider: ${latestAnalysis.providerName}`
+    : "No provider result recorded";
+  const steps = [
+    {
+      label: "ECG acquired",
+      status: study ? "available" : "missing",
+      detail: study
+        ? `${study.studyReference} - ${formatTimestamp(study.acquisitionAt)}`
+        : "No ECG study selected.",
+      source: "ECG study",
+      tone: "evidence",
+    },
+    {
+      label: "Technical quality check",
+      status: value.quality?.status ?? "pending",
+      detail: value.quality
+        ? `${value.quality.engineVersion} - ${value.quality.reasonCodes.join(", ") || "no reason code"}`
+        : "Quality assessment has not been recorded.",
+      source: "Machine-generated evidence",
+      tone: "machine",
+    },
+    {
+      label: "Model inference",
+      status: machineStatus,
+      detail: latestAnalysis
+        ? `${latestAnalysis.modelName} ${latestAnalysis.modelVersion} - ${latestAnalysis.completedAt ? formatTimestamp(latestAnalysis.completedAt) : "completion time unavailable"}`
+        : "Run research-use analysis only when waveform input is available.",
+      source: providerLabel,
+      tone: "machine",
+    },
+    {
+      label: "Model result and explanation",
+      status: latestAnalysis?.explanationStatus ?? "pending",
+      detail: latestAnalysis
+        ? `${latestAnalysis.findings.length} model score(s). Scores are not disease probabilities.`
+        : "No model score or explanation reference recorded.",
+      source: "AI-supported finding",
+      tone: "machine",
+    },
+    {
+      label: "Physician ECG review",
+      status: latestInterpretation ? latestInterpretation.status : "pending",
+      detail: latestInterpretation
+        ? latestInterpretation.summary
+        : "Physician interpretation is required before clinical authority.",
+      source: "Physician-authored interpretation",
+      tone: "physician",
+    },
+    {
+      label: "Evidence snapshot and decision",
+      status: latestInterpretation ? "under review" : "not started",
+      detail:
+        "Clinical Reasoning owns evidence synthesis, assessment and physician decision.",
+      source: "Clinical Reasoning workspace",
+      tone: "authority",
+    },
+  ];
+  return (
+    <ClinicalCard title="AI-supported ECG path">
+      <div className="vm-ai-path" aria-label="AI-supported ECG evidence path">
+        {steps.map((step) => (
+          <article
+            className={`vm-ai-step vm-ai-step--${step.tone}`}
+            key={step.label}
+          >
+            <span
+              className={`vm-status-pill vm-status-pill--${step.status.replaceAll(" ", "-")}`}
+            >
+              {step.status}
+            </span>
+            <h3>{step.label}</h3>
+            <p>{step.detail}</p>
+            <small>{step.source}</small>
+          </article>
+        ))}
+      </div>
+      <p className="vm-safety-note">
+        Machine-generated ECG evidence is visually separated from
+        physician-authored interpretation and physician-authorized decisions. AI
+        output cannot create tasks, alerts, workflow transitions or cath-lab
+        authority.
+      </p>
+    </ClinicalCard>
   );
 }
 
