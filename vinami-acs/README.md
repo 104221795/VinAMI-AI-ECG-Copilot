@@ -49,6 +49,15 @@ Endpoints:
 - Streamlit developer dashboard: `http://localhost:8501` until the documented legacy transition
 - Prometheus: `http://localhost:9090`
 
+Seed deterministic demo cases after the stack is ready:
+
+```bash
+docker compose exec api alembic upgrade head
+docker compose exec api python -m scripts.seed_demo_happy_cases
+```
+
+See `docs/demo-cases.md` for the two main demo cases and the optional ECG AI showcase path.
+
 Fast frontend iteration after the API dependencies are running:
 
 ```bash

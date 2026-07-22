@@ -92,6 +92,7 @@ Nguyen tac an toan:
 - `vinami-acs/docs/architecture/`
 - `vinami-acs/docs/recovery/`
 - `vinami-acs/docs/frontend/`
+- `vinami-acs/docs/demo-cases.md`
 - `vinami-acs/docs/ecg-r23a-real-model-integration.md`
 - `Research/VinStroke_ECG_Research_Proposal.md`
 
