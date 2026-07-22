@@ -33,17 +33,26 @@ Da co ban MVP gom:
 
 ```text
 .
-├── vinami-acs/                 # ung dung VinAMI ACS chinh
-│   ├── apps/api/               # FastAPI
-│   ├── apps/web/               # Next.js UI
-│   ├── apps/worker/            # outbox/timer worker
-│   ├── src/vinami/             # domain, application, ports, adapters
-│   ├── migrations/             # Alembic migrations
-│   ├── packages/contracts/     # OpenAPI generated contracts
-│   └── docs/                   # architecture, recovery, validation, UI docs
-├── Research/                   # ECG research reports
-├── src/                        # ECG research prototype utilities
-└── VinStroke_ECG_artifacts/    # local model/data artifacts, ignored by git
++-- HUONG_DAN_CHAY_LAI.md       # huong dan cho nguoi clone repo chay demo
++-- vinami-acs/                 # ung dung VinAMI ACS chinh
+|   +-- apps/api/               # FastAPI
+|   +-- apps/web/               # Next.js UI
+|   +-- apps/worker/            # outbox/timer worker
+|   +-- src/vinami/             # domain, application, ports, adapters
+|   +-- migrations/             # Alembic migrations
+|   +-- packages/contracts/     # OpenAPI generated contracts
+|   +-- docs/                   # architecture, recovery, validation, UI docs
++-- Research/                   # ECG research reports
++-- src/                        # ECG research prototype utilities
++-- VinStroke_ECG_artifacts/    # local model/data artifacts, ignored by git
+```
+
+## Chay lai demo
+
+Neu ban chi muon chay lai he thong de xem UI va demo cases, doc file:
+
+```text
+HUONG_DAN_CHAY_LAI.md
 ```
 
 ## Chay local
