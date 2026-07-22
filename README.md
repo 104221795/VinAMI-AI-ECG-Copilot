@@ -97,4 +97,4 @@ Nguyen tac an toan:
 
 ## GitHub
 
-Repository: https://github.com/104221795/VinAMI
+Repository: https://github.com/104221795/VinAMI-AI-ECG-Copilot
