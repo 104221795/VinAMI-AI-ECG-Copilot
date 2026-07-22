@@ -1296,6 +1296,10 @@
             "title": "Escalation Level",
             "type": "integer"
           },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
           "raised_at": {
             "format": "date-time",
             "title": "Raised At",
@@ -1303,6 +1307,10 @@
           },
           "severity": {
             "title": "Severity",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
             "type": "string"
           },
           "status": {
@@ -1313,10 +1321,12 @@
         "required": [
           "alert_id",
           "alert_type",
+          "source",
           "severity",
           "status",
           "raised_at",
-          "escalation_level"
+          "escalation_level",
+          "message"
         ],
         "title": "CommandCenterAlertResponse",
         "type": "object"
@@ -1346,6 +1356,11 @@
             },
             "title": "Alerts",
             "type": "array"
+          },
+          "automation": {
+            "additionalProperties": true,
+            "title": "Automation",
+            "type": "object"
           },
           "case_id": {
             "format": "uuid",
@@ -1645,7 +1660,8 @@
           "latest_activity_at",
           "update_token",
           "tasks",
-          "alerts"
+          "alerts",
+          "automation"
         ],
         "title": "CommandCenterCaseResponse",
         "type": "object"
@@ -1887,10 +1903,35 @@
             "title": "Requested By Actor Role",
             "type": "string"
           },
+          "review_recommendation": {
+            "title": "Review Recommendation",
+            "type": "string"
+          },
+          "rhythm_change_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Rhythm Change Indicators",
+            "type": "array"
+          },
           "safety_notice": {
             "default": "Technical ECG change indicator - physician interpretation required.",
             "title": "Safety Notice",
             "type": "string"
+          },
+          "signal_feature_deltas": {
+            "items": {
+              "$ref": "#/components/schemas/SignalFeatureDeltaResponse"
+            },
+            "title": "Signal Feature Deltas",
+            "type": "array"
+          },
+          "st_t_change_indicators": {
+            "items": {
+              "type": "string"
+            },
+            "title": "St T Change Indicators",
+            "type": "array"
           },
           "started_at": {
             "anyOf": [
@@ -1928,9 +1969,13 @@
           "comparability_reasons",
           "lead_comparisons",
           "technical_change_indicators",
+          "signal_feature_deltas",
+          "rhythm_change_indicators",
+          "st_t_change_indicators",
           "model_score_deltas",
           "model_score_compatibility",
           "quality_context",
+          "review_recommendation",
           "requested_by_actor_role",
           "requested_at",
           "started_at",
@@ -2133,6 +2178,11 @@
             },
             "title": "Alerts",
             "type": "array"
+          },
+          "automation": {
+            "additionalProperties": true,
+            "title": "Automation",
+            "type": "object"
           },
           "case_id": {
             "format": "uuid",
@@ -2380,6 +2430,7 @@
           "missing_evidence",
           "stale_evidence",
           "technical_limits",
+          "automation",
           "update_token",
           "evaluated_at"
         ],
@@ -4042,6 +4093,14 @@
             "title": "Received At",
             "type": "string"
           },
+          "reconciliation_reason": {
+            "title": "Reconciliation Reason",
+            "type": "string"
+          },
+          "reconciliation_status": {
+            "title": "Reconciliation Status",
+            "type": "string"
+          },
           "record_version": {
             "title": "Record Version",
             "type": "integer"
@@ -4049,6 +4108,10 @@
           "retry_count": {
             "title": "Retry Count",
             "type": "integer"
+          },
+          "review_required": {
+            "title": "Review Required",
+            "type": "boolean"
           },
           "safety_notice": {
             "default": "Simulated integration messages are not physician decisions or workflow authority.",
@@ -4096,7 +4159,10 @@
           "linked_record_ids",
           "dead_letter_reason",
           "simulated",
-          "record_version"
+          "record_version",
+          "reconciliation_status",
+          "reconciliation_reason",
+          "review_required"
         ],
         "title": "IntegrationMessageResponse",
         "type": "object"
@@ -6297,6 +6363,82 @@
           }
         },
         "title": "SafeDemographicSummaryModel",
+        "type": "object"
+      },
+      "SignalFeatureDeltaResponse": {
+        "properties": {
+          "absolute_delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolute Delta"
+          },
+          "current_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Value"
+          },
+          "display_label": {
+            "title": "Display Label",
+            "type": "string"
+          },
+          "evidence_scope": {
+            "title": "Evidence Scope",
+            "type": "string"
+          },
+          "feature_name": {
+            "title": "Feature Name",
+            "type": "string"
+          },
+          "previous_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Value"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "feature_name",
+          "display_label",
+          "previous_value",
+          "current_value",
+          "absolute_delta",
+          "unit",
+          "status",
+          "evidence_scope"
+        ],
+        "title": "SignalFeatureDeltaResponse",
         "type": "object"
       },
       "SimulatedECGMessageBody": {
@@ -8514,6 +8656,14 @@
         "additionalProperties": false,
         "description": "Authoritative case-level R6 workspace contract.",
         "properties": {
+          "alert_digest": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alert Digest",
+            "type": "array"
+          },
           "alerts": {
             "items": {
               "$ref": "#/components/schemas/AlertResponse"
@@ -8553,6 +8703,7 @@
           "workflow",
           "tasks",
           "alerts",
+          "alert_digest",
           "safety_notice"
         ],
         "title": "WorkflowWorkspaceResponse",
@@ -14319,6 +14470,65 @@
         ]
       }
     },
+    "/api/v1/ecg-analyses/{analysis_id}/explanation": {
+      "get": {
+        "operationId": "get_analysis_explanation_api_v1_ecg_analyses__analysis_id__explanation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Configured synthetic identity key; development mode only",
+            "in": "header",
+            "name": "X-Development-Identity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Configured synthetic identity key; development mode only",
+              "title": "X-Development-Identity"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Analysis Explanation",
+        "tags": [
+          "ecg-ai"
+        ]
+      }
+    },
     "/api/v1/ecg-analyses/{analysis_id}/retry": {
       "post": {
         "operationId": "retry_analysis_api_v1_ecg_analyses__analysis_id__retry_post",
@@ -16220,6 +16430,24 @@
                 }
               ],
               "title": "Source System"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reconciliation_status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reconciliation Status"
             }
           },
           {

@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from apps.api.http import AuthorizedIdentity, CommandHeaders, authorize_for, command_headers_for
 from vinami.identity.domain.security import Permission
+from vinami.integration.application.reconciliation import classify_reconciliation
 from vinami.integration.application.realtime import RealtimeNotification
 from vinami.integration.application.service import SimulatedECGMessage, SimulatedLabMessage
 from vinami.integration.domain.model import IntegrationMessage
@@ -57,6 +58,9 @@ class IntegrationMessageResponse(BaseModel):
     dead_letter_reason: str | None
     simulated: bool
     record_version: int
+    reconciliation_status: str
+    reconciliation_reason: str
+    review_required: bool
     safety_notice: str = (
         "Simulated integration messages are not physician decisions or workflow authority."
     )
@@ -171,14 +175,22 @@ def list_integration_messages(
     _: IntegrationRead,
     status: Annotated[str | None, Query(min_length=1, max_length=40)] = None,
     source_system: Annotated[str | None, Query(min_length=1, max_length=160)] = None,
+    reconciliation_status: Annotated[str | None, Query(min_length=1, max_length=80)] = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
 ) -> list[IntegrationMessageResponse]:
-    return [
+    responses = [
         _message(item)
         for item in container.integration_application().list_messages(
             status=status, source_system=source_system, limit=limit
         )
     ]
+    if reconciliation_status:
+        responses = [
+            item
+            for item in responses
+            if item.reconciliation_status == reconciliation_status
+        ]
+    return responses
 
 
 @router.get("/integration/connectors/status", response_model=dict[str, object])
@@ -296,6 +308,7 @@ def retry_integration_message(
 
 
 def _message(item: IntegrationMessage) -> IntegrationMessageResponse:
+    reconciliation = classify_reconciliation(item)
     return IntegrationMessageResponse(
         message_id=item.message_id,
         external_message_id=item.external_message_id,
@@ -314,6 +327,9 @@ def _message(item: IntegrationMessage) -> IntegrationMessageResponse:
         dead_letter_reason=item.dead_letter_reason,
         simulated=item.simulated,
         record_version=item.record_version,
+        reconciliation_status=str(reconciliation["reconciliation_status"]),
+        reconciliation_reason=str(reconciliation["reconciliation_reason"]),
+        review_required=bool(reconciliation["review_required"]),
     )
 
 

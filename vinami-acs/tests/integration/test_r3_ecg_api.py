@@ -187,6 +187,9 @@ def test_r3_ecg_vertical_slice_is_persisted_versioned_and_audited(
         assert comparison.status_code == 201, comparison.text
         assert comparison.json()["comparability_status"] == "comparable"
         assert len(comparison.json()["lead_comparisons"]) == 12
+        assert comparison.json()["comparison_policy_version"].startswith("r18-dynamic-ecg")
+        assert comparison.json()["signal_feature_deltas"]
+        assert comparison.json()["review_recommendation"].startswith("Dynamic ECG comparison")
         assert "physician interpretation required" in comparison.json()["safety_notice"]
 
         reminder = client.post(

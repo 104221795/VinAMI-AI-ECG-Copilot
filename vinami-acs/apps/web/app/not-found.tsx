@@ -5,11 +5,11 @@ export default function NotFound() {
   return (
     <>
       <EmptyState
-        title="Page not found"
-        description="The requested workspace is not part of the enabled R1 lifecycle slice."
+        title="Không tìm thấy trang"
+        description="Không gian làm việc được yêu cầu chưa nằm trong phạm vi đang bật của hệ thống."
       />
       <p style={{ textAlign: "center" }}>
-        <Link href="/command-center">Return to Command Center</Link>
+        <Link href="/command-center">Quay lại Trung tâm điều phối</Link>
       </p>
     </>
   );

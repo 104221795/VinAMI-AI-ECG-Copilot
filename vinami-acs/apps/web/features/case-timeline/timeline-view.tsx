@@ -9,6 +9,7 @@ import {
 } from "@vinami/ui";
 import type { TimelineEventPageView } from "@web/entities/timeline-event/model";
 import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import { viClinicalTerm, viEventTitle } from "@web/shared/locale/vi";
 
 export function TimelineView({ value }: { value: TimelineEventPageView }) {
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
@@ -30,83 +31,85 @@ export function TimelineView({ value }: { value: TimelineEventPageView }) {
   if (!events.length)
     return (
       <EmptyState
-        title="Timeline projection pending"
-        description="Committed lifecycle events may still be processing. Refresh after the worker completes the projection."
+        title="Projection dòng thời gian đang chờ"
+        description="Sự kiện vòng đời đã commit có thể vẫn đang được xử lý. Hãy làm mới sau khi worker hoàn tất projection."
       />
     );
   return (
     <section className="vm-card">
       <header className="vm-card__header">
-        <h2>Persisted lifecycle events</h2>
+        <h2>Sự kiện vòng đời đã lưu</h2>
         <label className="vm-field">
-          <span>Order</span>
+          <span>Thứ tự</span>
           <select
             value={order}
             onChange={(event) =>
               setOrder(event.target.value as "newest" | "oldest")
             }
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">Mới nhất trước</option>
+            <option value="oldest">Cũ nhất trước</option>
           </select>
         </label>
         <label className="vm-field">
-          <span>History state</span>
+          <span>Trạng thái lịch sử</span>
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
           >
-            <option value="all">All</option>
-            <option value="original">Original</option>
-            <option value="correction">Correction</option>
-            <option value="revocation">Revocation</option>
+            <option value="all">Tất cả</option>
+            <option value="original">Bản gốc</option>
+            <option value="correction">Chỉnh sửa</option>
+            <option value="revocation">Thu hồi</option>
           </select>
         </label>
       </header>
       <div className="vm-card__body">
         <p className="vm-muted">
-          Showing {ordered.length} of {value.total} backend-projected events.
-          Timeline rows are created from persisted backend events, not frontend
-          state.
+          Đang hiển thị {ordered.length} / {value.total} sự kiện do backend
+          projection. Dòng thời gian được tạo từ sự kiện backend đã lưu, không
+          phải state frontend.
         </p>
         <ol className="vm-timeline">
           {ordered.map((event, index) => (
             <TimelineItem
               key={event.id}
-              title={event.title}
+              title={viEventTitle(event.eventType, event.title)}
               timestamp={formatTimestamp(event.occurredAt)}
               actor={
-                event.actorId ? shortReference(event.actorId, "ACT") : "System"
+                event.actorId
+                  ? shortReference(event.actorId, "ACT")
+                  : "Hệ thống"
               }
               last={index === ordered.length - 1}
               detail={
                 <TechnicalDetailsDisclosure>
                   <dl>
-                    <dt>History state</dt>
+                    <dt>Trạng thái lịch sử</dt>
                     <dd>
                       <StatusBadge status={event.correctionStatus} />
                     </dd>
-                    <dt>Event type</dt>
+                    <dt>Loại sự kiện</dt>
                     <dd>{event.eventType}</dd>
-                    <dt>Recorded</dt>
+                    <dt>Ghi nhận</dt>
                     <dd>{formatTimestamp(event.recordedAt)}</dd>
-                    <dt>Source record</dt>
+                    <dt>Bản ghi nguồn</dt>
                     <dd>
-                      <code>{event.sourceRecordId ?? "Not supplied"}</code>
+                      <code>{event.sourceRecordId ?? "Chưa cung cấp"}</code>
                     </dd>
-                    <dt>Source version</dt>
-                    <dd>{event.sourceRecordVersion ?? "Not supplied"}</dd>
-                    <dt>Data class</dt>
-                    <dd>{event.dataClassification}</dd>
-                    <dt>Source</dt>
-                    <dd>{event.source}</dd>
+                    <dt>Phiên bản nguồn</dt>
+                    <dd>{event.sourceRecordVersion ?? "Chưa cung cấp"}</dd>
+                    <dt>Phân loại dữ liệu</dt>
+                    <dd>{viClinicalTerm(event.dataClassification)}</dd>
+                    <dt>Nguồn</dt>
+                    <dd>{viClinicalTerm(event.source)}</dd>
                     <dt>Correlation</dt>
                     <dd>
                       <code>{event.correlationId}</code>
                     </dd>
                     <dt>Causation</dt>
                     <dd>
-                      <code>{event.causationId ?? "None"}</code>
+                      <code>{event.causationId ?? "Không có"}</code>
                     </dd>
                   </dl>
                 </TechnicalDetailsDisclosure>

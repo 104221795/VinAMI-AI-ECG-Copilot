@@ -129,9 +129,9 @@ describe("TroponinWorkspace R4.1", () => {
       />,
     );
 
-    expect(screen.getByText("Request lifecycle")).toBeVisible();
+    expect(screen.getByText("Vòng đời yêu cầu")).toBeVisible();
     expect(screen.getByText("Repeat synthetic specimen.")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Acknowledge" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ghi nhận" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -154,15 +154,15 @@ describe("TroponinWorkspace R4.1", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Correct current review" }),
+      screen.getByRole("button", { name: "Hiệu chỉnh rà soát hiện tại" }),
     );
     fireEvent.submit(
       screen
-        .getByRole("button", { name: "Confirm correction" })
+        .getByRole("button", { name: "Xác nhận hiệu chỉnh" })
         .closest("form")!,
     );
     expect(
-      screen.getByText(/correction_reason: A correction reason is required/i),
+      screen.getByText(/correction_reason: Cần nhập lý do hiệu chỉnh/i),
     ).toBeVisible();
   });
 });

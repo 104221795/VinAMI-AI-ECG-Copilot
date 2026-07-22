@@ -6,7 +6,7 @@ import { presentError } from "@web/shared/errors/presentation";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "Triage and Vitals" };
+export const metadata: Metadata = { title: "Tiếp nhận và sinh hiệu" };
 
 export default async function DocumentationPage({
   params,

@@ -181,3 +181,72 @@ def test_r7_query_count_is_constant_and_r6_updates_replace_counts(
         assert item["active_task_count"] == 0
         assert item["tasks"] == []
         assert item["update_token"] != initial_item["update_token"]
+
+
+def test_r7_priority_filters_and_pagination_return_authoritative_pages(
+    postgres_session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    app = create_app(_settings(tmp_path / "r7-pagination"))
+    with TestClient(app) as client:
+        cases = [_case(client) for _ in range(3)]
+        for case in cases:
+            _make_visible(case, postgres_session_factory, "Emergency Department")
+
+        critical_case = cases[1]
+        critical_case_id = str(critical_case["case_id"])
+        decision = _physician_decision(client, critical_case, "request_repeat_troponin")
+        task_response = _generate_task(
+            client,
+            critical_case_id,
+            decision,
+            datetime.now(UTC) - timedelta(minutes=3),
+        )
+        assert task_response.status_code == 201, task_response.text
+        evaluated = client.post(
+            f"/api/v1/clinical-cases/{critical_case_id}/workflow-operations/overdue-evaluations",
+            headers=_headers(f"r7-page-overdue-{uuid4()}", "physician"),
+            json={},
+        )
+        assert evaluated.status_code == 200, evaluated.text
+
+        critical = client.get(
+            "/api/v1/command-center/cases",
+            headers=_headers(identity="physician"),
+            params={"priority": "critical", "page_size": 10},
+        )
+        assert critical.status_code == 200, critical.text
+        critical_payload = critical.json()
+        critical_ids = {item["case_id"] for item in critical_payload["items"]}
+        assert critical_payload["total"] >= 1
+        assert critical_case_id in critical_ids
+        assert all(
+            item["operational_priority"] == "critical" for item in critical_payload["items"]
+        )
+
+        urgent = client.get(
+            "/api/v1/command-center/cases",
+            headers=_headers(identity="physician"),
+            params={"priority": "urgent", "page_size": 10},
+        )
+        assert urgent.status_code == 200, urgent.text
+        urgent_ids = {item["case_id"] for item in urgent.json()["items"]}
+        assert critical_case_id not in urgent_ids
+        assert {str(cases[0]["case_id"]), str(cases[2]["case_id"])} <= urgent_ids
+
+        first_page = client.get(
+            "/api/v1/command-center/cases",
+            headers=_headers(identity="physician"),
+            params={"sort": "opened_at", "direction": "asc", "page": 1, "page_size": 1},
+        )
+        second_page = client.get(
+            "/api/v1/command-center/cases",
+            headers=_headers(identity="physician"),
+            params={"sort": "opened_at", "direction": "asc", "page": 2, "page_size": 1},
+        )
+        assert first_page.status_code == 200, first_page.text
+        assert second_page.status_code == 200, second_page.text
+        assert first_page.json()["page"] == 1
+        assert second_page.json()["page"] == 2
+        assert first_page.json()["items"][0]["case_id"] != second_page.json()["items"][0][
+            "case_id"
+        ]

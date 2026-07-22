@@ -23,6 +23,11 @@ import type {
 } from "@web/entities/clinical-documentation/model";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import {
+  viClinicalLabel,
+  viObservationState,
+  viStatus,
+} from "@web/shared/locale/vi";
 import { TriageForm, type TriageFormValue } from "./triage-form";
 import { VitalForm, type VitalFormValue } from "./vital-form";
 
@@ -61,21 +66,21 @@ export function ClinicalDocumentationWorkspace({
           body,
           idempotencyKey.current,
         );
-        setMessage("Triage correction recorded as a new revision.");
+        setMessage("Đã ghi nhận chỉnh sửa tiếp nhận thành phiên bản mới.");
       } else {
         const body: RecordTriageInput = {
           ...content,
           expected_case_version: value.caseVersion,
         };
         await api.current.recordTriage(caseId, body, idempotencyKey.current);
-        setMessage("Triage assessment recorded.");
+        setMessage("Đã ghi nhận đánh giá tiếp nhận.");
       }
       finishMutation();
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "The request could not be completed.",
+          : "Không thể hoàn tất yêu cầu.",
       );
     } finally {
       setBusy(false);
@@ -85,7 +90,7 @@ export function ClinicalDocumentationWorkspace({
   async function submitVitals(form: VitalFormValue) {
     const measurements = vitalMeasurements(form);
     if (measurements.length === 0) {
-      setError("Enter at least one vital observation before review.");
+      setError("Nhập ít nhất một chỉ số sinh hiệu trước khi rà soát.");
       return;
     }
     setBusy(true);
@@ -110,21 +115,21 @@ export function ClinicalDocumentationWorkspace({
           body,
           idempotencyKey.current,
         );
-        setMessage("Vital correction recorded as a new revision.");
+        setMessage("Đã ghi nhận chỉnh sửa sinh hiệu thành phiên bản mới.");
       } else {
         const body: RecordVitalsInput = {
           ...content,
           expected_case_version: value.caseVersion,
         };
         await api.current.recordVitals(caseId, body, idempotencyKey.current);
-        setMessage("Vital observation set recorded.");
+        setMessage("Đã ghi nhận bộ sinh hiệu.");
       }
       finishMutation();
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
-          : "The request could not be completed.",
+          : "Không thể hoàn tất yêu cầu.",
       );
     } finally {
       setBusy(false);
@@ -151,31 +156,31 @@ export function ClinicalDocumentationWorkspace({
     >
       <header className="vm-documentation__header">
         <div>
-          <p className="vm-eyebrow">R2 verified vertical slice</p>
-          <h2 id="documentation-heading">Triage and vital documentation</h2>
+          <p className="vm-eyebrow">Luồng dọc R2 đã xác thực</p>
+          <h2 id="documentation-heading">Ghi nhận tiếp nhận và sinh hiệu</h2>
           <p>
-            Structured observations only. No diagnosis, pathway, or clinical
-            threshold is inferred.
+            Chỉ ghi nhận quan sát có cấu trúc. Không suy luận chẩn đoán, hướng
+            xử trí hoặc ngưỡng lâm sàng.
           </p>
         </div>
         <Badge tone={value.missingDocumentation.length ? "warning" : "success"}>
           {value.missingDocumentation.length
-            ? `${value.missingDocumentation.length} documentation gap${value.missingDocumentation.length > 1 ? "s" : ""}`
-            : "Documentation policy complete"}
+            ? `${value.missingDocumentation.length} mục ghi nhận còn thiếu`
+            : "Đã đủ theo chính sách ghi nhận"}
         </Badge>
       </header>
 
       {value.missingDocumentation.length > 0 && (
         <div className="vm-documentation-gaps" role="status">
-          <strong>Documentation completeness review</strong>
+          <strong>Rà soát độ đầy đủ ghi nhận</strong>
           <ul>
             {value.missingDocumentation.map((item) => (
               <li key={item.identifier}>{item.description}</li>
             ))}
           </ul>
           <small>
-            Backend policy {value.completenessPolicyVersion}; no clinical
-            meaning is assigned.
+            Chính sách backend {value.completenessPolicyVersion}; chưa gán ý
+            nghĩa lâm sàng.
           </small>
         </div>
       )}
@@ -192,11 +197,11 @@ export function ClinicalDocumentationWorkspace({
 
       <div className="vm-documentation-grid">
         <ClinicalCard
-          title="Structured triage"
+          title="Tiếp nhận có cấu trúc"
           action={
             editor?.startsWith("triage") ? null : value.currentTriage ? (
               <Button type="button" onClick={() => open("triage-correction")}>
-                Correct entry
+                Chỉnh sửa bản ghi
               </Button>
             ) : (
               <Button
@@ -204,7 +209,7 @@ export function ClinicalDocumentationWorkspace({
                 className="vm-button--primary"
                 onClick={() => open("triage-new")}
               >
-                Record triage
+                Ghi nhận tiếp nhận
               </Button>
             )
           }
@@ -222,14 +227,14 @@ export function ClinicalDocumentationWorkspace({
             <TriageCurrent value={value.currentTriage} />
           ) : (
             <EmptyState
-              title="No triage assessment recorded"
-              description="Record explicit present, absent, unknown, or not-assessed states."
+              title="Chưa ghi nhận đánh giá tiếp nhận"
+              description="Ghi rõ trạng thái có, không có, chưa rõ hoặc chưa đánh giá."
             />
           )}
         </ClinicalCard>
 
         <ClinicalCard
-          title="Vital observations"
+          title="Sinh hiệu"
           action={
             editor?.startsWith("vitals") ? null : (
               <div className="vm-card-actions">
@@ -238,7 +243,7 @@ export function ClinicalDocumentationWorkspace({
                     type="button"
                     onClick={() => open("vitals-correction")}
                   >
-                    Correct latest
+                    Chỉnh sửa bản mới nhất
                   </Button>
                 )}
                 <Button
@@ -246,7 +251,7 @@ export function ClinicalDocumentationWorkspace({
                   className="vm-button--primary"
                   onClick={() => open("vitals-new")}
                 >
-                  Record new set
+                  Ghi nhận bộ mới
                 </Button>
               </div>
             )
@@ -265,31 +270,32 @@ export function ClinicalDocumentationWorkspace({
             <VitalCurrent value={value.latestVitals} />
           ) : (
             <EmptyState
-              title="No vital observation set"
-              description="Record timestamped raw values with explicit units and source."
+              title="Chưa có bộ sinh hiệu"
+              description="Ghi nhận giá trị thô kèm thời gian, đơn vị và nguồn rõ ràng."
             />
           )}
         </ClinicalCard>
       </div>
 
-      <ClinicalCard title="Documentation revision history">
+      <ClinicalCard title="Lịch sử phiên bản ghi nhận">
         <div className="vm-revision-grid">
           <RevisionList
-            title="Triage revisions"
+            title="Phiên bản tiếp nhận"
             values={value.triageHistory}
             type="triage"
           />
           <RevisionList
-            title="Vital-set revisions"
+            title="Phiên bản bộ sinh hiệu"
             values={value.vitalHistory}
             type="vitals"
           />
         </div>
-        <TechnicalDetailsDisclosure title="Data provenance">
+        <TechnicalDetailsDisclosure title="Nguồn gốc dữ liệu">
           <p>
-            Data refreshed {formatTimestamp(value.dataFreshnessAt)}. Case
-            aggregate version {value.caseVersion}. Corrections are append-only
-            and visible in Timeline and Audit after outbox projection.
+            Dữ liệu làm mới {formatTimestamp(value.dataFreshnessAt)}. Phiên bản
+            aggregate của ca {value.caseVersion}. Chỉnh sửa được ghi nối tiếp và
+            hiển thị trong Dòng thời gian/Nhật ký kiểm chứng sau khi outbox xử
+            lý.
           </p>
         </TechnicalDetailsDisclosure>
       </ClinicalCard>
@@ -302,36 +308,36 @@ function TriageCurrent({ value }: { value: TriageAssessmentView }) {
     <div className="vm-current-record">
       <div className="vm-record-meta">
         <Badge tone={value.status === "correction" ? "warning" : "info"}>
-          Revision {value.revisionNumber} · {value.status}
+          Phiên bản {value.revisionNumber} · {viStatus(value.status)}
         </Badge>
         <span>
-          Recorded {formatTimestamp(value.recordedAt)} by {value.recordedBy}
+          Ghi nhận {formatTimestamp(value.recordedAt)} bởi {value.recordedBy}
         </span>
       </div>
       <dl className="vm-definition-list">
-        <dt>Chief complaint</dt>
-        <dd>{value.chiefComplaint ?? "Not documented"}</dd>
-        <dt>Onset</dt>
+        <dt>Lý do vào viện</dt>
+        <dd>{value.chiefComplaint ?? "Chưa ghi nhận"}</dd>
+        <dt>Khởi phát</dt>
         <dd>
           {stateLabel(value.symptomOnsetState)}
           {value.symptomOnsetAt
             ? ` · ${formatTimestamp(value.symptomOnsetAt)}`
             : ""}
         </dd>
-        <dt>Description</dt>
-        <dd>{value.symptomDescription ?? "Not documented"}</dd>
+        <dt>Mô tả</dt>
+        <dd>{value.symptomDescription ?? "Chưa ghi nhận"}</dd>
       </dl>
       <ObservationRows
-        title="Associated symptoms"
+        title="Triệu chứng đi kèm"
         values={value.associatedSymptoms}
       />
       <ObservationRows
-        title="History / risk factors"
+        title="Tiền sử / yếu tố nguy cơ"
         values={value.riskFactors}
       />
       {value.correctionReason && (
         <p className="vm-correction-note">
-          <strong>Correction reason:</strong> {value.correctionReason}
+          <strong>Lý do chỉnh sửa:</strong> {value.correctionReason}
         </p>
       )}
     </div>
@@ -343,24 +349,24 @@ function VitalCurrent({ value }: { value: VitalObservationSetView }) {
     <div className="vm-current-record">
       <div className="vm-record-meta">
         <Badge tone={value.correctionReason ? "warning" : "info"}>
-          Set {value.sequenceNumber} · revision {value.revisionNumber}
+          Bộ {value.sequenceNumber} · phiên bản {value.revisionNumber}
         </Badge>
-        <span>Observed {formatTimestamp(value.observedAt)}</span>
+        <span>Quan sát {formatTimestamp(value.observedAt)}</span>
       </div>
       <div className="vm-vital-values">
         {value.measurements.map((item) => (
           <div key={item.kind}>
-            <span>{labelKind(item.kind)}</span>
+            <span>{viClinicalLabel(item.kind)}</span>
             <strong>
               {item.value} <small>{item.unit}</small>
             </strong>
-            <small>{item.qualityStatus}</small>
+            <small>{viStatus(item.qualityStatus)}</small>
           </div>
         ))}
       </div>
       {value.correctionReason && (
         <p className="vm-correction-note">
-          <strong>Correction reason:</strong> {value.correctionReason}
+          <strong>Lý do chỉnh sửa:</strong> {value.correctionReason}
         </p>
       )}
     </div>
@@ -380,7 +386,7 @@ function ObservationRows({
       <strong>{title}</strong>
       {values.map((item) => (
         <span key={item.name}>
-          {item.name}
+          {viClinicalLabel(item.name)}
           <Badge tone={item.state === "present" ? "info" : "neutral"}>
             {stateLabel(item.state)}
           </Badge>
@@ -412,7 +418,7 @@ function RevisionList({
                   : (item as VitalObservationSetView).vitalSetId
               }
             >
-              <strong>Revision {item.revisionNumber}</strong>
+              <strong>Phiên bản {item.revisionNumber}</strong>
               <span>
                 {formatTimestamp(item.recordedAt)} · {item.recordedBy}
               </span>
@@ -422,13 +428,13 @@ function RevisionList({
                       (item as TriageAssessmentView).assessmentId,
                       "TRI",
                     )
-                  : `Set ${(item as VitalObservationSetView).sequenceNumber}`}
+                  : `Bộ ${(item as VitalObservationSetView).sequenceNumber}`}
               </small>
             </li>
           ))}
         </ol>
       ) : (
-        <p>No revisions recorded.</p>
+        <p>Chưa ghi nhận phiên bản.</p>
       )}
     </div>
   );
@@ -486,8 +492,5 @@ function vitalMeasurements(
 }
 
 function stateLabel(value: ObservationState) {
-  return value.replaceAll("_", " ");
-}
-function labelKind(value: string) {
-  return value.replaceAll("_", " ");
+  return viObservationState(value);
 }

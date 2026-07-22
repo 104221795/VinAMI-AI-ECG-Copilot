@@ -8,10 +8,10 @@ import type {
 } from "@web/entities/clinical-documentation/model";
 
 const states: Array<{ value: ObservationState; label: string }> = [
-  { value: "present", label: "Present" },
-  { value: "absent", label: "Absent" },
-  { value: "unknown", label: "Unknown" },
-  { value: "not_assessed", label: "Not assessed" },
+  { value: "present", label: "Có" },
+  { value: "absent", label: "Không có" },
+  { value: "unknown", label: "Chưa rõ" },
+  { value: "not_assessed", label: "Chưa đánh giá" },
 ];
 
 export interface TriageFormValue {
@@ -70,15 +70,15 @@ export function TriageForm({
     >
       <div className="vm-form-grid">
         <label className="vm-input-field vm-form-span-2">
-          <span>Chief complaint</span>
+          <span>Lý do vào viện</span>
           <textarea rows={2} {...register("chiefComplaint")} />
         </label>
         <label className="vm-input-field vm-form-span-2">
-          <span>Patient-reported symptom description</span>
+          <span>Mô tả triệu chứng do người bệnh cung cấp</span>
           <textarea rows={3} {...register("symptomDescription")} />
         </label>
         <label className="vm-input-field">
-          <span>Symptom onset status</span>
+          <span>Trạng thái thời điểm khởi phát</span>
           <select {...register("onsetState")}>
             {states.map((state) => (
               <option key={state.value} value={state.value}>
@@ -90,7 +90,7 @@ export function TriageForm({
         {onsetState === "present" && (
           <>
             <label className="vm-input-field">
-              <span>Reported onset time</span>
+              <span>Thời điểm khởi phát được khai báo</span>
               <input
                 type="datetime-local"
                 required
@@ -98,52 +98,52 @@ export function TriageForm({
               />
             </label>
             <label className="vm-input-field">
-              <span>Time precision</span>
+              <span>Độ chính xác thời gian</span>
               <select {...register("onsetPrecision")}>
-                <option value="exact">Exact</option>
-                <option value="approximate">Approximate</option>
-                <option value="date_only">Date only</option>
-                <option value="unknown">Unknown precision</option>
+                <option value="exact">Chính xác</option>
+                <option value="approximate">Ước lượng</option>
+                <option value="date_only">Chỉ biết ngày</option>
+                <option value="unknown">Chưa rõ độ chính xác</option>
               </select>
             </label>
           </>
         )}
       </div>
       <fieldset className="vm-observation-fieldset">
-        <legend>Associated symptom documentation</legend>
+        <legend>Ghi nhận triệu chứng đi kèm</legend>
         <ObservationSelect
-          label="Dyspnoea"
+          label="Khó thở"
           registration={register("dyspnoea")}
         />
-        <ObservationSelect label="Nausea" registration={register("nausea")} />
+        <ObservationSelect label="Buồn nôn" registration={register("nausea")} />
       </fieldset>
       <fieldset className="vm-observation-fieldset">
-        <legend>Cardiovascular history documentation</legend>
+        <legend>Ghi nhận tiền sử tim mạch/yếu tố nguy cơ</legend>
         <ObservationSelect
-          label="Smoking history"
+          label="Tiền sử hút thuốc"
           registration={register("smokingHistory")}
         />
         <ObservationSelect
-          label="Diabetes history"
+          label="Tiền sử đái tháo đường"
           registration={register("diabetesHistory")}
         />
       </fieldset>
       {correcting && (
         <label className="vm-input-field">
-          <span>Correction reason</span>
+          <span>Lý do chỉnh sửa</span>
           <textarea
             rows={2}
             required
             {...register("correctionReason", { required: true })}
           />
           {formState.errors.correctionReason && (
-            <small role="alert">A correction reason is required.</small>
+            <small role="alert">Cần nhập lý do chỉnh sửa.</small>
           )}
         </label>
       )}
       <div className="vm-form-actions">
         <Button type="button" onClick={onCancel} disabled={busy}>
-          Cancel
+          Hủy
         </Button>
         <ConfirmationDialog
           trigger={
@@ -153,21 +153,23 @@ export function TriageForm({
               disabled={busy || !canReview}
             >
               {busy
-                ? "Saving…"
+                ? "Đang lưu..."
                 : correcting
-                  ? "Review correction"
-                  : "Review entry"}
+                  ? "Rà soát chỉnh sửa"
+                  : "Rà soát thông tin"}
             </Button>
           }
           title={
-            correcting ? "Confirm triage correction" : "Confirm triage entry"
+            correcting ? "Xác nhận chỉnh sửa tiếp nhận" : "Xác nhận tiếp nhận"
           }
           description={
             correcting
-              ? "A new append-only revision will be recorded. The prior entry remains in history."
-              : "Record these factual observations in the clinical case?"
+              ? "Một phiên bản ghi nối tiếp mới sẽ được tạo. Bản ghi trước vẫn còn trong lịch sử."
+              : "Ghi nhận các quan sát thực tế này vào ca lâm sàng?"
           }
-          confirmLabel={correcting ? "Record correction" : "Record triage"}
+          confirmLabel={
+            correcting ? "Ghi nhận chỉnh sửa" : "Ghi nhận tiếp nhận"
+          }
           onConfirm={handleSubmit(onSubmit)}
         />
       </div>

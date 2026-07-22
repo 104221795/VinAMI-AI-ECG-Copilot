@@ -7,16 +7,14 @@ import type {
   TroponinResultView,
   TroponinWorkspaceView,
 } from "@web/entities/troponin/model";
+import { EmptyState } from "@vinami/ui";
+import { formatTimestamp } from "@web/shared/formatting";
+import { viAction, viClinicalTerm, viStatus } from "@web/shared/locale/vi";
 
 const fmtTime = (value: string | null) =>
-  value
-    ? new Intl.DateTimeFormat("en-GB", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(value))
-    : "Not available";
+  value ? formatTimestamp(value) : "Chưa có thời gian";
 const label = (value: unknown) =>
-  typeof value === "string" && value ? value.replaceAll("_", " ") : "Unknown";
+  typeof value === "string" && value ? viClinicalTerm(value) : "Chưa rõ";
 
 export function TroponinWorkspace({
   caseId,
@@ -42,7 +40,8 @@ export function TroponinWorkspace({
       `/api/backend/api/v1/clinical-cases/${caseId}/troponin-workspace`,
       { cache: "no-store" },
     );
-    if (!response.ok) throw new Error("Could not refresh laboratory evidence.");
+    if (!response.ok)
+      throw new Error("Không thể làm mới bằng chứng xét nghiệm.");
     setValue((await response.json()) as TroponinWorkspaceView);
   }
 
@@ -50,29 +49,29 @@ export function TroponinWorkspace({
     <div className="vm-troponin-workspace">
       <div className="vm-section-heading">
         <div>
-          <p className="vm-eyebrow">Laboratory evidence</p>
-          <h2>Serial troponin</h2>
+          <p className="vm-eyebrow">Bằng chứng xét nghiệm</p>
+          <h2>Troponin nối tiếp</h2>
           <p>
-            Numerical laboratory evidence with assay, source and amendment
-            provenance.
+            Bằng chứng xét nghiệm dạng số với thông tin xét nghiệm, nguồn dữ
+            liệu và provenance khi hiệu chỉnh.
           </p>
         </div>
         <div className="vm-case-header">
           <button className="vm-button" onClick={() => setPanel("import")}>
-            Import mock result
+            Nạp kết quả mô phỏng
           </button>
           <button
             className="vm-button vm-button--primary"
             onClick={() => setPanel("manual")}
           >
-            Record result
+            Ghi kết quả
           </button>
         </div>
       </div>
       <div className="vm-safety-note" role="note">
-        <strong>Clinician interpretation required.</strong> This workspace does
-        not produce an acute myocardial infarction diagnosis or disposition and
-        does not select a pathway or treatment.
+        <strong>Cần bác sĩ diễn giải.</strong> Không gian này không tạo chẩn
+        đoán nhồi máu cơ tim cấp, không quyết định hướng xử trí và không chọn
+        điều trị.
       </div>
       {message && (
         <div className="vm-inline-notice" role="status">
@@ -87,7 +86,7 @@ export function TroponinWorkspace({
           onDone={async () => {
             await refresh();
             setPanel("none");
-            setMessage("Troponin result recorded with source provenance.");
+            setMessage("Đã ghi kết quả Troponin kèm provenance nguồn.");
           }}
         />
       )}
@@ -100,29 +99,24 @@ export function TroponinWorkspace({
             await refresh();
             setPanel("none");
             setMessage(
-              "Local mock laboratory import completed. This is not a live LIS connection.",
+              "Đã nạp kết quả xét nghiệm mô phỏng tại chỗ. Đây không phải kết nối LIS thật.",
             );
           }}
         />
       )}
 
       {!latest ? (
-        <section className="vm-card vm-empty-state">
-          <div className="vm-card__body">
-            <h3>No troponin results</h3>
-            <p>
-              Record a structured result or use the deterministic local/mock
-              laboratory connector.
-            </p>
-          </div>
-        </section>
+        <EmptyState
+          title="Chưa có kết quả Troponin"
+          description="Ghi kết quả có cấu trúc hoặc dùng bộ kết nối xét nghiệm mô phỏng tại chỗ."
+        />
       ) : (
         <>
           <section className="vm-card">
             <div className="vm-card__body">
               <div className="vm-panel-toolbar">
                 <div>
-                  <p className="vm-eyebrow">Latest result</p>
+                  <p className="vm-eyebrow">Kết quả mới nhất</p>
                   <h3>{latest.assay_display_name}</h3>
                 </div>
                 <span className="vm-badge">{label(latest.result_status)}</span>
@@ -133,23 +127,23 @@ export function TroponinWorkspace({
                   <span>{latest.original_unit}</span>
                 </div>
                 <dl>
-                  <dt>Specimen collected</dt>
+                  <dt>Thời điểm lấy mẫu</dt>
                   <dd>{fmtTime(latest.specimen_collected_at)}</dd>
-                  <dt>Resulted</dt>
+                  <dt>Thời điểm trả kết quả</dt>
                   <dd>{fmtTime(latest.resulted_at)}</dd>
-                  <dt>Quality</dt>
+                  <dt>Chất lượng</dt>
                   <dd>
                     {latest.quality_flags.length
                       ? latest.quality_flags.map(label).join(", ")
-                      : "No technical flag reported"}
+                      : "Không ghi nhận cờ kỹ thuật"}
                   </dd>
-                  <dt>Reference limit</dt>
+                  <dt>Giới hạn tham chiếu</dt>
                   <dd>
                     {latest.reference_limit_value
                       ? `${latest.reference_limit_value} ${latest.reference_limit_unit}`
-                      : "Not supplied"}
+                      : "Chưa cung cấp"}
                   </dd>
-                  <dt>Source</dt>
+                  <dt>Nguồn</dt>
                   <dd>
                     {label(latest.source_type)} · {latest.source_system}
                   </dd>
@@ -162,20 +156,17 @@ export function TroponinWorkspace({
             <div className="vm-card__body">
               <div className="vm-panel-toolbar">
                 <div>
-                  <p className="vm-eyebrow">Serial evidence</p>
-                  <h3>Specimen-time trend</h3>
+                  <p className="vm-eyebrow">Bằng chứng nối tiếp</p>
+                  <h3>Xu hướng theo thời điểm lấy mẫu</h3>
                 </div>
-                <span>
-                  {value.effective_results.length} effective result
-                  {value.effective_results.length === 1 ? "" : "s"}
-                </span>
+                <span>{value.effective_results.length} kết quả hiệu lực</span>
               </div>
               {points ? (
                 <svg
                   className="vm-trop-chart"
                   viewBox="0 0 700 180"
                   role="img"
-                  aria-label="Troponin values ordered by specimen collection time"
+                  aria-label="Giá trị Troponin theo thời điểm lấy mẫu"
                 >
                   <polyline
                     points={points}
@@ -187,8 +178,8 @@ export function TroponinWorkspace({
                 </svg>
               ) : (
                 <p className="vm-inline-empty">
-                  One result only. Serial numerical change is unavailable; no
-                  baseline is inferred.
+                  Hiện chỉ có một kết quả. Chưa thể tính thay đổi nối tiếp và
+                  không suy đoán kết quả nền.
                 </p>
               )}
               <ResultTable results={value.effective_results} />
@@ -197,43 +188,43 @@ export function TroponinWorkspace({
 
           <section className="vm-card">
             <div className="vm-card__body">
-              <p className="vm-eyebrow">Numerical change</p>
-              <h3>Delta between consecutive compatible specimens</h3>
+              <p className="vm-eyebrow">Thay đổi định lượng</p>
+              <h3>Delta giữa các mẫu liên tiếp tương thích</h3>
               {lastDelta ? (
                 <div className="vm-trop-delta">
                   <div>
-                    <span>Absolute change</span>
+                    <span>Thay đổi tuyệt đối</span>
                     <strong>
-                      {lastDelta.absolute_change ?? "Unavailable"}{" "}
+                      {lastDelta.absolute_change ?? "Không khả dụng"}{" "}
                       {lastDelta.normalized_unit ?? ""}
                     </strong>
                   </div>
                   <div>
-                    <span>Relative change</span>
+                    <span>Thay đổi tương đối</span>
                     <strong>
                       {lastDelta.relative_change_percent
                         ? `${lastDelta.relative_change_percent}%`
-                        : "Unavailable"}
+                        : "Không khả dụng"}
                     </strong>
                   </div>
                   <div>
-                    <span>Specimen interval</span>
+                    <span>Khoảng cách lấy mẫu</span>
                     <strong>
                       {Math.round(lastDelta.specimen_interval_seconds / 60)} min
                     </strong>
                   </div>
                   <div>
-                    <span>Compatibility</span>
+                    <span>Mức tương thích</span>
                     <strong>{label(lastDelta.compatibility_status)}</strong>
                   </div>
                 </div>
               ) : (
                 <p className="vm-inline-empty">
-                  A second technically compatible result is required.
+                  Cần kết quả thứ hai tương thích về mặt kỹ thuật.
                 </p>
               )}
               <p className="vm-model-warning">
-                Numerical troponin change - clinician interpretation required.
+                Thay đổi Troponin dạng số - cần bác sĩ diễn giải.
               </p>
               {lastDelta?.incompatibility_reasons.map((reason) => (
                 <p className="vm-inline-notice" key={reason}>
@@ -246,52 +237,52 @@ export function TroponinWorkspace({
           <div className="vm-trop-columns">
             <section className="vm-card">
               <div className="vm-card__body">
-                <p className="vm-eyebrow">Assay and reference</p>
+                <p className="vm-eyebrow">Xét nghiệm và tham chiếu</p>
                 <h3>{latest.assay_code}</h3>
                 <dl className="vm-definition-list">
-                  <dt>Analyte</dt>
+                  <dt>Chất phân tích</dt>
                   <dd>{label(latest.analyte)}</dd>
-                  <dt>Category</dt>
+                  <dt>Nhóm xét nghiệm</dt>
                   <dd>{label(latest.assay_category)}</dd>
-                  <dt>Manufacturer</dt>
+                  <dt>Nhà sản xuất</dt>
                   <dd>{latest.manufacturer}</dd>
-                  <dt>Platform</dt>
+                  <dt>Nền tảng</dt>
                   <dd>{latest.platform}</dd>
-                  <dt>Assay version</dt>
+                  <dt>Phiên bản xét nghiệm</dt>
                   <dd>{latest.assay_version}</dd>
-                  <dt>Normalization</dt>
+                  <dt>Chuẩn hóa</dt>
                   <dd>
-                    {latest.normalized_value ?? "Unavailable"}{" "}
+                    {latest.normalized_value ?? "Không khả dụng"}{" "}
                     {latest.normalized_unit ?? ""}
                   </dd>
-                  <dt>Conversion</dt>
+                  <dt>Chuyển đổi đơn vị</dt>
                   <dd>
                     {label(latest.conversion_status)} ·{" "}
                     {latest.conversion_version}
                   </dd>
-                  <dt>Reference source</dt>
-                  <dd>{latest.reference_limit_source ?? "Not supplied"}</dd>
+                  <dt>Nguồn tham chiếu</dt>
+                  <dd>{latest.reference_limit_source ?? "Chưa cung cấp"}</dd>
                 </dl>
               </div>
             </section>
             <section className="vm-card">
               <div className="vm-card__body">
-                <p className="vm-eyebrow">Laboratory source</p>
-                <h3>Import and provenance</h3>
+                <p className="vm-eyebrow">Nguồn xét nghiệm</p>
+                <h3>Nạp dữ liệu và provenance</h3>
                 <p>
-                  <strong>Local/mock only.</strong> No live LIS connection is
-                  configured.
+                  <strong>Chỉ tại chỗ/mô phỏng.</strong> Chưa cấu hình kết nối
+                  LIS thật.
                 </p>
                 <dl className="vm-definition-list">
-                  <dt>Source result</dt>
+                  <dt>Kết quả nguồn</dt>
                   <dd>
                     <code>{latest.source_result_id}</code>
                   </dd>
-                  <dt>Recorded by</dt>
+                  <dt>Người ghi nhận</dt>
                   <dd>{label(latest.recorded_by_role)}</dd>
-                  <dt>Data freshness</dt>
+                  <dt>Độ mới dữ liệu</dt>
                   <dd>{fmtTime(value.data_freshness)}</dd>
-                  <dt>Import jobs</dt>
+                  <dt>Job nạp dữ liệu</dt>
                   <dd>{value.import_jobs.length}</dd>
                 </dl>
               </div>
@@ -302,21 +293,21 @@ export function TroponinWorkspace({
             <div className="vm-card__body">
               <div className="vm-panel-toolbar">
                 <div>
-                  <p className="vm-eyebrow">Complete history</p>
-                  <h3>Results and amendments</h3>
+                  <p className="vm-eyebrow">Lịch sử đầy đủ</p>
+                  <h3>Kết quả và hiệu chỉnh</h3>
                 </div>
                 <div className="vm-case-header">
                   <button
                     className="vm-button"
                     onClick={() => setPanel("amend")}
                   >
-                    Amend latest result
+                    Hiệu chỉnh kết quả mới nhất
                   </button>
                   <button
                     className="vm-button"
                     onClick={() => setPanel("review")}
                   >
-                    Record clinician review
+                    Ghi rà soát của bác sĩ
                   </button>
                 </div>
               </div>
@@ -329,7 +320,7 @@ export function TroponinWorkspace({
                     await refresh();
                     setPanel("none");
                     setMessage(
-                      "Amendment recorded. The original result remains in complete history.",
+                      "Đã ghi hiệu chỉnh. Kết quả gốc vẫn nằm trong lịch sử đầy đủ.",
                     );
                   }}
                 />
@@ -344,7 +335,7 @@ export function TroponinWorkspace({
                     await refresh();
                     setPanel("none");
                     setMessage(
-                      "Clinician review recorded; no diagnostic or pathway action was performed.",
+                      "Đã ghi rà soát của bác sĩ; không thực hiện chẩn đoán hoặc chuyển hướng xử trí.",
                     );
                   }}
                 />
@@ -354,15 +345,15 @@ export function TroponinWorkspace({
           <div className="vm-trop-columns">
             <section className="vm-card">
               <div className="vm-card__body">
-                <p className="vm-eyebrow">Clinician review</p>
+                <p className="vm-eyebrow">Bác sĩ rà soát</p>
                 <h3>
                   {value.clinician_reviews.length
-                    ? `${value.clinician_reviews.length} immutable review record(s)`
-                    : "Awaiting review"}
+                    ? `${value.clinician_reviews.length} bản ghi rà soát bất biến`
+                    : "Chờ rà soát"}
                 </h3>
                 <p>
-                  Review acknowledges evidence and limitations only. It cannot
-                  diagnose AMI or change the clinical workflow.
+                  Rà soát chỉ ghi nhận bằng chứng và giới hạn dữ liệu. Nó không
+                  chẩn đoán AMI và không đổi quy trình lâm sàng.
                 </p>
                 <ReviewHistory
                   reviews={value.clinician_reviews}
@@ -379,7 +370,7 @@ export function TroponinWorkspace({
                       await refresh();
                       setPanel("none");
                       setMessage(
-                        "A corrected immutable review revision is now effective.",
+                        "Phiên bản rà soát đã hiệu chỉnh hiện là bản hiệu lực.",
                       );
                     }}
                   />
@@ -388,15 +379,15 @@ export function TroponinWorkspace({
             </section>
             <section className="vm-card">
               <div className="vm-card__body">
-                <p className="vm-eyebrow">Repeat measurement</p>
+                <p className="vm-eyebrow">Lặp lại xét nghiệm</p>
                 <h3>
                   {value.repeat_measurement_requests.length
-                    ? `${value.repeat_measurement_requests.length} request(s)`
-                    : "No request"}
+                    ? `${value.repeat_measurement_requests.length} yêu cầu`
+                    : "Chưa có yêu cầu"}
                 </h3>
                 <p>
-                  A request is created only by an explicit clinician action; no
-                  timing threshold is inferred.
+                  Yêu cầu chỉ được tạo khi bác sĩ thao tác rõ ràng; hệ thống
+                  không tự suy đoán ngưỡng thời gian.
                 </p>
                 <RepeatRequestPanel
                   requests={value.repeat_measurement_requests}
@@ -427,12 +418,12 @@ function ResultTable({
       <table className="vm-table">
         <thead>
           <tr>
-            <th>Specimen time</th>
-            <th>Value</th>
-            <th>Status</th>
-            <th>Assay</th>
-            <th>Source</th>
-            {showHistory && <th>History</th>}
+            <th>Thời điểm lấy mẫu</th>
+            <th>Giá trị</th>
+            <th>Trạng thái</th>
+            <th>Xét nghiệm</th>
+            <th>Nguồn</th>
+            {showHistory && <th>Lịch sử</th>}
           </tr>
         </thead>
         <tbody>
@@ -448,8 +439,8 @@ function ResultTable({
               {showHistory && (
                 <td>
                   {result.supersedes_result_id
-                    ? `Amends ${result.supersedes_result_id.slice(0, 8)}`
-                    : "Original"}
+                    ? `Hiệu chỉnh ${result.supersedes_result_id.slice(0, 8)}`
+                    : "Bản gốc"}
                 </td>
               )}
             </tr>
@@ -473,7 +464,7 @@ async function problemMessage(
   const problem = (await response.json().catch(() => null)) as Problem | null;
   const field = problem?.errors?.[0]?.field;
   const detail = problem?.detail ?? fallback;
-  return `${field ? `${field}: ` : ""}${detail}${problem?.correlation_id ? ` Correlation: ${problem.correlation_id}` : ""}`;
+  return `${field ? `${field}: ` : ""}${detail}${problem?.correlation_id ? ` Mã tương quan: ${problem.correlation_id}` : ""}`;
 }
 
 function ReviewHistory({
@@ -488,21 +479,21 @@ function ReviewHistory({
   if (!reviews.length) return null;
   return (
     <div className="vm-trop-review-history">
-      <h4>Review history</h4>
+      <h4>Lịch sử rà soát</h4>
       <ul>
         {reviews.map((review) => (
           <li key={review.review_id}>
-            <strong>{review.review_status}</strong> ·{" "}
+            <strong>{label(review.review_status)}</strong> ·{" "}
             {fmtTime(review.recorded_at)}
             {review.supersedes_review_id
-              ? " · corrected revision"
-              : " · original"}
+              ? " · phiên bản hiệu chỉnh"
+              : " · bản gốc"}
           </li>
         ))}
       </ul>
       {latest && (
         <button className="vm-button" type="button" onClick={onCorrect}>
-          Correct current review
+          Hiệu chỉnh rà soát hiện tại
         </button>
       )}
     </div>
@@ -529,10 +520,10 @@ function ReviewCorrectionForm({
     const data = new FormData(event.currentTarget);
     const reason = String(data.get("correction_reason") ?? "").trim();
     if (!reason) {
-      setError("correction_reason: A correction reason is required.");
+      setError("correction_reason: Cần nhập lý do hiệu chỉnh.");
       return;
     }
-    if (!window.confirm("Create an immutable corrected review revision?"))
+    if (!window.confirm("Tạo một phiên bản rà soát hiệu chỉnh bất biến?"))
       return;
     setBusy(true);
     setError(null);
@@ -563,7 +554,7 @@ function ReviewCorrectionForm({
       setError(
         await problemMessage(
           response,
-          "The corrected review could not be recorded.",
+          "Không thể ghi phiên bản rà soát hiệu chỉnh.",
         ),
       );
       setBusy(false);
@@ -577,12 +568,13 @@ function ReviewCorrectionForm({
       onSubmit={submit}
       aria-labelledby="review-correction-title"
     >
-      <h4 id="review-correction-title">Correct clinician review</h4>
+      <h4 id="review-correction-title">Hiệu chỉnh rà soát của bác sĩ</h4>
       <p>
-        Original: {review.review_status} · {review.note ?? "No note"}
+        Bản gốc: {label(review.review_status)} ·{" "}
+        {review.note ?? "Không có ghi chú"}
       </p>
       <label className="vm-field">
-        Corrected review status
+        Trạng thái rà soát hiệu chỉnh
         <input
           name="review_status"
           defaultValue={review.review_status}
@@ -595,7 +587,7 @@ function ReviewCorrectionForm({
           name="incompatible"
           defaultChecked={review.incompatibility_acknowledged}
         />{" "}
-        Technical incompatibility acknowledged
+        Đã ghi nhận không tương thích kỹ thuật
       </label>
       <label>
         <input
@@ -603,14 +595,14 @@ function ReviewCorrectionForm({
           name="quality"
           defaultChecked={review.quality_limitation_acknowledged}
         />{" "}
-        Quality limitation acknowledged
+        Đã ghi nhận giới hạn chất lượng
       </label>
       <label className="vm-field">
-        Corrected note
+        Ghi chú hiệu chỉnh
         <textarea name="note" rows={3} defaultValue={review.note ?? ""} />
       </label>
       <label className="vm-field">
-        Correction reason
+        Lý do hiệu chỉnh
         <textarea
           name="correction_reason"
           rows={2}
@@ -619,7 +611,8 @@ function ReviewCorrectionForm({
         />
       </label>
       <p id="correction-reason-help">
-        The original review remains in history; this creates a new revision.
+        Bản rà soát gốc vẫn được giữ trong lịch sử; thao tác này tạo phiên bản
+        mới.
       </p>
       {error && (
         <p className="vm-inline-notice" role="alert">
@@ -633,10 +626,10 @@ function ReviewCorrectionForm({
           disabled={busy}
           onClick={onClose}
         >
-          Cancel
+          Hủy
         </button>
         <button className="vm-button vm-button--primary" disabled={busy}>
-          {busy ? "Saving…" : "Confirm correction"}
+          {busy ? "Đang lưu..." : "Xác nhận hiệu chỉnh"}
         </button>
       </div>
     </form>
@@ -662,7 +655,9 @@ function RepeatRequestPanel({
     payload: Record<string, string | null> = {},
   ) {
     if (
-      !window.confirm(`Confirm ${action} for this repeat measurement request?`)
+      !window.confirm(
+        `Xác nhận "${viAction(action)}" cho yêu cầu lặp lại xét nghiệm này?`,
+      )
     )
       return;
     setBusy(`${request.request_id}-${action}`);
@@ -685,7 +680,7 @@ function RepeatRequestPanel({
       setError(
         await problemMessage(
           response,
-          "The repeat-measurement transition could not be completed.",
+          "Không thể chuyển trạng thái yêu cầu lặp lại xét nghiệm.",
         ),
       );
       setBusy(null);
@@ -693,13 +688,15 @@ function RepeatRequestPanel({
     }
     setCompleteId(null);
     setCancelId(null);
-    await onDone(`Repeat measurement request ${action}d.`);
+    await onDone(
+      `Đã ${viAction(action).toLowerCase()} yêu cầu lặp lại xét nghiệm.`,
+    );
     setBusy(null);
   }
   if (!requests.length) return null;
   return (
     <div className="vm-trop-review-history">
-      <h4>Request lifecycle</h4>
+      <h4>Vòng đời yêu cầu</h4>
       {error && (
         <p className="vm-inline-notice" role="alert">
           {error}
@@ -714,32 +711,32 @@ function RepeatRequestPanel({
         return (
           <article key={request.request_id} className="vm-repeat-request">
             <p>
-              <strong>{label(request.status)}</strong> · Version{" "}
+              <strong>{label(request.status)}</strong> · Phiên bản{" "}
               {request.record_version}
             </p>
             <dl className="vm-definition-list">
-              <dt>Source result</dt>
+              <dt>Kết quả nguồn</dt>
               <dd>
                 <code>{request.source_result_id}</code>
               </dd>
-              <dt>Reason</dt>
+              <dt>Lý do</dt>
               <dd>{request.reason}</dd>
-              <dt>Requested</dt>
+              <dt>Đã yêu cầu</dt>
               <dd>{fmtTime(request.requested_at)}</dd>
-              <dt>Acknowledged</dt>
+              <dt>Đã ghi nhận</dt>
               <dd>
                 {request.acknowledged_at
                   ? fmtTime(request.acknowledged_at)
-                  : "Not yet"}
+                  : "Chưa có"}
               </dd>
-              <dt>Completed</dt>
+              <dt>Hoàn tất</dt>
               <dd>
                 {request.completed_at
                   ? fmtTime(request.completed_at)
-                  : "Not yet"}
+                  : "Chưa có"}
               </dd>
-              <dt>Cancellation</dt>
-              <dd>{request.cancellation_reason ?? "Not cancelled"}</dd>
+              <dt>Hủy</dt>
+              <dd>{request.cancellation_reason ?? "Chưa hủy"}</dd>
             </dl>
             {open && (
               <div className="vm-case-header">
@@ -750,7 +747,7 @@ function RepeatRequestPanel({
                     disabled={busy !== null}
                     onClick={() => transition(request, "acknowledge")}
                   >
-                    Acknowledge
+                    Ghi nhận
                   </button>
                 )}
                 <button
@@ -759,7 +756,7 @@ function RepeatRequestPanel({
                   disabled={busy !== null}
                   onClick={() => setCompleteId(request.request_id)}
                 >
-                  Complete
+                  Hoàn tất
                 </button>
                 <button
                   type="button"
@@ -767,7 +764,7 @@ function RepeatRequestPanel({
                   disabled={busy !== null}
                   onClick={() => setCancelId(request.request_id)}
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             )}
@@ -782,9 +779,7 @@ function RepeatRequestPanel({
                     ) ?? "",
                   );
                   if (!selected) {
-                    setError(
-                      "completed_result_id: Select a subsequent result.",
-                    );
+                    setError("completed_result_id: Chọn một kết quả sau đó.");
                     return;
                   }
                   void transition(request, "complete", {
@@ -793,10 +788,10 @@ function RepeatRequestPanel({
                 }}
               >
                 <label className="vm-field">
-                  Completion result (validated by backend)
+                  Kết quả hoàn tất (backend xác thực)
                   <select name="completed_result_id" required defaultValue="">
                     <option value="" disabled>
-                      Select result
+                      Chọn kết quả
                     </option>
                     {candidates.map((result) => (
                       <option value={result.result_id} key={result.result_id}>
@@ -810,7 +805,7 @@ function RepeatRequestPanel({
                   className="vm-button vm-button--primary"
                   disabled={busy !== null}
                 >
-                  Confirm completion
+                  Xác nhận hoàn tất
                 </button>
               </form>
             )}
@@ -823,21 +818,21 @@ function RepeatRequestPanel({
                     new FormData(event.currentTarget).get("reason") ?? "",
                   ).trim();
                   if (!reason) {
-                    setError("reason: A cancellation reason is required.");
+                    setError("reason: Cần nhập lý do hủy.");
                     return;
                   }
                   void transition(request, "cancel", { reason });
                 }}
               >
                 <label className="vm-field">
-                  Cancellation reason
+                  Lý do hủy
                   <input name="reason" required />
                 </label>
                 <button
                   className="vm-button vm-button--primary"
                   disabled={busy !== null}
                 >
-                  Confirm cancellation
+                  Xác nhận hủy
                 </button>
               </form>
             )}
@@ -882,7 +877,7 @@ function ManualForm({
       reference_limit_value: data.get("reference") || null,
       reference_limit_unit: data.get("reference") ? data.get("unit") : null,
       reference_limit_source: data.get("reference")
-        ? "Manually supplied laboratory metadata"
+        ? "Siêu dữ liệu xét nghiệm nhập tay"
         : null,
       quality_flags: [],
       source_system: "manual-entry",
@@ -901,9 +896,7 @@ function ManualForm({
       },
     );
     if (!response.ok) {
-      setError(
-        await problemMessage(response, "The result could not be recorded."),
-      );
+      setError(await problemMessage(response, "Không thể ghi kết quả."));
       setBusy(false);
       return;
     }
@@ -912,27 +905,27 @@ function ManualForm({
   return (
     <form className="vm-card vm-action-panel" onSubmit={submit}>
       <div className="vm-card__body">
-        <h3>Record structured troponin result</h3>
+        <h3>Ghi kết quả Troponin có cấu trúc</h3>
         <div className="vm-form-grid">
           <label className="vm-field">
-            Assay
+            Xét nghiệm
             <select name="assay" required defaultValue="">
               <option value="" disabled>
-                Select assay
+                Chọn xét nghiệm
               </option>
-              <option value="DEMO-HS-CTNI-01">Demonstration hs-cTnI</option>
-              <option value="DEMO-HS-CTNT-01">Demonstration hs-cTnT</option>
+              <option value="DEMO-HS-CTNI-01">Minh họa hs-cTnI</option>
+              <option value="DEMO-HS-CTNT-01">Minh họa hs-cTnT</option>
             </select>
           </label>
           <label className="vm-field">
-            Value
+            Giá trị
             <input name="value" inputMode="decimal" required />
           </label>
           <label className="vm-field">
-            Unit
+            Đơn vị
             <select name="unit" required defaultValue="">
               <option value="" disabled>
-                Select unit
+                Chọn đơn vị
               </option>
               <option>ng/L</option>
               <option>pg/mL</option>
@@ -940,11 +933,11 @@ function ManualForm({
             </select>
           </label>
           <label className="vm-field">
-            Specimen collection
+            Thời điểm lấy mẫu
             <input name="collected" type="datetime-local" required />
           </label>
           <label className="vm-field">
-            Upper reference limit (optional)
+            Giới hạn tham chiếu trên (tùy chọn)
             <input name="reference" inputMode="decimal" />
           </label>
         </div>
@@ -955,10 +948,10 @@ function ManualForm({
         )}
         <div className="vm-case-header">
           <button type="button" className="vm-button" onClick={onClose}>
-            Cancel
+            Hủy
           </button>
           <button className="vm-button vm-button--primary" disabled={busy}>
-            {busy ? "Recording…" : "Confirm and record"}
+            {busy ? "Đang ghi..." : "Xác nhận và ghi"}
           </button>
         </div>
       </div>
@@ -1003,7 +996,7 @@ function ImportForm({
       setError(
         await problemMessage(
           response,
-          "The mock import could not be completed.",
+          "Không thể hoàn tất nạp kết quả mô phỏng.",
         ),
       );
       setBusy(false);
@@ -1014,32 +1007,29 @@ function ImportForm({
   return (
     <form className="vm-card vm-action-panel" onSubmit={submit}>
       <div className="vm-card__body">
-        <h3>Deterministic local/mock import</h3>
+        <h3>Nạp kết quả mô phỏng tại chỗ</h3>
         <p>
-          This is not a live LIS connection and does not use HL7 or FHIR
-          endpoints.
+          Đây không phải kết nối LIS thật và không dùng endpoint HL7/FHIR thật.
         </p>
         <label className="vm-field">
-          Scenario
+          Kịch bản
           <select name="scenario">
-            <option value="success">Successful independent result</option>
-            <option value="preliminary">Lifecycle: preliminary delivery</option>
-            <option value="final">Lifecycle: final delivery</option>
-            <option value="amended">Lifecycle: amended delivery</option>
+            <option value="success">Kết quả độc lập thành công</option>
+            <option value="preliminary">Vòng đời: kết quả sơ bộ</option>
+            <option value="final">Vòng đời: kết quả cuối cùng</option>
+            <option value="amended">Vòng đời: kết quả hiệu chỉnh</option>
             <option value="duplicate-preliminary">
-              Duplicate preliminary delivery
+              Gửi trùng kết quả sơ bộ
             </option>
-            <option value="duplicate-final">Duplicate final delivery</option>
+            <option value="duplicate-final">Gửi trùng kết quả cuối cùng</option>
             <option value="duplicate-amended">
-              Duplicate amended delivery
+              Gửi trùng kết quả hiệu chỉnh
             </option>
             <option value="missing-reference-limit">
-              Missing reference limit
+              Thiếu giới hạn tham chiếu
             </option>
-            <option value="retry-success">
-              Failure for retry demonstration
-            </option>
-            <option value="timeout">Timeout</option>
+            <option value="retry-success">Lỗi để minh họa thử lại</option>
+            <option value="timeout">Quá thời gian</option>
           </select>
           {error && (
             <p className="vm-inline-notice" role="alert">
@@ -1049,10 +1039,10 @@ function ImportForm({
         </label>
         <div className="vm-case-header">
           <button type="button" className="vm-button" onClick={onClose}>
-            Cancel
+            Hủy
           </button>
           <button className="vm-button vm-button--primary" disabled={busy}>
-            Run mock import
+            Chạy nạp mô phỏng
           </button>
         </div>
       </div>
@@ -1103,30 +1093,32 @@ function ReviewForm({
   }
   return (
     <form className="vm-action-panel" onSubmit={submit}>
-      <h3>Record clinician evidence review</h3>
+      <h3>Ghi rà soát bằng chứng của bác sĩ</h3>
       <label>
-        <input type="checkbox" name="incompatible" /> Technical incompatibility
-        acknowledged
+        <input type="checkbox" name="incompatible" /> Đã ghi nhận không tương
+        thích kỹ thuật
       </label>
       <label>
-        <input type="checkbox" name="quality" /> Quality limitation acknowledged
+        <input type="checkbox" name="quality" /> Đã ghi nhận giới hạn chất lượng
       </label>
       <label>
-        <input type="checkbox" name="repeat" /> Request repeat measurement
+        <input type="checkbox" name="repeat" /> Yêu cầu lặp lại xét nghiệm
       </label>
       <label className="vm-field">
-        Reason for repeat
+        Lý do lặp lại
         <input name="reason" />
       </label>
       <label className="vm-field">
-        Optional note
+        Ghi chú tùy chọn
         <textarea name="note" rows={3} />
       </label>
       <div className="vm-case-header">
         <button type="button" className="vm-button" onClick={onClose}>
-          Cancel
+          Hủy
         </button>
-        <button className="vm-button vm-button--primary">Confirm review</button>
+        <button className="vm-button vm-button--primary">
+          Xác nhận rà soát
+        </button>
       </div>
     </form>
   );
@@ -1169,7 +1161,7 @@ function AmendmentForm({
         correlation_id?: string;
       } | null;
       setError(
-        `${problem?.detail ?? "The amendment could not be recorded."}${problem?.correlation_id ? ` Correlation: ${problem.correlation_id}` : ""}`,
+        `${problem?.detail ?? "Không thể ghi hiệu chỉnh."}${problem?.correlation_id ? ` Mã tương quan: ${problem.correlation_id}` : ""}`,
       );
       return;
     }
@@ -1177,13 +1169,12 @@ function AmendmentForm({
   }
   return (
     <form className="vm-action-panel" onSubmit={submit}>
-      <h3>Amend immutable result</h3>
+      <h3>Hiệu chỉnh kết quả bất biến</h3>
       <p>
-        The original remains available. This action creates a linked replacement
-        record.
+        Bản gốc vẫn được giữ lại. Thao tác này tạo một bản thay thế có liên kết.
       </p>
       <label className="vm-field">
-        Amended value
+        Giá trị hiệu chỉnh
         <input
           name="value"
           inputMode="decimal"
@@ -1192,7 +1183,7 @@ function AmendmentForm({
         />
       </label>
       <label className="vm-field">
-        Amendment reason
+        Lý do hiệu chỉnh
         <textarea name="reason" rows={3} required />
       </label>
       {error && (
@@ -1202,10 +1193,10 @@ function AmendmentForm({
       )}
       <div className="vm-case-header">
         <button type="button" className="vm-button" onClick={onClose}>
-          Cancel
+          Hủy
         </button>
         <button className="vm-button vm-button--primary">
-          Confirm amendment
+          Xác nhận hiệu chỉnh
         </button>
       </div>
     </form>

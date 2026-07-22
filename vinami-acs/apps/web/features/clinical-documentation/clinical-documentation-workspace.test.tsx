@@ -71,13 +71,13 @@ describe("ClinicalDocumentationWorkspace", () => {
       />,
     );
     expect(
-      screen.getByText("Documentation policy complete"),
+      screen.getByText("Đã đủ theo chính sách ghi nhận"),
     ).toBeInTheDocument();
-    expect(screen.getByText("absent")).toBeInTheDocument();
-    expect(screen.getByText("not assessed")).toBeInTheDocument();
+    expect(screen.getByText("Không có")).toBeInTheDocument();
+    expect(screen.getByText("Chưa đánh giá")).toBeInTheDocument();
     expect(screen.getByText("72")).toBeInTheDocument();
     expect(screen.getByText("beats/min")).toBeInTheDocument();
-    expect(screen.getByText(/No diagnosis, pathway/)).toBeInTheDocument();
+    expect(screen.getByText(/Không suy luận chẩn đoán/)).toBeInTheDocument();
   });
 
   it("opens append-only correction forms with required reason fields", () => {
@@ -87,10 +87,10 @@ describe("ClinicalDocumentationWorkspace", () => {
         value={current}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Correct entry" }));
-    expect(screen.getByText("Correction reason")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Chỉnh sửa bản ghi" }));
+    expect(screen.getByText("Lý do chỉnh sửa")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Review correction" }),
+      screen.getByRole("button", { name: "Rà soát chỉnh sửa" }),
     ).toBeInTheDocument();
   });
 
@@ -111,10 +111,10 @@ describe("ClinicalDocumentationWorkspace", () => {
         }}
       />,
     );
-    expect(screen.getByText("1 documentation gap")).toBeInTheDocument();
+    expect(screen.getByText("1 mục ghi nhận còn thiếu")).toBeInTheDocument();
     expect(
-      screen.getByText("No triage assessment recorded"),
+      screen.getByText("Chưa ghi nhận đánh giá tiếp nhận"),
     ).toBeInTheDocument();
-    expect(screen.getByText("No vital observation set")).toBeInTheDocument();
+    expect(screen.getByText("Chưa có bộ sinh hiệu")).toBeInTheDocument();
   });
 });

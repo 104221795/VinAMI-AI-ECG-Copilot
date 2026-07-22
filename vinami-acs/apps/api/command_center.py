@@ -41,10 +41,12 @@ class CommandCenterAlertResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     alert_id: UUID
     alert_type: str
+    source: str
     severity: str
     status: str
     raised_at: datetime
     escalation_level: int
+    message: str
 
 
 class CommandCenterCaseResponse(BaseModel):
@@ -88,6 +90,7 @@ class CommandCenterCaseResponse(BaseModel):
     update_token: str
     tasks: tuple[CommandCenterTaskResponse, ...]
     alerts: tuple[CommandCenterAlertResponse, ...]
+    automation: dict[str, object]
 
 
 class CommandCenterPageResponse(BaseModel):

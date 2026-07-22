@@ -18,30 +18,31 @@ export function RealtimeStatus({
   return (
     <aside className={`vm-realtime vm-realtime--${state}`} aria-live="polite">
       <div>
-        <strong>Real-time updates</strong>
+        <strong>Cập nhật thời gian thực</strong>
         <span>{label(state)}</span>
       </div>
       <p>
         {lastUpdateAt
-          ? `Last backend notification ${formatTimestamp(lastUpdateAt)}`
-          : "Waiting for backend notifications."}
+          ? `Thông báo backend gần nhất ${formatTimestamp(lastUpdateAt)}`
+          : "Đang chờ thông báo từ backend."}
       </p>
       {notification && (
         <p>
-          New {notification.resourceHint.replaceAll("_", " ")} update received;
-          authoritative data is refreshing.
+          Nhận cập nhật mới cho {notification.resourceHint.replaceAll("_", " ")}
+          ; dữ liệu thẩm quyền đang được tải lại.
         </p>
       )}
       <small>
-        Notifications are not clinical truth; the UI refetches backend APIs.
+        Thông báo chỉ là tín hiệu làm mới; dữ liệu thẩm quyền luôn được lấy lại
+        từ API backend.
       </small>
     </aside>
   );
 }
 
 function label(state: RealtimeConnectionState) {
-  if (state === "connected") return "connected";
-  if (state === "reconnecting") return "reconnecting";
-  if (state === "disconnected") return "disconnected";
-  return "connecting";
+  if (state === "connected") return "đang kết nối";
+  if (state === "reconnecting") return "đang kết nối lại";
+  if (state === "disconnected") return "đã mất kết nối";
+  return "đang mở kết nối";
 }

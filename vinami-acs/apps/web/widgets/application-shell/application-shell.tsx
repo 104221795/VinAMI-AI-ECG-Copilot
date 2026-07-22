@@ -13,7 +13,7 @@ export function ApplicationShell({
   return (
     <div className="vm-shell">
       <a className="vm-skip-link" href="#main-content">
-        Skip to main content
+        Bỏ qua để tới nội dung chính
       </a>
       <ClinicalSidebar />
       <div className="vm-shell__workspace">

@@ -12,7 +12,7 @@ import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { presentError } from "@web/shared/errors/presentation";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "Lifecycle Timeline" };
+export const metadata: Metadata = { title: "Dòng thời gian ca" };
 
 export default async function TimelinePage({
   params,
@@ -31,8 +31,8 @@ export default async function TimelinePage({
       <>
         <CaseWorkspaceHeader value={workspace} active="timeline" />
         <PageHeader
-          title="Timeline, Outcome and Learning Record"
-          description="Consolidated backend Timeline, physician-authored outcome revisions, model provenance and research-use export."
+          title="Dòng thời gian, kết cục và học hỏi"
+          description="Tổng hợp dòng thời gian backend, các phiên bản kết cục do bác sĩ ghi nhận, nguồn gốc mô hình và gói xuất dữ liệu nghiên cứu."
         />
         <TimelineView value={timeline} />
         <CaseHistoryPanel

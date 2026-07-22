@@ -2,9 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { AlertTriangle, Clock3, RefreshCw } from "lucide-react";
+import { Clock3, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import {
+  EmptyState,
   ErrorState,
   LoadingSkeleton,
   OfflineState,
@@ -12,15 +13,32 @@ import {
 } from "@vinami/ui";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
-import { formatTimestamp, safeDemographics } from "@web/shared/formatting";
+import {
+  formatDueLabel,
+  formatTimestamp,
+  safeDemographics,
+  shortReference,
+} from "@web/shared/formatting";
+import {
+  viClinicalLabel,
+  viClinicalTerm,
+  viDecisionType,
+  viPriority,
+  viSafetyNotice,
+  viStatus,
+  viTaskType,
+  viWorkflowState,
+} from "@web/shared/locale/vi";
 import { useConnectivity } from "@web/shared/hooks/use-connectivity";
 import { IntegrationStatusPanel } from "@web/features/realtime/integration-status-panel";
 import { RealtimeStatus } from "@web/features/realtime/connection-status";
 import { useRealtimeUpdates } from "@web/features/realtime/use-realtime-updates";
+import { EvidenceStatusSummary } from "@web/features/evidence/evidence-status-summary";
+import { EvidenceAutomationPanel } from "@web/features/evidence/evidence-automation-panel";
 import { loadCompleteCaseWorkspaceWith } from "./data";
 import type { CompleteCaseWorkspaceView } from "./model";
 
-const text = (value: unknown, fallback = "Not recorded") =>
+const text = (value: unknown, fallback = "Chưa ghi nhận") =>
   typeof value === "string" && value.length ? value : fallback;
 const number = (value: unknown) => (typeof value === "number" ? value : 0);
 const list = (value: unknown) => (Array.isArray(value) ? value : []);
@@ -77,11 +95,10 @@ export function CompleteCaseWorkspace({
     unknown
   > | null;
   const analysis = value.ecg?.analysis as Record<string, unknown> | null;
-
   return (
     <main
       className="vm-case-workspace"
-      aria-label="Complete clinical case workspace"
+      aria-label="Không gian tổng hợp ca lâm sàng"
     >
       {stale && (
         <StaleDataBanner updatedLabel={formatTimestamp(value.evaluated_at)} />
@@ -93,284 +110,273 @@ export function CompleteCaseWorkspace({
       />
       <header className="vm-case-workspace__header">
         <div>
-          <p className="vm-eyebrow">Suspected ACS clinical case</p>
-          <h1>{value.patient_name ?? value.patient_reference}</h1>
+          <p className="vm-eyebrow">Ca nghi hội chứng mạch vành cấp</p>
+          <h1>{shortReference(value.case_id, "CASE")}</h1>
           <p>
             {value.patient_reference} ·{" "}
             {safeDemographics(value.age_band, value.sex_at_birth)} ·{" "}
             {value.location}
           </p>
+          <code className="vm-raw-identifier">{value.case_id}</code>
         </div>
         <div
           className="vm-case-workspace__status"
-          aria-label="Case status and update"
+          aria-label="Trạng thái ca và cập nhật"
         >
-          <strong>{value.case_status.replaceAll("_", " ")}</strong>
-          <span>Priority {value.case_priority}</span>
-          <span>Updated {formatTimestamp(value.last_updated_at)}</span>
+          <strong>{viStatus(value.case_status)}</strong>
+          <span>Ưu tiên {viPriority(value.case_priority)}</span>
+          <span>Cập nhật {formatTimestamp(value.last_updated_at)}</span>
           <button
             className="vm-button vm-button--secondary"
             onClick={() => query.refetch()}
             disabled={query.isFetching}
           >
             <RefreshCw size={15} aria-hidden />{" "}
-            {query.isFetching ? "Refreshing" : "Refresh"}
+            {query.isFetching ? "Đang làm mới" : "Làm mới"}
           </button>
         </div>
       </header>
 
       <nav
         className="vm-case-workspace__nav"
-        aria-label="Case workspace navigation"
+        aria-label="Điều hướng không gian ca"
       >
-        <Link href={`/cases/${caseId}/documentation`}>Triage / Vitals</Link>
+        <Link href={`/cases/${caseId}`} aria-current="page">
+          Tổng quan
+        </Link>
+        <Link href={`/cases/${caseId}/documentation`}>
+          Tiếp nhận / Sinh hiệu
+        </Link>
         <Link href={`/cases/${caseId}/ecg`}>ECG</Link>
         <Link href={`/cases/${caseId}/troponin`}>Troponin</Link>
         <Link href={`/cases/${caseId}/clinical-reasoning`}>
-          Clinical Reasoning
+          Tổng hợp lâm sàng
         </Link>
-        <Link href={`/cases/${caseId}/workflow`}>Workflow</Link>
-        <Link href={`/cases/${caseId}/timeline`}>Timeline</Link>
-        <Link href={`/cases/${caseId}/audit`}>Audit</Link>
+        <Link href={`/cases/${caseId}/workflow`}>Quy trình</Link>
+        <Link href={`/cases/${caseId}/timeline`}>Dòng thời gian</Link>
+        <Link href={`/cases/${caseId}/audit`}>Nhật ký kiểm chứng</Link>
       </nav>
 
-      <section
-        className={`vm-evidence-banner vm-evidence-banner--${value.evidence_status}`}
-        aria-labelledby="evidence-attention-title"
-      >
-        <AlertTriangle size={18} aria-hidden />
-        <div>
-          <h2 id="evidence-attention-title">Evidence attention</h2>
-          <p>
-            Missing:{" "}
-            {value.missing_evidence.length
-              ? value.missing_evidence.join(", ")
-              : "none recorded"}
-            . Stale:{" "}
-            {value.stale_evidence.length
-              ? value.stale_evidence.join(", ")
-              : "none recorded"}
-            .
-          </p>
-          {value.technical_limits.map((item) => (
-            <p key={item}>{item}</p>
-          ))}
-          <small>Missing or unknown evidence is not negative evidence.</small>
-        </div>
-      </section>
+      <EvidenceStatusSummary
+        title="Chú ý bằng chứng"
+        status={value.evidence_status}
+        missingEvidence={value.missing_evidence}
+        staleEvidence={value.stale_evidence}
+        technicalLimits={value.technical_limits}
+      />
+      <EvidenceAutomationPanel automation={value.automation} />
 
       <div className="vm-case-workspace__grid">
         <Panel
-          title="Triage and latest vitals"
+          title="Tiếp nhận và sinh hiệu mới nhất"
           link={`/cases/${caseId}/documentation`}
-          linkLabel="Open Triage / Vitals"
+          linkLabel="Mở tiếp nhận / sinh hiệu"
         >
           {value.triage ? (
             <>
               <Fact
-                label="Chief complaint"
+                label="Lý do vào viện"
                 value={text(value.triage.chief_complaint)}
               />
               <Fact
-                label="Symptoms"
+                label="Triệu chứng"
                 value={text(value.triage.symptom_description)}
               />
               <Fact
-                label="Clinical time"
+                label="Thời điểm lâm sàng"
                 value={formatTimestamp(text(value.triage.occurred_at))}
               />
               <Source value={value.triage} idKey="assessment_id" />
             </>
           ) : (
-            <Empty label="No current triage record" />
+            <Empty label="Chưa có bản ghi tiếp nhận hiện hành" />
           )}
           <div className="vm-vital-compact">
             {value.vitals ? (
               list(value.vitals.measurements).map((item, index) => {
                 const measurement = item as Record<string, unknown>;
+                const unit = text(measurement.unit, "");
                 return (
                   <span key={`${text(measurement.kind)}-${index}`}>
-                    <strong>{text(measurement.value, "—")}</strong>{" "}
-                    {text(measurement.unit, "")}
-                    <small>{text(measurement.kind)}</small>
+                    <strong>
+                      <span>{formatMeasurementValue(measurement.value)}</span>
+                      {unit ? <em>{unit}</em> : null}
+                    </strong>
+                    <small>{viClinicalLabel(text(measurement.kind))}</small>
                   </span>
                 );
               })
             ) : (
-              <Empty label="No current vital set" />
+              <Empty label="Chưa có bộ sinh hiệu hiện hành" />
             )}
           </div>
         </Panel>
 
         <Panel
-          title="ECG evidence"
+          title="Bằng chứng ECG"
           link={`/cases/${caseId}/ecg`}
-          linkLabel="Open ECG workspace"
+          linkLabel="Mở không gian ECG"
         >
           {value.ecg ? (
             <>
-              <Fact label="Study" value={text(value.ecg.study_reference)} />
+              <Fact label="Lần đo" value={text(value.ecg.study_reference)} />
               <Fact
-                label="Technical quality"
-                value={text(value.ecg.quality_status)}
+                label="Chất lượng kỹ thuật"
+                value={viStatus(text(value.ecg.quality_status))}
               />
               <Fact
-                label="Acquired"
+                label="Thời điểm đo"
                 value={formatTimestamp(text(value.ecg.acquisition_at))}
               />
               <Fact
-                label="AI-supported finding"
+                label="Nhận định ECG có AI hỗ trợ"
                 value={
                   analysis
                     ? `${text(analysis.status)} · ${text(analysis.model_name)} ${text(analysis.model_version, "")}`
-                    : "No model result"
+                    : "Chưa có kết quả mô hình"
                 }
               />
               <Fact
-                label="Physician interpretation"
+                label="Diễn giải của bác sĩ"
                 value={
                   interpretation
                     ? text(interpretation.structured_interpretation)
-                    : "Physician review not recorded"
+                    : "Chưa ghi nhận bác sĩ rà soát"
                 }
               />
               <Source value={value.ecg} idKey="study_id" />
               <small>
-                Model output is decision support, not a diagnosis or clinical
-                probability.
+                Đầu ra mô hình chỉ hỗ trợ quyết định, không phải chẩn đoán hoặc
+                xác suất lâm sàng.
               </small>
             </>
           ) : (
-            <Empty label="No ECG evidence recorded" />
+            <Empty label="Chưa có bản ghi ECG hiện hành" />
           )}
         </Panel>
 
         <Panel
-          title="Serial troponin"
+          title="Troponin nối tiếp"
           link={`/cases/${caseId}/troponin`}
-          linkLabel="Open Troponin workspace"
+          linkLabel="Mở không gian Troponin"
         >
           {latestTroponin ? (
             <>
               <Fact
-                label="Latest result"
+                label="Kết quả mới nhất"
                 value={`${text(latestTroponin.value)} ${text(latestTroponin.unit, "")}`}
               />
-              <Fact label="Assay" value={text(latestTroponin.assay_name)} />
               <Fact
-                label="Specimen time"
+                label="Xét nghiệm"
+                value={text(latestTroponin.assay_name)}
+              />
+              <Fact
+                label="Thời điểm lấy mẫu"
                 value={formatTimestamp(
                   text(latestTroponin.specimen_collected_at),
                 )}
               />
               <Fact
-                label="Effective results"
+                label="Kết quả hiệu lực"
                 value={String(number(value.troponin.result_count))}
               />
               <Fact
-                label="Latest owner-calculated delta"
+                label="Delta mới nhất do backend tính"
                 value={
                   latestDelta
                     ? `${text(latestDelta.absolute_change)} ${text(latestDelta.unit, "")} · ${text(latestDelta.compatibility_status)}`
-                    : "Awaiting serial compatible result"
+                    : "Đang chờ kết quả nối tiếp tương thích"
                 }
               />
               <Source value={latestTroponin} idKey="result_id" />
             </>
           ) : (
-            <Empty label="No effective troponin result" />
+            <Empty label="Chưa có kết quả Troponin hiện hành" />
           )}
         </Panel>
 
         <Panel
-          title="Clinical reasoning and physician authority"
+          title="Tổng hợp lâm sàng và thẩm quyền bác sĩ"
           link={`/cases/${caseId}/clinical-reasoning`}
-          linkLabel="Open Clinical Reasoning"
+          linkLabel="Mở tổng hợp lâm sàng"
         >
           {value.physician_assessment ? (
             <>
               <Fact
-                label="Assessment"
+                label="Đánh giá"
                 value={text(value.physician_assessment.summary)}
               />
               <Fact
-                label="Uncertainty"
+                label="Điểm chưa chắc chắn"
                 value={text(value.physician_assessment.uncertainty)}
               />
             </>
           ) : (
-            <Empty label="No effective physician assessment" />
+            <Empty label="Chưa có đánh giá hiệu lực của bác sĩ" />
           )}
           {value.physician_decision ? (
             <div className="vm-authority-block">
-              <strong>Current non-revoked physician decision</strong>
+              <strong>Quyết định hiện hành chưa bị thu hồi của bác sĩ</strong>
               <p>
-                {text(value.physician_decision.decision_type).replaceAll(
-                  "_",
-                  " ",
-                )}
+                {viDecisionType(text(value.physician_decision.decision_type))}
               </p>
               <p>{text(value.physician_decision.rationale)}</p>
               <Source value={value.physician_decision} idKey="decision_id" />
             </div>
           ) : (
-            <Empty label="No current physician decision" />
+            <Empty label="Chưa có quyết định hiện hành của bác sĩ" />
           )}
           <small>
-            Corrected, superseded and revoked records remain available in
-            Clinical Reasoning history.
+            Các bản ghi đã sửa, bị thay thế hoặc thu hồi vẫn có trong lịch sử
+            Tổng hợp lâm sàng.
           </small>
         </Panel>
 
         <Panel
-          title="Workflow state"
+          title="Trạng thái quy trình"
           link={`/cases/${caseId}/workflow`}
-          linkLabel="Open Workflow"
+          linkLabel="Mở quy trình"
         >
           {value.workflow ? (
             <>
               <Fact
-                label="Current state"
-                value={text(value.workflow.state).replaceAll("_", " ")}
+                label="Trạng thái hiện tại"
+                value={viWorkflowState(text(value.workflow.state))}
               />
               <Fact
-                label="Last transition"
+                label="Chuyển trạng thái gần nhất"
                 value={
                   value.workflow.last_transition_at
                     ? formatTimestamp(text(value.workflow.last_transition_at))
-                    : "No transition recorded"
+                    : "Chưa ghi nhận chuyển trạng thái"
                 }
               />
               <Source value={value.workflow} idKey="workflow_id" />
               <p className="vm-demo-notice">
-                {text(value.workflow.demonstration_notice)}
+                {viSafetyNotice(text(value.workflow.demonstration_notice))}
               </p>
             </>
           ) : (
-            <Empty label="No workflow instance" />
+            <Empty label="Chưa có phiên quy trình" />
           )}
         </Panel>
 
         <Panel
-          title="Active tasks and unresolved alerts"
+          title="Công việc đang mở và cảnh báo chưa xử lý"
           link={`/cases/${caseId}/workflow`}
-          linkLabel="Manage in Workflow"
+          linkLabel="Quản lý trong Quy trình"
         >
           <div className="vm-case-ops-summary">
             <strong>{value.tasks.length}</strong>
-            <span>active tasks</span>
+            <span>công việc đang mở</span>
             <strong>{value.alerts.length}</strong>
-            <span>unresolved alerts</span>
+            <span>cảnh báo chưa xử lý</span>
           </div>
           {value.tasks.slice(0, 4).map((task) => (
             <div className="vm-compact-row" key={text(task.task_id)}>
-              <span>{text(task.task_type).replaceAll("_", " ")}</span>
-              <strong>{text(task.status)}</strong>
-              <small>
-                {task.due_at
-                  ? `Due ${formatTimestamp(text(task.due_at))}`
-                  : "No due time"}
-              </small>
+              <span>{viTaskType(text(task.task_type))}</span>
+              <strong>{viStatus(text(task.status))}</strong>
+              <small>{formatDueLabel(text(task.due_at, ""))}</small>
             </div>
           ))}
           {value.alerts.slice(0, 3).map((alert) => (
@@ -378,42 +384,42 @@ export function CompleteCaseWorkspace({
               className="vm-compact-row vm-compact-row--alert"
               key={text(alert.alert_id)}
             >
-              <span>{text(alert.message)}</span>
-              <strong>{text(alert.severity)}</strong>
+              <span>{viClinicalTerm(text(alert.message))}</span>
+              <strong>{viStatus(text(alert.severity))}</strong>
             </div>
           ))}
           {!value.tasks.length && !value.alerts.length && (
-            <Empty label="No active tasks or unresolved alerts" />
+            <Empty label="Không có công việc đang mở hoặc cảnh báo chưa xử lý" />
           )}
         </Panel>
 
         <Panel
-          title="Follow-up Scheduling"
+          title="Lịch theo dõi"
           link={`/cases/${caseId}/timeline`}
-          linkLabel="Review Timeline / Outcome"
+          linkLabel="Rà soát dòng thời gian / kết cục"
         >
           <div className="vm-scheduling-summary">
             <span>
               <strong>1</strong>
-              Physician follow-up recommendation
+              Khuyến nghị theo dõi của bác sĩ
             </span>
             <span>
               <strong>2</strong>
-              Administrative appointment request
+              Yêu cầu lịch hẹn hành chính
             </span>
             <span>
               <strong>3</strong>
-              Staff confirmation and reminder
+              Nhân viên xác nhận và nhắc lịch
             </span>
             <span>
               <strong>4</strong>
-              Rescheduled, missed/no-show or completed follow-up
+              Đổi lịch, không đến hoặc hoàn tất theo dõi
             </span>
           </div>
           <p className="vm-inline-notice">
-            Scheduling is represented for workflow review only. This MVP has no
-            hospital calendar engine and does not route emergency findings into
-            normal follow-up scheduling.
+            Lịch chỉ được biểu diễn để rà soát quy trình. MVP này chưa có máy
+            lịch bệnh viện và không đưa tín hiệu khẩn cấp vào lịch theo dõi
+            thường quy.
           </p>
         </Panel>
       </div>
@@ -423,8 +429,10 @@ export function CompleteCaseWorkspace({
         aria-labelledby="recent-timeline-title"
       >
         <div className="vm-case-panel__heading">
-          <h2 id="recent-timeline-title">Recent Timeline</h2>
-          <Link href={`/cases/${caseId}/timeline`}>View full Timeline</Link>
+          <h2 id="recent-timeline-title">Dòng thời gian gần đây</h2>
+          <Link href={`/cases/${caseId}/timeline`}>
+            Xem toàn bộ dòng thời gian
+          </Link>
         </div>
         {value.timeline.length ? (
           value.timeline.map((event) => (
@@ -440,20 +448,20 @@ export function CompleteCaseWorkspace({
             </article>
           ))
         ) : (
-          <Empty label="No Timeline activity recorded" />
+          <Empty label="Chưa ghi nhận hoạt động dòng thời gian" />
         )}
         <p className="vm-case-workspace__audit-link">
-          Need provenance?{" "}
+          Cần xem nguồn gốc?{" "}
           <Link href={`/cases/${caseId}/audit`}>
-            Open the complete Audit trail
+            Mở nhật ký kiểm chứng đầy đủ
           </Link>
           .
         </p>
       </section>
       <IntegrationStatusPanel />
       <footer className="vm-case-workspace__footer">
-        Research-use prototype. This workspace presents backend-owned evidence
-        and navigation; it does not create clinical authority.
+        Nguyên mẫu dùng cho nghiên cứu. Không gian này chỉ trình bày bằng chứng
+        và điều hướng do backend sở hữu; không tạo thẩm quyền lâm sàng.
       </footer>
     </main>
   );
@@ -499,6 +507,17 @@ function Fact({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+function formatMeasurementValue(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return new Intl.NumberFormat("vi-VN", {
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return "Chưa ghi nhận";
+}
 function Source({
   value,
   idKey,
@@ -508,10 +527,16 @@ function Source({
 }) {
   return (
     <small className="vm-source-ref">
-      Source {text(value[idKey])} · v{number(value.record_version)}
+      Nguồn {text(value[idKey])} | v{number(value.record_version)}
     </small>
   );
 }
 function Empty({ label }: { label: string }) {
-  return <p className="vm-inline-empty">{label}. Unknown is not negative.</p>;
+  return (
+    <EmptyState
+      title={label}
+      description="Chưa rõ là dữ liệu chưa đầy đủ, không phải bằng chứng âm tính."
+      compact
+    />
+  );
 }

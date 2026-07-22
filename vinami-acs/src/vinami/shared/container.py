@@ -36,6 +36,7 @@ from vinami.ecg.adapters.ingestion import (
     PDFECGAdapter,
 )
 from vinami.ecg.adapters.mock_provider import MockECGAIProvider
+from vinami.ecg.adapters.precomputed_showcase_provider import PTBXLShowcaseProvider
 from vinami.ecg.adapters.preprocessing import CanonicalECGPreprocessor, TechnicalECGQualityEngine
 from vinami.ecg.adapters.torch_provider import TorchConvNeXtV2Provider
 from vinami.ecg.application.service import (
@@ -150,6 +151,15 @@ class AppContainer:
                 self.settings.ecg_checkpoint_path,
                 self.settings.ecg_checkpoint_sha256,
                 self.settings.ecg_device,
+                self.settings.ecg_provider_timeout_seconds,
+            )
+        if (
+            self.settings.ecg_showcase_manifest_path
+            and self.settings.ecg_showcase_manifest_path.is_file()
+        ):
+            providers["ptbxl-showcase"] = PTBXLShowcaseProvider(
+                self.settings.ecg_showcase_manifest_path,
+                self.settings.ecg_showcase_artifact_root,
             )
         return providers
 
@@ -163,6 +173,9 @@ class AppContainer:
             TechnicalECGQualityEngine(),
             self.ecg_providers(),
             MockDICOMSourceConnector(),
+            fallback_provider_name=self.settings.ecg_fallback_provider
+            if self.settings.ecg_allow_provider_fallback
+            else None,
         )
 
     def ecg_queries(self) -> ECGQueryService:

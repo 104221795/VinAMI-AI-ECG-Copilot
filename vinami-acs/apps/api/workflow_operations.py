@@ -120,6 +120,7 @@ class WorkflowWorkspaceResponse(BaseModel):
     workflow: dict[str, Any]
     tasks: list[TaskResponse]
     alerts: list[AlertResponse]
+    alert_digest: list[dict[str, Any]]
     safety_notice: str
 
 

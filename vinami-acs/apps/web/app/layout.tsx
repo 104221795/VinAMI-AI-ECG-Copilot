@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: `%s | ${publicConfig.productName}`,
   },
   description:
-    "Research-use clinical workflow interface for suspected ACS cases",
+    "Giao diện điều phối quy trình lâm sàng cho ca nghi hội chứng mạch vành cấp, chỉ dùng cho nghiên cứu",
   robots: { index: false, follow: false },
 };
 
@@ -24,7 +24,7 @@ export default async function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   const identity = await loadIdentitySafe();
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <QueryProvider>
           <ApplicationShell identity={identity}>{children}</ApplicationShell>

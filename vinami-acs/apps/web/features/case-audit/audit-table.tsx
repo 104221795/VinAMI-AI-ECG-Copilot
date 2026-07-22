@@ -11,8 +11,8 @@ export function AuditTable({ value }: { value: AuditEntryPageView }) {
   if (!entries.length)
     return (
       <EmptyState
-        title="No projected audit entries"
-        description="The immutable audit projection may still be processing. No entries are created by the frontend."
+        title="Chưa có bản ghi kiểm chứng được projection"
+        description="Projection audit bất biến có thể vẫn đang xử lý. Frontend không tạo bản ghi audit."
       />
     );
   return (
@@ -24,25 +24,25 @@ export function AuditTable({ value }: { value: AuditEntryPageView }) {
       }}
     >
       <p className="vm-muted">
-        Showing {entries.length} of {value.total} append-only audit records.
-        Consequential commands include actor, authorization and idempotency
-        provenance where available.
+        Đang hiển thị {entries.length} / {value.total} bản ghi audit ghi nối
+        tiếp. Các lệnh hệ quả có kèm người thực hiện, ủy quyền và idempotency
+        khi có.
       </p>
       <table
         className="vm-table vm-audit-table"
-        aria-label="Immutable case audit history"
+        aria-label="Lịch sử kiểm chứng bất biến của ca"
       >
         <thead>
           <tr>
-            <th scope="col">Timestamp</th>
-            <th scope="col">Actor</th>
-            <th scope="col">Role</th>
-            <th scope="col">Action</th>
-            <th scope="col">Resource</th>
-            <th scope="col">Outcome</th>
-            <th scope="col">Version</th>
-            <th scope="col">Source</th>
-            <th scope="col">Details</th>
+            <th scope="col">Thời gian</th>
+            <th scope="col">Người thực hiện</th>
+            <th scope="col">Vai trò</th>
+            <th scope="col">Hành động</th>
+            <th scope="col">Tài nguyên</th>
+            <th scope="col">Kết quả</th>
+            <th scope="col">Phiên bản</th>
+            <th scope="col">Nguồn</th>
+            <th scope="col">Chi tiết</th>
           </tr>
         </thead>
         <tbody>
@@ -69,28 +69,28 @@ export function AuditTable({ value }: { value: AuditEntryPageView }) {
                     </dd>
                     <dt>Causation</dt>
                     <dd>
-                      <code>{entry.causationId ?? "None"}</code>
+                      <code>{entry.causationId ?? "Không có"}</code>
                     </dd>
-                    <dt>Identity provider</dt>
-                    <dd>{entry.identityProvider ?? "Not supplied"}</dd>
-                    <dt>Authentication</dt>
-                    <dd>{entry.authenticationMethod ?? "Not supplied"}</dd>
-                    <dt>Authorization</dt>
-                    <dd>{entry.authorizationResult ?? "Not supplied"}</dd>
-                    <dt>Idempotency key</dt>
+                    <dt>Nhà cung cấp danh tính</dt>
+                    <dd>{entry.identityProvider ?? "Chưa cung cấp"}</dd>
+                    <dt>Xác thực</dt>
+                    <dd>{entry.authenticationMethod ?? "Chưa cung cấp"}</dd>
+                    <dt>Ủy quyền</dt>
+                    <dd>{entry.authorizationResult ?? "Chưa cung cấp"}</dd>
+                    <dt>Khóa idempotency</dt>
                     <dd>
-                      <code>{entry.idempotencyKey ?? "Not supplied"}</code>
+                      <code>{entry.idempotencyKey ?? "Chưa cung cấp"}</code>
                     </dd>
-                    <dt>Correction state</dt>
+                    <dt>Trạng thái chỉnh sửa</dt>
                     <dd>{entry.correctionStatus}</dd>
-                    <dt>Source record version</dt>
-                    <dd>{entry.sourceRecordVersion ?? "Not supplied"}</dd>
-                    <dt>Resource UUID</dt>
+                    <dt>Phiên bản bản ghi nguồn</dt>
+                    <dd>{entry.sourceRecordVersion ?? "Chưa cung cấp"}</dd>
+                    <dt>UUID tài nguyên</dt>
                     <dd>
                       <code>{entry.resourceId}</code>
                     </dd>
-                    <dt>Reason</dt>
-                    <dd>{entry.reason ?? "Not supplied"}</dd>
+                    <dt>Lý do</dt>
+                    <dd>{entry.reason ?? "Chưa cung cấp"}</dd>
                   </dl>
                 </TechnicalDetailsDisclosure>
               </td>

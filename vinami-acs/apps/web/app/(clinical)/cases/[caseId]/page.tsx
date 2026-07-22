@@ -4,7 +4,7 @@ import { loadCompleteCaseWorkspace } from "@web/features/complete-case-workspace
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { presentError } from "@web/shared/errors/presentation";
 
-export const metadata: Metadata = { title: "Clinical Case" };
+export const metadata: Metadata = { title: "Ca lâm sàng" };
 
 export default async function CaseWorkspacePage({
   params,

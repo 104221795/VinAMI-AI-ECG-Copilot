@@ -77,6 +77,7 @@ export const workflowOperationsSchema = z.object({
   }),
   tasks: z.array(workflowTaskSchema),
   alerts: z.array(workflowAlertSchema),
+  alert_digest: z.array(z.record(z.string(), z.unknown())),
   safety_notice: z.string(),
 });
 

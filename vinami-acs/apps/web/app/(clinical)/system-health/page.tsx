@@ -5,7 +5,7 @@ import { SystemHealth } from "@web/features/system-health/system-health";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { presentError } from "@web/shared/errors/presentation";
 
-export const metadata: Metadata = { title: "System Health" };
+export const metadata: Metadata = { title: "Trạng thái hệ thống" };
 
 export default async function SystemHealthPage() {
   try {
@@ -13,9 +13,9 @@ export default async function SystemHealthPage() {
     return (
       <>
         <PageHeader
-          eyebrow="Technical operations"
-          title="System Health"
-          description="Dependency readiness is separated from the clinical queue and contains no patient information."
+          eyebrow="Vận hành kỹ thuật"
+          title="Trạng thái hệ thống"
+          description="Kiểm tra sẵn sàng của phụ thuộc được tách khỏi hàng đợi lâm sàng và không chứa thông tin bệnh nhân."
         />
         <SystemHealth value={value} />
       </>
@@ -23,7 +23,7 @@ export default async function SystemHealthPage() {
   } catch (error) {
     return (
       <>
-        <PageHeader eyebrow="Technical operations" title="System Health" />
+        <PageHeader eyebrow="Vận hành kỹ thuật" title="Trạng thái hệ thống" />
         <ErrorPanel presentation={presentError(error)} />
       </>
     );

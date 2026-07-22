@@ -36,6 +36,7 @@ from vinami.ecg.domain.clinical import (
     ModelScoreEvolution,
     ReminderOrigin,
     ReminderStatus,
+    SignalFeatureDelta,
     TechnicalQualityStatus,
 )
 from vinami.ecg.domain.model import ECGQualityAssessment
@@ -306,10 +307,24 @@ class DynamicECGComparisonRecord(Base):
     comparability_reasons: Mapped[list[str]] = mapped_column(JSONDocument, nullable=False)
     lead_comparisons: Mapped[list[dict[str, object]]] = mapped_column(JSONDocument, nullable=False)
     technical_change_indicators: Mapped[list[str]] = mapped_column(JSONDocument, nullable=False)
+    signal_feature_deltas: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONDocument, nullable=False, default=list
+    )
+    rhythm_change_indicators: Mapped[list[str]] = mapped_column(
+        JSONDocument, nullable=False, default=list
+    )
+    st_t_change_indicators: Mapped[list[str]] = mapped_column(
+        JSONDocument, nullable=False, default=list
+    )
     model_score_deltas: Mapped[list[dict[str, object]]] = mapped_column(
         JSONDocument, nullable=False
     )
     quality_context: Mapped[str] = mapped_column(Text, nullable=False)
+    review_recommendation: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+        default="Technical serial ECG comparison only; physician interpretation is required.",
+    )
     requested_by: Mapped[UUID] = mapped_column(
         UUIDType, ForeignKey("clinical_users.id", ondelete="RESTRICT"), nullable=False
     )
@@ -635,8 +650,12 @@ class SQLAlchemyECGClinicalRepository:
                 comparability_reasons=list(value.comparability_reasons),
                 lead_comparisons=[_lead_document(item) for item in value.lead_comparisons],
                 technical_change_indicators=list(value.technical_change_indicators),
+                signal_feature_deltas=[asdict(item) for item in value.signal_feature_deltas],
+                rhythm_change_indicators=list(value.rhythm_change_indicators),
+                st_t_change_indicators=list(value.st_t_change_indicators),
                 model_score_deltas=[asdict(item) for item in value.model_score_deltas],
                 quality_context=value.quality_context,
+                review_recommendation=value.review_recommendation,
                 requested_by=value.requested_by,
                 requested_by_role=value.requested_by_role,
                 requested_at=value.requested_at,
@@ -914,6 +933,19 @@ def _score_delta(value: dict[str, object]) -> ModelScoreEvolution:
     )
 
 
+def _signal_feature_delta(value: dict[str, object]) -> SignalFeatureDelta:
+    return SignalFeatureDelta(
+        feature_name=str(value["feature_name"]),
+        display_label=str(value["display_label"]),
+        previous_value=_optional_number(value.get("previous_value"), "previous_value"),
+        current_value=_optional_number(value.get("current_value"), "current_value"),
+        absolute_delta=_optional_number(value.get("absolute_delta"), "absolute_delta"),
+        unit=str(value["unit"]) if value.get("unit") is not None else None,
+        status=str(value["status"]),
+        evidence_scope=str(value["evidence_scope"]),
+    )
+
+
 def _comparison_domain(value: DynamicECGComparisonRecord) -> DynamicECGComparison:
     return DynamicECGComparison(
         id=value.id,
@@ -927,8 +959,14 @@ def _comparison_domain(value: DynamicECGComparisonRecord) -> DynamicECGCompariso
         comparability_reasons=tuple(value.comparability_reasons),
         lead_comparisons=tuple(_lead_domain(item) for item in value.lead_comparisons),
         technical_change_indicators=tuple(value.technical_change_indicators),
+        signal_feature_deltas=tuple(
+            _signal_feature_delta(item) for item in value.signal_feature_deltas
+        ),
+        rhythm_change_indicators=tuple(value.rhythm_change_indicators),
+        st_t_change_indicators=tuple(value.st_t_change_indicators),
         model_score_deltas=tuple(_score_delta(item) for item in value.model_score_deltas),
         quality_context=value.quality_context,
+        review_recommendation=value.review_recommendation,
         requested_by=value.requested_by,
         requested_by_role=value.requested_by_role,
         requested_at=value.requested_at,
@@ -979,6 +1017,12 @@ def _number(value: object, field: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
         raise ValueError(f"persisted ECG {field} is malformed")
     return float(value)
+
+
+def _optional_number(value: object, field: str) -> float | None:
+    if value is None:
+        return None
+    return _number(value, field)
 
 
 def _integer(value: object, field: str) -> int:

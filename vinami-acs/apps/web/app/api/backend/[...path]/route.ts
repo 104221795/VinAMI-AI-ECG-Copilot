@@ -19,6 +19,7 @@ const allowedPaths = [
   /^api\/v1\/clinical-cases\/[0-9a-f-]+\/(?:ecg-imports|ecg-comparisons|ecg-evolution|repeat-ecg-reminders)$/,
   /^api\/v1\/ecg-source-connectors(?:\/[a-z0-9-]+\/health)?$/,
   /^api\/v1\/ecg-studies\/[0-9a-f-]+\/(?:waveform|quality|analyses|physician-interpretations|preview)$/,
+  /^api\/v1\/ecg-analyses\/[0-9a-f-]+\/explanation$/,
   /^api\/v1\/ecg-ingestion-jobs\/[0-9a-f-]+$/,
   /^api\/v1\/ecg-comparisons\/[0-9a-f-]+(?:\/physician-reviews)?$/,
   /^api\/v1\/repeat-ecg-reminders\/[0-9a-f-]+$/,

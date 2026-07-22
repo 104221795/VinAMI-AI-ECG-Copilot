@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, aliased
 
 from vinami.alerts.adapters.persistence import AlertRecord
 from vinami.alerts.domain.model import AlertSeverity, AlertStatus
+from vinami.clinical_case.application.automation import build_case_automation
 from vinami.clinical_case.adapters.persistence import ClinicalCaseRecord
 from vinami.clinical_case.domain.model import CaseStatus, ClinicalPriority
 from vinami.clinical_case.ports.command_center import (
@@ -26,7 +27,11 @@ from vinami.reasoning.adapters.r5_persistence import (
     ClinicalEvidenceSnapshotRecord,
     ClinicalReasoningDecisionRecord,
 )
-from vinami.triage.adapters.persistence import TriageAssessmentRecord, VitalObservationSetRecord
+from vinami.triage.adapters.persistence import (
+    TriageAssessmentRecord,
+    TriageStructuredObservationRecord,
+    VitalObservationSetRecord,
+)
 from vinami.troponin.adapters.r4_persistence import TroponinEvidenceRecord
 from vinami.workflow.adapters.persistence import (
     ClinicalTaskRecord,
@@ -56,11 +61,7 @@ class SQLAlchemyCommandCenterReadRepository:
         snapshot = self._latest_snapshot()
         decision = self._latest_effective_decision()
         ecg = self._latest_ecg()
-        triage = self._latest_timestamp(
-            TriageAssessmentRecord.clinical_case_id,
-            TriageAssessmentRecord.recorded_at,
-            "triage_at",
-        )
+        triage = self._latest_triage()
         vitals = self._latest_timestamp(
             VitalObservationSetRecord.clinical_case_id,
             VitalObservationSetRecord.observed_at,
@@ -128,6 +129,9 @@ class SQLAlchemyCommandCenterReadRepository:
         )
         evidence_missing = or_(
             triage.c.triage_at.is_(None),
+            triage.c.symptom_onset_state.in_(("unknown", "not_assessed")),
+            and_(triage.c.symptom_onset_state == "present", triage.c.symptom_onset_at.is_(None)),
+            func.coalesce(triage.c.explicit_risk_factor_count, 0) == 0,
             vitals.c.vitals_at.is_(None),
             ecg.c.acquisition_at.is_(None),
             troponin.c.troponin_at.is_(None),
@@ -197,6 +201,11 @@ class SQLAlchemyCommandCenterReadRepository:
                 ecg.c.acquisition_at.label("ecg_at"),
                 troponin.c.troponin_at,
                 ecg.c.quality_status.label("ecg_quality_status"),
+                triage.c.chief_complaint,
+                triage.c.symptom_onset_state,
+                triage.c.symptom_onset_at,
+                triage.c.risk_factor_count,
+                triage.c.explicit_risk_factor_count,
             )
             .join(EncounterRecord, EncounterRecord.id == ClinicalCaseRecord.encounter_id)
             .join(PatientRecord, PatientRecord.id == EncounterRecord.patient_id)
@@ -392,6 +401,57 @@ class SQLAlchemyCommandCenterReadRepository:
         return select(candidates).where(candidates.c.rank == 1).subquery("r7_effective_decision")
 
     @staticmethod
+    def _latest_triage() -> Any:
+        ranked = (
+            select(
+                TriageAssessmentRecord.id.label("triage_assessment_id"),
+                TriageAssessmentRecord.clinical_case_id,
+                TriageAssessmentRecord.recorded_at.label("triage_at"),
+                TriageAssessmentRecord.chief_complaint,
+                TriageAssessmentRecord.symptom_onset_state,
+                TriageAssessmentRecord.symptom_onset_at,
+                func.row_number()
+                .over(
+                    partition_by=TriageAssessmentRecord.clinical_case_id,
+                    order_by=(
+                        TriageAssessmentRecord.revision_number.desc(),
+                        TriageAssessmentRecord.recorded_at.desc(),
+                    ),
+                )
+                .label("rank"),
+            )
+            .subquery()
+        )
+        latest = select(ranked).where(ranked.c.rank == 1).subquery("r7_latest_triage_base")
+        risk = (
+            select(
+                TriageStructuredObservationRecord.triage_assessment_id,
+                func.count().label("risk_factor_count"),
+                func.count()
+                .filter(TriageStructuredObservationRecord.state.in_(("present", "absent")))
+                .label("explicit_risk_factor_count"),
+            )
+            .where(TriageStructuredObservationRecord.category == "cardiovascular_risk_factor")
+            .group_by(TriageStructuredObservationRecord.triage_assessment_id)
+            .subquery()
+        )
+        return (
+            select(
+                latest.c.clinical_case_id,
+                latest.c.triage_at,
+                latest.c.chief_complaint,
+                latest.c.symptom_onset_state,
+                latest.c.symptom_onset_at,
+                func.coalesce(risk.c.risk_factor_count, 0).label("risk_factor_count"),
+                func.coalesce(risk.c.explicit_risk_factor_count, 0).label(
+                    "explicit_risk_factor_count"
+                ),
+            )
+            .outerjoin(risk, risk.c.triage_assessment_id == latest.c.triage_assessment_id)
+            .subquery("r7_latest_triage")
+        )
+
+    @staticmethod
     def _latest_ecg() -> Any:
         ranked = (
             select(
@@ -487,10 +547,12 @@ class SQLAlchemyCommandCenterReadRepository:
                 CommandCenterAlert(
                     row.id,
                     row.alert_type,
+                    row.source,
                     row.severity.value,
                     row.status.value,
                     row.raised_at,
                     row.escalation_level,
+                    row.message,
                 )
             )
         return result
@@ -520,6 +582,12 @@ class SQLAlchemyCommandCenterReadRepository:
             freshness["ecg"] = "technical_limit"
         missing = set(row["missing_evidence"] or [])
         missing.update(name for name, timestamp in timestamps.items() if timestamp is None)
+        if row["symptom_onset_state"] in {None, "unknown", "not_assessed"} or (
+            row["symptom_onset_state"] == "present" and row["symptom_onset_at"] is None
+        ):
+            missing.add("symptom_onset")
+        if row["explicit_risk_factor_count"] in {None, 0}:
+            missing.add("risk_factors")
         technical = tuple(row["technical_conflicts"] or [])
         if row["ecg_quality_status"] in {"limited", "unusable"}:
             technical = (*technical, f"Latest ECG quality is {row['ecg_quality_status']}")
@@ -534,7 +602,72 @@ class SQLAlchemyCommandCenterReadRepository:
                 row["max_alert_version"],
                 row["snapshot_id"],
                 row["decision_id"],
+                row["symptom_onset_state"],
+                row["explicit_risk_factor_count"],
             )
+        )
+        triage_payload = (
+            None
+            if row["triage_at"] is None
+            else {
+                "chief_complaint": row["chief_complaint"] or "recorded",
+                "symptom_onset_state": row["symptom_onset_state"],
+                "symptom_onset_at": row["symptom_onset_at"],
+                "observations": (
+                    [
+                        {
+                            "category": "cardiovascular_risk_factor",
+                            "name": "documented_risk_factor_state",
+                            "state": "present",
+                        }
+                    ]
+                    if row["explicit_risk_factor_count"]
+                    else []
+                ),
+            }
+        )
+        vitals_payload = None if row["vitals_at"] is None else {"measurements": [1]}
+        ecg_payload = (
+            None
+            if row["ecg_at"] is None
+            else {"quality_status": row["ecg_quality_status"] or "unknown"}
+        )
+        troponin_payload = {"result_count": 0 if row["troponin_at"] is None else 1}
+        automation = build_case_automation(
+            case_id=row["case_id"],
+            now=query.now,
+            triage=triage_payload,
+            vitals=vitals_payload,
+            ecg=ecg_payload,
+            troponin=troponin_payload,
+            evidence_freshness=freshness,
+            missing_evidence=tuple(sorted(missing)),
+            stale_evidence=tuple(
+                name for name, state in freshness.items() if state == "stale"
+            ),
+            technical_limits=technical,
+            tasks=[
+                {
+                    "task_id": task.task_id,
+                    "task_type": task.task_type,
+                    "status": task.status,
+                    "priority": task.priority,
+                }
+                for task in tasks
+            ],
+            alerts=[
+                {
+                    "alert_id": alert.alert_id,
+                    "alert_type": alert.alert_type,
+                    "source": alert.source,
+                    "severity": alert.severity,
+                    "status": alert.status,
+                    "raised_at": alert.raised_at,
+                    "escalation_level": alert.escalation_level,
+                    "message": alert.message,
+                }
+                for alert in alerts
+            ],
         )
         return CommandCenterCase(
             row["case_id"],
@@ -574,4 +707,5 @@ class SQLAlchemyCommandCenterReadRepository:
             token,
             tuple(tasks),
             tuple(alerts),
+            automation,
         )

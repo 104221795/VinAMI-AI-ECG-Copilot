@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     ecg_checkpoint_path: Path | None = None
     ecg_checkpoint_sha256: str | None = None
     ecg_device: str = "cpu"
+    ecg_provider_timeout_seconds: float = Field(default=30.0, gt=0.0)
+    ecg_allow_provider_fallback: bool = False
+    ecg_fallback_provider: str = "mock"
+    ecg_showcase_manifest_path: Path | None = None
+    ecg_showcase_artifact_root: Path | None = None
 
     @model_validator(mode="after")
     def validate_identity_configuration(self) -> Settings:

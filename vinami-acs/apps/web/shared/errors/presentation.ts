@@ -10,53 +10,53 @@ export interface ErrorPresentation {
 export function presentError(error: unknown): ErrorPresentation {
   if (!(error instanceof VinamiApiError)) {
     return {
-      title: "Information unavailable",
+      title: "Thông tin không khả dụng",
       description:
-        "The request could not be completed. Retry, or contact the support team if the issue persists.",
+        "Không thể hoàn tất yêu cầu. Hãy thử lại hoặc liên hệ nhóm hỗ trợ nếu lỗi tiếp diễn.",
       correlationId: null,
       retryable: true,
     };
   }
   const messages: Record<typeof error.kind, [string, string]> = {
     authentication: [
-      "Session unavailable",
-      "The verified session is missing or expired. Re-establish the approved identity session.",
+      "Phiên làm việc không khả dụng",
+      "Phiên xác thực bị thiếu hoặc đã hết hạn. Cần thiết lập lại phiên danh tính đã được phê duyệt.",
     ],
     authorization: [
-      "Permission required",
-      "Your verified role does not permit access to this clinical information.",
+      "Cần quyền truy cập",
+      "Vai trò đã xác thực của bạn không cho phép xem thông tin lâm sàng này.",
     ],
     not_found: [
-      "Record not found",
-      "This record may have been removed from the active workflow or the reference may be incorrect.",
+      "Không tìm thấy bản ghi",
+      "Bản ghi có thể không còn trong quy trình đang hoạt động hoặc mã tham chiếu chưa đúng.",
     ],
     conflict: [
-      "Information changed",
-      "A newer aggregate version is available. Refresh before continuing.",
+      "Dữ liệu ca đã thay đổi",
+      "Backend đã có phiên bản mới hơn. Hãy làm mới trước khi tiếp tục để không ghi thao tác lên dữ liệu cũ.",
     ],
     validation: [
-      "Request could not be validated",
-      "Review the selected filters and retry with supported values.",
+      "Yêu cầu không hợp lệ",
+      "Kiểm tra bộ lọc hoặc dữ liệu đã chọn rồi thử lại với giá trị được hỗ trợ.",
     ],
     timeout: [
-      "Service response delayed",
-      "The clinical service did not respond within the expected time window.",
+      "Dịch vụ phản hồi chậm",
+      "Dịch vụ lâm sàng không phản hồi trong khoảng thời gian dự kiến.",
     ],
     offline: [
-      "Connection unavailable",
-      "The clinical service cannot be reached. Check connectivity before relying on displayed information.",
+      "Không có kết nối",
+      "Không thể kết nối tới dịch vụ lâm sàng. Hãy kiểm tra mạng trước khi dựa vào thông tin hiển thị.",
     ],
     server: [
-      "Clinical service unavailable",
-      "The server could not complete the request. No clinical action was taken.",
+      "Dịch vụ lâm sàng không khả dụng",
+      "Máy chủ không thể hoàn tất yêu cầu. Không có thao tác lâm sàng nào được ghi nhận.",
     ],
     malformed: [
-      "Contract mismatch detected",
-      "The received information failed runtime validation and has not been displayed.",
+      "Phát hiện lệch hợp đồng dữ liệu",
+      "Thông tin nhận được không vượt qua kiểm tra runtime nên chưa được hiển thị.",
     ],
     unknown: [
-      "Request unsuccessful",
-      "The request could not be completed safely.",
+      "Yêu cầu chưa thành công",
+      "Không thể hoàn tất yêu cầu một cách an toàn.",
     ],
   };
   const [title, description] = messages[error.kind];

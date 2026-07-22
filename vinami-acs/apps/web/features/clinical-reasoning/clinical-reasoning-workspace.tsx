@@ -4,9 +4,16 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle2, Clock3, FilePenLine } from "lucide-react";
+import { AlertTriangle, FilePenLine } from "lucide-react";
 import { createBrowserApiClient } from "@web/shared/api/browser";
-import { formatTimestamp } from "@web/shared/formatting";
+import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import {
+  viDecisionType,
+  viEvidence,
+  viSafetyNotice,
+  viStatus,
+} from "@web/shared/locale/vi";
+import { EvidenceStatusSummary } from "@web/features/evidence/evidence-status-summary";
 import {
   clinicalReasoningWorkspaceSchema,
   type AssessmentView,
@@ -15,14 +22,14 @@ import {
 } from "./model";
 
 const decisionLabels = {
-  continue_observation: "Continue observation",
-  request_repeat_ecg: "Request repeat ECG",
-  request_repeat_troponin: "Request repeat troponin",
-  request_additional_information: "Request additional information",
-  request_cardiology_review: "Request cardiology review",
-  request_cath_lab_review: "Physician request for cath-lab review",
-  maintain_current_plan: "Maintain current plan",
-  other_documented_plan: "Other documented plan",
+  continue_observation: "Tiếp tục theo dõi",
+  request_repeat_ecg: "Yêu cầu lặp lại ECG",
+  request_repeat_troponin: "Yêu cầu lặp lại Troponin",
+  request_additional_information: "Yêu cầu bổ sung thông tin",
+  request_cardiology_review: "Yêu cầu hội chẩn Tim mạch",
+  request_cath_lab_review: "Bác sĩ yêu cầu xem xét can thiệp",
+  maintain_current_plan: "Duy trì kế hoạch hiện tại",
+  other_documented_plan: "Kế hoạch khác đã ghi nhận",
 } as const;
 type DecisionCode = keyof typeof decisionLabels;
 
@@ -90,7 +97,7 @@ export function ClinicalReasoningWorkspace({
   const assessmentMutation = useMutation({
     mutationFn: async (form: AssessmentForm) => {
       if (!snapshot)
-        throw new Error("Create a current evidence snapshot first.");
+        throw new Error("Cần tạo snapshot bằng chứng hiện hành trước.");
       const base = {
         snapshot_id: snapshot.snapshot_id,
         expected_snapshot_version: snapshot.record_version,
@@ -123,9 +130,7 @@ export function ClinicalReasoningWorkspace({
   const decisionMutation = useMutation({
     mutationFn: async (form: DecisionForm) => {
       if (!snapshot || !value.assessments[0])
-        throw new Error(
-          "A current snapshot and physician assessment are required.",
-        );
+        throw new Error("Cần có snapshot hiện hành và đánh giá của bác sĩ.");
       const assessment = value.assessments[0];
       const base = {
         snapshot_id: snapshot.snapshot_id,
@@ -161,14 +166,12 @@ export function ClinicalReasoningWorkspace({
   const revokeMutation = useMutation({
     mutationFn: async () => {
       if (!snapshot || !revokeDecision)
-        throw new Error(
-          "A current decision and evidence snapshot are required.",
-        );
+        throw new Error("Cần có quyết định hiện hành và snapshot bằng chứng.");
       const assessment = value.assessments.find(
         (item) => item.assessment_id === revokeDecision.assessment_id,
       );
       if (!assessment)
-        throw new Error("Linked physician assessment is unavailable.");
+        throw new Error("Không tìm thấy đánh giá bác sĩ được liên kết.");
       return api.revokeClinicalDecision(
         caseId,
         revokeDecision.decision_id,
@@ -205,10 +208,10 @@ export function ClinicalReasoningWorkspace({
         <div className="vm-card__body">
           <div>
             <p className="vm-eyebrow">
-              Physician workspace - research-use prototype
+              Không gian bác sĩ - nguyên mẫu nghiên cứu
             </p>
-            <h2 id="reasoning-title">Clinical evidence synthesis</h2>
-            <p>{value.safety_notice}</p>
+            <h2 id="reasoning-title">Tổng hợp bằng chứng lâm sàng</h2>
+            <p>{viSafetyNotice(value.safety_notice)}</p>
           </div>
           <button
             className="vm-button vm-button--primary"
@@ -216,8 +219,8 @@ export function ClinicalReasoningWorkspace({
             onClick={() => snapshotMutation.mutate()}
           >
             {snapshotMutation.isPending
-              ? "Creating snapshot..."
-              : "Create current snapshot"}
+              ? "Đang tạo snapshot..."
+              : "Tạo snapshot hiện hành"}
           </button>
         </div>
       </section>
@@ -225,87 +228,72 @@ export function ClinicalReasoningWorkspace({
       <div className="vm-reasoning-grid">
         <section className="vm-card">
           <div className="vm-card__body">
-            <h3>Case identity and evidence freshness</h3>
+            <h3>Định danh ca</h3>
             <dl className="vm-reasoning-facts">
-              <dt>Case</dt>
+              <dt>Ca</dt>
               <dd>
-                <code>{caseId}</code>
+                <strong>{shortReference(caseId, "CASE")}</strong>
+                <code className="vm-raw-identifier">{caseId}</code>
               </dd>
-              <dt>Case version</dt>
+              <dt>Phiên bản ca</dt>
               <dd>v{value.case_version}</dd>
               <dt>Snapshot</dt>
               <dd>
                 {snapshot
                   ? `v${snapshot.record_version} - ${formatTimestamp(snapshot.created_at)}`
-                  : "Not created"}
+                  : "Chưa tạo"}
               </dd>
             </dl>
-            {snapshot &&
-              Object.entries(snapshot.freshness).map(([name, status]) => (
-                <span
-                  className={`vm-evidence-status vm-evidence-status--${status}`}
-                  key={name}
-                >
-                  <Clock3 size={14} /> {name}: {status}
-                </span>
-              ))}
           </div>
         </section>
         <section className="vm-card">
           <div className="vm-card__body">
-            <h3>Evidence limitations</h3>
-            {!snapshot && (
-              <p>Create a snapshot to inspect persisted evidence.</p>
+            {!snapshot && <p>Tạo snapshot để xem bằng chứng đã lưu.</p>}
+            {snapshot && (
+              <EvidenceStatusSummary
+                title="Giới hạn bằng chứng"
+                status={
+                  snapshot.missing_evidence.length ||
+                  snapshot.technical_conflicts.length
+                    ? "incomplete"
+                    : "current"
+                }
+                freshness={snapshot.freshness}
+                missingEvidence={snapshot.missing_evidence}
+                technicalLimits={snapshot.technical_conflicts}
+              />
             )}
-            {snapshot &&
-              snapshot.missing_evidence.length === 0 &&
-              snapshot.technical_conflicts.length === 0 && (
-                <p className="vm-positive">
-                  <CheckCircle2 size={16} /> No technical gap recorded in this
-                  snapshot.
-                </p>
-              )}
-            {snapshot?.missing_evidence.map((item) => (
-              <p className="vm-warning" key={item}>
-                <AlertTriangle size={16} /> Missing: {item}
-              </p>
-            ))}
-            {snapshot?.technical_conflicts.map((item) => (
-              <p className="vm-warning" key={item}>
-                <AlertTriangle size={16} /> {item}
-              </p>
-            ))}
           </div>
         </section>
       </div>
 
       <div className="vm-reasoning-grid vm-reasoning-grid--three">
         <EvidencePanel
-          title="Triage and vitals"
+          title="Tiếp nhận và sinh hiệu"
           value={{
             triage: snapshot?.summaries.triage,
             vitals: snapshot?.summaries.vitals,
           }}
-          empty="No triage or vital evidence in the current snapshot."
+          empty="Snapshot hiện hành chưa có nội dung tóm tắt."
         />
         <EvidencePanel
-          title="ECG summary"
+          title="Tóm tắt ECG"
           value={snapshot?.summaries.ecg}
-          empty="No ECG evidence in the current snapshot."
+          empty="Snapshot hiện hành chưa có nội dung tóm tắt."
         />
         <EvidencePanel
-          title="Troponin summary"
+          title="Tóm tắt Troponin"
           value={snapshot?.summaries.troponin}
-          empty="No effective troponin evidence in the current snapshot."
+          empty="Snapshot hiện hành chưa có nội dung tóm tắt."
         />
       </div>
 
       <section className="vm-card">
         <div className="vm-card__body">
-          <h3>Select evidence for physician authorship</h3>
+          <h3>Chọn bằng chứng để bác sĩ ghi nhận</h3>
           <p>
-            Selections are references to persisted records. They do not create a
-            clinical conclusion.
+            Các lựa chọn chỉ là tham chiếu tới bản ghi đã lưu. Chúng không tạo
+            kết luận lâm sàng.
           </p>
           <div className="vm-evidence-picker">
             {sourceOptions.map((source) => {
@@ -321,7 +309,8 @@ export function ClinicalReasoningWorkspace({
                       )
                     }
                   />{" "}
-                  Supporting - {source.source_type} v{source.source_version}
+                  Ủng hộ - {viEvidence(source.source_type)} v
+                  {source.source_version}
                 </label>
               );
             })}
@@ -338,7 +327,8 @@ export function ClinicalReasoningWorkspace({
                       )
                     }
                   />{" "}
-                  Contradictory - {source.source_type} v{source.source_version}
+                  Mâu thuẫn - {viEvidence(source.source_type)} v
+                  {source.source_version}
                 </label>
               );
             })}
@@ -350,7 +340,7 @@ export function ClinicalReasoningWorkspace({
         <section className="vm-card">
           <div className="vm-card__body">
             <h3>
-              <FilePenLine size={18} /> Physician assessment
+              <FilePenLine size={18} /> Đánh giá của bác sĩ
             </h3>
             <form
               onSubmit={assessmentForm.handleSubmit((form) =>
@@ -359,13 +349,13 @@ export function ClinicalReasoningWorkspace({
               className="vm-form-stack"
             >
               <label>
-                Assessment summary
+                Tóm tắt đánh giá
                 <textarea
                   {...assessmentForm.register("summary", { required: true })}
                 />
               </label>
               <label>
-                Uncertainty
+                Điểm chưa chắc chắn
                 <textarea
                   {...assessmentForm.register("uncertainty", {
                     required: true,
@@ -373,14 +363,14 @@ export function ClinicalReasoningWorkspace({
                 />
               </label>
               <label>
-                Additional information required
+                Thông tin bổ sung cần có
                 <textarea
                   {...assessmentForm.register("additionalInformation")}
                 />
               </label>
               {assessmentCorrection && (
                 <label>
-                  Correction reason
+                  Lý do chỉnh sửa
                   <textarea
                     {...assessmentForm.register("correctionReason", {
                       required: true,
@@ -393,19 +383,19 @@ export function ClinicalReasoningWorkspace({
                 disabled={!snapshot || assessmentMutation.isPending}
               >
                 {assessmentCorrection
-                  ? "Append assessment correction"
-                  : "Record physician assessment"}
+                  ? "Ghi nối tiếp chỉnh sửa đánh giá"
+                  : "Ghi nhận đánh giá bác sĩ"}
               </button>
             </form>
             <MutationError error={assessmentMutation.error} />
           </div>
         </section>
         <History
-          title="Assessment revision history"
-          empty="No physician assessment recorded."
+          title="Lịch sử phiên bản đánh giá"
+          empty="Chưa ghi nhận đánh giá của bác sĩ."
           items={value.assessments.map((item) => ({
             id: item.assessment_id,
-            heading: `Revision ${item.revision_number}`,
+            heading: `Phiên bản ${item.revision_number}`,
             body: item.summary,
             meta: formatTimestamp(item.recorded_at),
             action: (
@@ -422,7 +412,7 @@ export function ClinicalReasoningWorkspace({
                   });
                 }}
               >
-                Create correction
+                Tạo chỉnh sửa
               </button>
             ),
           }))}
@@ -432,13 +422,13 @@ export function ClinicalReasoningWorkspace({
       <div className="vm-reasoning-grid">
         <section className="vm-card">
           <div className="vm-card__body">
-            <h3>Physician decision</h3>
+            <h3>Quyết định của bác sĩ</h3>
             <form
               onSubmit={decisionForm.handleSubmit(setPendingDecision)}
               className="vm-form-stack"
             >
               <label>
-                Documented plan
+                Kế hoạch đã ghi nhận
                 <select
                   {...decisionForm.register("decisionType", { required: true })}
                 >
@@ -450,20 +440,20 @@ export function ClinicalReasoningWorkspace({
                 </select>
               </label>
               <label>
-                Rationale
+                Lý do
                 <textarea
                   {...decisionForm.register("rationale", { required: true })}
                 />
               </label>
               <label>
-                Uncertainty
+                Điểm chưa chắc chắn
                 <textarea
                   {...decisionForm.register("uncertainty", { required: true })}
                 />
               </label>
               {decisionCorrection && (
                 <label>
-                  Correction reason
+                  Lý do chỉnh sửa
                   <textarea
                     {...decisionForm.register("correctionReason", {
                       required: true,
@@ -475,20 +465,20 @@ export function ClinicalReasoningWorkspace({
                 className="vm-button vm-button--primary"
                 disabled={!snapshot || !value.assessments.length}
               >
-                Review and confirm
+                Rà soát và xác nhận
               </button>
             </form>
             <MutationError error={decisionMutation.error} />
           </div>
         </section>
         <History
-          title="Decision correction and revocation history"
-          empty="No physician decision recorded."
+          title="Lịch sử chỉnh sửa và thu hồi quyết định"
+          empty="Chưa ghi nhận quyết định của bác sĩ."
           items={value.decisions.map((item) => ({
             id: item.decision_id,
-            heading: `${decisionLabel(item.decision_type)} - ${item.status}`,
+            heading: `${decisionLabel(item.decision_type)} - ${viStatus(item.status)}`,
             body: item.rationale,
-            meta: `Revision ${item.revision_number} - ${item.effective ? "effective" : "not effective"}`,
+            meta: `Phiên bản ${item.revision_number} - ${item.effective ? "hiệu lực" : "không hiệu lực"}`,
             action: item.effective ? (
               <div className="vm-inline-actions">
                 <button
@@ -503,13 +493,13 @@ export function ClinicalReasoningWorkspace({
                     });
                   }}
                 >
-                  Create correction
+                  Tạo chỉnh sửa
                 </button>
                 <button
                   className="vm-button vm-button--danger"
                   onClick={() => setRevokeDecision(item)}
                 >
-                  Revoke
+                  Thu hồi
                 </button>
               </div>
             ) : undefined,
@@ -519,55 +509,55 @@ export function ClinicalReasoningWorkspace({
 
       <nav
         className="vm-card vm-reasoning-links"
-        aria-label="Related case workspaces"
+        aria-label="Không gian liên quan của ca"
       >
-        <Link href={`/cases/${caseId}/ecg`}>ECG workspace</Link>
-        <Link href={`/cases/${caseId}/troponin`}>Troponin workspace</Link>
-        <Link href={`/cases/${caseId}/timeline`}>Timeline</Link>
-        <Link href={`/cases/${caseId}/audit`}>Audit</Link>
+        <Link href={`/cases/${caseId}/ecg`}>Không gian ECG</Link>
+        <Link href={`/cases/${caseId}/troponin`}>Không gian Troponin</Link>
+        <Link href={`/cases/${caseId}/timeline`}>Dòng thời gian</Link>
+        <Link href={`/cases/${caseId}/audit`}>Nhật ký kiểm chứng</Link>
       </nav>
 
       {pendingDecision && (
         <ConfirmationDialog
-          title="Confirm physician decision"
+          title="Xác nhận quyết định của bác sĩ"
           confirmLabel={
             pendingDecision.decisionType === "request_cath_lab_review"
-              ? "Confirm physician request for cath-lab review"
-              : "Record physician decision"
+              ? "Xác nhận yêu cầu bác sĩ xem xét can thiệp"
+              : "Ghi nhận quyết định của bác sĩ"
           }
           busy={decisionMutation.isPending}
           onCancel={() => setPendingDecision(null)}
           onConfirm={() => decisionMutation.mutate(pendingDecision)}
         >
           <p>
-            This immutable record is linked to the current evidence snapshot and
-            physician assessment.
+            Bản ghi bất biến này được liên kết với snapshot bằng chứng hiện hành
+            và đánh giá của bác sĩ.
           </p>
           <strong>{decisionLabels[pendingDecision.decisionType]}</strong>
           <p>
-            No workflow transition or treatment action is performed by this
-            dialog.
+            Hộp thoại này không thực hiện chuyển trạng thái quy trình hoặc hành
+            động điều trị.
           </p>
         </ConfirmationDialog>
       )}
       {revokeDecision && (
         <ConfirmationDialog
-          title="Revoke physician decision"
-          confirmLabel="Append revocation"
+          title="Thu hồi quyết định của bác sĩ"
+          confirmLabel="Ghi nối tiếp thu hồi"
           busy={revokeMutation.isPending}
           onCancel={() => setRevokeDecision(null)}
           onConfirm={() => revokeMutation.mutate()}
         >
           <label>
-            Revocation reason
+            Lý do thu hồi
             <textarea
               value={revocationReason}
               onChange={(event) => setRevocationReason(event.target.value)}
             />
           </label>
           <p>
-            The prior record remains auditable and will no longer authorize a
-            future workflow transition.
+            Bản ghi trước vẫn kiểm chứng được và sẽ không còn ủy quyền cho
+            chuyển trạng thái quy trình về sau.
           </p>
         </ConfirmationDialog>
       )}
@@ -662,7 +652,7 @@ function ConfirmationDialog({
         {children}
         <div className="vm-inline-actions">
           <button className="vm-button" onClick={onCancel}>
-            Cancel
+            Hủy
           </button>
           <button
             className="vm-button vm-button--primary"
@@ -692,5 +682,7 @@ function toggle(values: string[], value: string, checked: boolean) {
 }
 
 function decisionLabel(code: string) {
-  return code in decisionLabels ? decisionLabels[code as DecisionCode] : code;
+  return code in decisionLabels
+    ? decisionLabels[code as DecisionCode]
+    : viDecisionType(code);
 }

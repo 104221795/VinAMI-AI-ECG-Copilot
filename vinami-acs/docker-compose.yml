@@ -58,8 +58,16 @@ services:
       VINAMI_LOG_LEVEL: INFO
       VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
       VINAMI_ECG_ARTIFACT_ROOT: /var/lib/vinami/ecg-artifacts
-      VINAMI_ECG_PROVIDER: mock
-      VINAMI_ECG_ALLOW_MOCK_PROVIDER: "true"
+      VINAMI_ECG_PROVIDER: ${VINAMI_ECG_PROVIDER:-mock}
+      VINAMI_ECG_ALLOW_MOCK_PROVIDER: ${VINAMI_ECG_ALLOW_MOCK_PROVIDER:-true}
+      VINAMI_ECG_PROVIDER_TIMEOUT_SECONDS: ${VINAMI_ECG_PROVIDER_TIMEOUT_SECONDS:-30}
+      VINAMI_ECG_ALLOW_PROVIDER_FALLBACK: ${VINAMI_ECG_ALLOW_PROVIDER_FALLBACK:-false}
+      VINAMI_ECG_FALLBACK_PROVIDER: ${VINAMI_ECG_FALLBACK_PROVIDER:-mock}
+      VINAMI_ECG_CHECKPOINT_PATH: ${VINAMI_ECG_CHECKPOINT_PATH:-}
+      VINAMI_ECG_CHECKPOINT_SHA256: ${VINAMI_ECG_CHECKPOINT_SHA256:-}
+      VINAMI_ECG_DEVICE: ${VINAMI_ECG_DEVICE:-cpu}
+      VINAMI_ECG_SHOWCASE_MANIFEST_PATH: ${VINAMI_ECG_SHOWCASE_MANIFEST_PATH:-/opt/vinstroke-ecg-artifacts/reports/r23a_showcase_predictions.json}
+      VINAMI_ECG_SHOWCASE_ARTIFACT_ROOT: ${VINAMI_ECG_SHOWCASE_ARTIFACT_ROOT:-/opt/vinstroke-ecg-artifacts}
     depends_on:
       ecg-artifact-init:
         condition: service_completed_successfully
@@ -71,6 +79,7 @@ services:
       - "8000:8000"
     volumes:
       - ecg_artifact_data:/var/lib/vinami/ecg-artifacts
+      - ../VinStroke_ECG_artifacts:/opt/vinstroke-ecg-artifacts:ro
     healthcheck:
       test:
         [
@@ -144,6 +153,16 @@ services:
       VINAMI_LOG_LEVEL: INFO
       VINAMI_IDENTITY_MODE: ${VINAMI_IDENTITY_MODE:-development}
       VINAMI_ECG_ARTIFACT_ROOT: /var/lib/vinami/ecg-artifacts
+      VINAMI_ECG_PROVIDER: ${VINAMI_ECG_PROVIDER:-mock}
+      VINAMI_ECG_ALLOW_MOCK_PROVIDER: ${VINAMI_ECG_ALLOW_MOCK_PROVIDER:-true}
+      VINAMI_ECG_PROVIDER_TIMEOUT_SECONDS: ${VINAMI_ECG_PROVIDER_TIMEOUT_SECONDS:-30}
+      VINAMI_ECG_ALLOW_PROVIDER_FALLBACK: ${VINAMI_ECG_ALLOW_PROVIDER_FALLBACK:-false}
+      VINAMI_ECG_FALLBACK_PROVIDER: ${VINAMI_ECG_FALLBACK_PROVIDER:-mock}
+      VINAMI_ECG_CHECKPOINT_PATH: ${VINAMI_ECG_CHECKPOINT_PATH:-}
+      VINAMI_ECG_CHECKPOINT_SHA256: ${VINAMI_ECG_CHECKPOINT_SHA256:-}
+      VINAMI_ECG_DEVICE: ${VINAMI_ECG_DEVICE:-cpu}
+      VINAMI_ECG_SHOWCASE_MANIFEST_PATH: ${VINAMI_ECG_SHOWCASE_MANIFEST_PATH:-/opt/vinstroke-ecg-artifacts/reports/r23a_showcase_predictions.json}
+      VINAMI_ECG_SHOWCASE_ARTIFACT_ROOT: ${VINAMI_ECG_SHOWCASE_ARTIFACT_ROOT:-/opt/vinstroke-ecg-artifacts}
     depends_on:
       ecg-artifact-init:
         condition: service_completed_successfully
@@ -154,6 +173,7 @@ services:
     restart: unless-stopped
     volumes:
       - ecg_artifact_data:/var/lib/vinami/ecg-artifacts
+      - ../VinStroke_ECG_artifacts:/opt/vinstroke-ecg-artifacts:ro
 
   prometheus:
     image: prom/prometheus:v2.54.1

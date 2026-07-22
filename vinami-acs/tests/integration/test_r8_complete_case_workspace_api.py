@@ -228,6 +228,12 @@ def test_r8_visibility_revocation_update_token_and_query_count(
         ).json()
         assert refreshed["tasks"] == []
         assert refreshed["update_token"] != value["update_token"]
+        outcomes = client.get(
+            f"/api/v1/clinical-cases/{case['case_id']}/outcomes",
+            headers=_headers(identity="physician"),
+        )
+        assert outcomes.status_code == 200, outcomes.text
+        assert outcomes.json()["current"] is None
 
         _make_visible(case, postgres_session_factory, "Outside physician scope")
         hidden = client.get(

@@ -84,25 +84,30 @@ describe("ClinicalReasoningWorkspace", () => {
       </Wrapper>,
     );
     expect(
-      screen.getByRole("heading", { name: "Clinical evidence synthesis" }),
+      screen.getByRole("heading", { name: "Tổng hợp bằng chứng lâm sàng" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Missing: troponin")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Documented plan"), {
+    expect(screen.getByText("Thiếu hoặc chưa rõ")).toBeInTheDocument();
+    expect(screen.getByText("Troponin")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Kế hoạch đã ghi nhận"), {
       target: { value: "request_cath_lab_review" },
     });
-    fireEvent.change(screen.getByLabelText("Rationale"), {
+    fireEvent.change(screen.getByLabelText("Lý do"), {
       target: { value: "Physician specialist review request." },
     });
-    fireEvent.change(screen.getAllByLabelText("Uncertainty")[1]!, {
+    fireEvent.change(screen.getAllByLabelText("Điểm chưa chắc chắn")[1]!, {
       target: { value: "Specialist review remains necessary." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Review and confirm" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Rà soát và xác nhận" }),
+    );
     expect(
-      await screen.findByRole("dialog", { name: "Confirm physician decision" }),
+      await screen.findByRole("dialog", {
+        name: "Xác nhận quyết định của bác sĩ",
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "Confirm physician request for cath-lab review",
+        name: "Xác nhận yêu cầu bác sĩ xem xét can thiệp",
       }),
     ).toBeInTheDocument();
   });

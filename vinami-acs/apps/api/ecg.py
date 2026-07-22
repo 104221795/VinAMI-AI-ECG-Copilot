@@ -235,6 +235,17 @@ class ModelScoreEvolutionResponse(BaseModel):
     compatibility_status: str
 
 
+class SignalFeatureDeltaResponse(BaseModel):
+    feature_name: str
+    display_label: str
+    previous_value: float | None
+    current_value: float | None
+    absolute_delta: float | None
+    unit: str | None
+    status: str
+    evidence_scope: str
+
+
 class ComparisonResponse(BaseModel):
     comparison_id: UUID
     clinical_case_id: UUID
@@ -247,9 +258,13 @@ class ComparisonResponse(BaseModel):
     comparability_reasons: list[str]
     lead_comparisons: list[LeadComparisonResponse]
     technical_change_indicators: list[str]
+    signal_feature_deltas: list[SignalFeatureDeltaResponse]
+    rhythm_change_indicators: list[str]
+    st_t_change_indicators: list[str]
     model_score_deltas: list[ModelScoreEvolutionResponse]
     model_score_compatibility: str
     quality_context: str
+    review_recommendation: str
     requested_by_actor_role: str
     requested_at: datetime
     started_at: datetime | None
@@ -654,6 +669,21 @@ def latest_analysis(
 @router.get("/ecg-analyses/{analysis_id}", response_model=AnalysisResponse, tags=["ecg-ai"])
 def get_analysis(analysis_id: UUID, _auth: ECGRead, container: Container) -> AnalysisResponse:
     return _analysis(container.ecg_queries().analysis(analysis_id))
+
+
+@router.get(
+    "/ecg-analyses/{analysis_id}/explanation",
+    response_class=Response,
+    tags=["ecg-ai"],
+)
+def get_analysis_explanation(analysis_id: UUID, _auth: ECGRead, container: Container) -> Response:
+    content, content_type = container.ecg_queries().explanation_artifact(analysis_id)
+    content_security_policy = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'"
+    return Response(
+        content,
+        media_type=content_type,
+        headers={"Content-Security-Policy": content_security_policy},
+    )
 
 
 @router.post(
@@ -1129,12 +1159,19 @@ def _comparison(value: Any) -> ComparisonResponse:
             for item in value.lead_comparisons
         ],
         technical_change_indicators=list(value.technical_change_indicators),
+        signal_feature_deltas=[
+            SignalFeatureDeltaResponse.model_validate(item, from_attributes=True)
+            for item in value.signal_feature_deltas
+        ],
+        rhythm_change_indicators=list(value.rhythm_change_indicators),
+        st_t_change_indicators=list(value.st_t_change_indicators),
         model_score_deltas=[
             ModelScoreEvolutionResponse.model_validate(item, from_attributes=True)
             for item in value.model_score_deltas
         ],
         model_score_compatibility=value.model_score_compatibility,
         quality_context=value.quality_context,
+        review_recommendation=value.review_recommendation,
         requested_by_actor_role=value.requested_by_role,
         requested_at=value.requested_at,
         started_at=value.started_at,

@@ -57,12 +57,56 @@ const row: CommandCenterCaseView = {
     {
       alert_id: "17ebaf15-5cc7-47bc-b6d3-ef68ea5dc84a",
       alert_type: "task_overdue",
+      source: "workflow_operations",
       severity: "urgent",
       status: "active",
       raised_at: "2026-07-15T14:31:00Z",
       escalation_level: 1,
+      message: "A time-bound clinical task is overdue.",
     },
   ],
+  automation: {
+    policy_version: "vinami-r13-r14-r21-demo-v1",
+    safety_notice: "Demonstration automation - not for clinical use.",
+    completeness: {
+      score: 67,
+      status: "incomplete",
+      required_count: 6,
+      current_count: 4,
+      items: [],
+      missing_evidence: ["ecg"],
+      stale_evidence: [],
+      technical_limits: [],
+      not_negative_evidence_notice:
+        "Missing, unknown, stale, or technically limited evidence is not negative evidence.",
+    },
+    suggested_tasks: [
+      {
+        suggestion_id: "suggest-repeat-ecg",
+        task_type: "repeat_ecg",
+        priority: "urgent",
+        due_state: "due_now",
+        due_at: "2026-07-15T15:00:00Z",
+        reason: "No current ECG evidence is available.",
+        evidence_gaps: ["ecg"],
+      },
+    ],
+    alert_digest: [
+      {
+        group_key: "task-overdue",
+        alert_type: "task_overdue",
+        source: "workflow_operations",
+        severity: "urgent",
+        status: "active",
+        count: 1,
+        representative_alert_id: "17ebaf15-5cc7-47bc-b6d3-ef68ea5dc84a",
+        alert_ids: ["17ebaf15-5cc7-47bc-b6d3-ef68ea5dc84a"],
+        latest_raised_at: "2026-07-15T14:31:00Z",
+        max_escalation_level: 1,
+        message: "A time-bound clinical task is overdue.",
+      },
+    ],
+  },
 };
 
 describe("R7 Command Center presentation", () => {
@@ -76,11 +120,23 @@ describe("R7 Command Center presentation", () => {
       />,
     );
     expect(screen.getByText("SYN-R7-001")).toBeInTheDocument();
-    expect(screen.getByText("1 overdue")).toBeInTheDocument();
+    expect(screen.getByText("1 quá hạn")).toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole("row", { name: /SYN-R7-001/i }), {
       key: "Enter",
     });
     expect(onSelect).toHaveBeenCalledWith(row.case_id);
+  });
+
+  it("does not render placeholder due dates as real clinical dates", () => {
+    render(
+      <ActiveCaseTable
+        rows={[{ ...row, next_due_at: "2020-01-01T00:00:00Z" }]}
+        referenceTime="2026-07-15T15:00:00Z"
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Chưa đặt hạn xử lý")).toBeInTheDocument();
+    expect(screen.queryByText(/1 Jan 2020/)).not.toBeInTheDocument();
   });
 
   it("shows decision, evidence, tasks, alerts and workspace links", () => {
@@ -91,17 +147,16 @@ describe("R7 Command Center presentation", () => {
         onClear={vi.fn()}
       />,
     );
-    expect(screen.getByText("Physician decision")).toBeInTheDocument();
+    expect(screen.getByText("Quyết định của bác sĩ")).toBeInTheDocument();
     expect(
       screen.getByText(/Physician requested technical/),
     ).toBeInTheDocument();
-    expect(screen.getByText("Missing or unknown:")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Workflow" })).toHaveAttribute(
+    expect(screen.getByText("Gợi ý công việc từ backend")).toBeInTheDocument();
+    expect(screen.getAllByText("ECG").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Quy trình" })).toHaveAttribute(
       "href",
       `/cases/${row.case_id}/workflow`,
     );
-    expect(
-      screen.getByText(/AI output does not determine priority/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/AI không quyết định ưu tiên/)).toBeInTheDocument();
   });
 });

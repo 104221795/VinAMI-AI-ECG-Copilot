@@ -8,7 +8,7 @@ import { loadCommandCenter } from "@web/features/command-center/server-data";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { presentError } from "@web/shared/errors/presentation";
 
-export const metadata: Metadata = { title: "Advanced Command Center" };
+export const metadata: Metadata = { title: "Trung tâm điều phối" };
 
 export default async function CommandCenterPage({
   searchParams,
@@ -22,7 +22,7 @@ export default async function CommandCenterPage({
     overdue: overdue(single(params.overdue)),
     alertStatus: alertStatus(single(params.alert_status)),
     evidenceStatus: evidenceStatus(single(params.evidence_status)),
-    owner: single(params.owner),
+    owner: owner(single(params.owner)),
     sort: sort(single(params.sort)),
     direction: single(params.direction) === "asc" ? "asc" : "desc",
     page: positiveInteger(single(params.page), 1),
@@ -45,9 +45,9 @@ export default async function CommandCenterPage({
     return (
       <>
         <PageHeader
-          eyebrow="Clinical operations"
-          title="Advanced Command Center"
-          description="Active suspected ACS cases prioritized from persisted workflow, task, alert and evidence state. Physician review remains the authority for consequential decisions."
+          eyebrow="Điều phối lâm sàng"
+          title="Trung tâm điều phối"
+          description="Danh sách ca nghi hội chứng mạch vành cấp đang hoạt động, được ưu tiên từ trạng thái quy trình, công việc, cảnh báo và bằng chứng đã lưu. Bác sĩ vẫn là người xác nhận mọi quyết định hệ quả."
         />
         <CommandCenter initialData={initialData} initialState={state} />
       </>
@@ -55,10 +55,7 @@ export default async function CommandCenterPage({
   } catch (error) {
     return (
       <>
-        <PageHeader
-          eyebrow="Clinical operations"
-          title="Advanced Command Center"
-        />
+        <PageHeader eyebrow="Điều phối lâm sàng" title="Trung tâm điều phối" />
         <ErrorPanel presentation={presentError(error)} />
       </>
     );
@@ -108,6 +105,14 @@ function alertStatus(value: string): CommandCenterState["alertStatus"] {
 function evidenceStatus(value: string): CommandCenterState["evidenceStatus"] {
   return ["current", "missing", "stale", "technical_limit"].includes(value)
     ? (value as CommandCenterState["evidenceStatus"])
+    : "";
+}
+function owner(value: string): string {
+  const trimmed = value.trim();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    trimmed,
+  )
+    ? trimmed
     : "";
 }
 function sort(value: string): CommandCenterState["sort"] {

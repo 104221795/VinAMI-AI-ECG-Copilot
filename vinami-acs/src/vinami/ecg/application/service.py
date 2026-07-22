@@ -15,6 +15,7 @@ from vinami.clinical_case.domain.model import CaseStatus
 from vinami.clinical_case.ports.repository import ClinicalCaseRepository
 from vinami.ecg.domain.clinical import (
     BLOCKING_QUALITY,
+    STANDARD_12_LEADS,
     ComparabilityStatus,
     ComparisonStatus,
     DynamicECGComparison,
@@ -28,6 +29,7 @@ from vinami.ecg.domain.clinical import (
     ModelScoreEvolution,
     ReminderOrigin,
     ReminderStatus,
+    SignalFeatureDelta,
     TechnicalQualityStatus,
 )
 from vinami.ecg.ports.artifacts import ArtifactMetadata, ECGArtifactStore
@@ -43,6 +45,7 @@ from vinami.ecg.ports.provider import (
     ECGAIProvider,
     ECGExplanationRequest,
     ECGPredictionRequest,
+    ECGPredictionResult,
     ModelInfo,
 )
 from vinami.ecg.ports.repository import (
@@ -74,6 +77,11 @@ SAFE_LABELS = {
     "CD": "conduction disturbance",
     "HYP": "hypertrophy pattern",
 }
+R18_COMPARISON_POLICY_VERSION = "r18-dynamic-ecg-technical-comparison-1.0.0"
+R18_REVIEW_RECOMMENDATION = (
+    "Dynamic ECG comparison is a technical and AI-assisted review aid only; "
+    "physician interpretation is required before any clinical decision."
+)
 
 
 class ECGUnitOfWork(Protocol):
@@ -184,6 +192,8 @@ class ECGApplicationService:
         quality_engine: ECGQualityEngine,
         providers: dict[str, ECGAIProvider],
         dicom_connector: DICOMSourceConnector,
+        *,
+        fallback_provider_name: str | None = None,
     ) -> None:
         self._uow = unit_of_work
         self._artifacts = artifact_store
@@ -192,6 +202,7 @@ class ECGApplicationService:
         self._quality = quality_engine
         self._providers = providers
         self._dicom_connector = dicom_connector
+        self._fallback_provider_name = fallback_provider_name
 
     def ingest(self, command: IngestECG) -> tuple[ECGIngestionJob, ECGStudySnapshot | None]:
         payload = {
@@ -470,6 +481,13 @@ class ECGApplicationService:
             provider = self._providers.get(command.provider_name)
             if provider is None:
                 raise ResourceConflictError("ECG AI provider is not configured")
+            input_artifact = uow.ecg_clinical.get_artifact(study.normalized_waveform_artifact_id)
+            if input_artifact is None or not self._artifacts.verify(
+                input_artifact.artifact_id, input_artifact.checksum_sha256
+            ):
+                raise ResourceConflictError("normalized ECG waveform integrity check failed")
+            with self._artifacts.open(input_artifact.artifact_id) as stream:
+                waveform_bytes = stream.read()
             model = provider.get_model_info()
             requested_at = utc_now()
             analysis_id = uuid4()
@@ -493,65 +511,146 @@ class ECGApplicationService:
             failure_category = None
             failure_detail = None
             explanation_artifact = None
+            provider_warning: tuple[str, ...] = ()
+            prediction_request = ECGPredictionRequest(
+                study.study_id,
+                f"artifact://{study.normalized_waveform_artifact_id}",
+                waveform_bytes=waveform_bytes,
+                input_quality=study.quality_status,
+                artifact_checksum=input_artifact.checksum_sha256,
+            )
             try:
-                result = provider.predict(
-                    ECGPredictionRequest(
-                        study.study_id,
-                        f"artifact://{study.normalized_waveform_artifact_id}",
-                        input_quality=study.quality_status,
-                        artifact_checksum=study.artifact_checksum,
-                    )
-                )
+                result = _validated_prediction(provider, model, prediction_request, requested_at)
                 if result.failure_reason:
                     status = "rejected_quality"
                 findings = _findings(result.label_scores, result.thresholds, model)
                 if study.quality_status in BLOCKING_QUALITY:
                     findings = ()
+                warnings = provider_warning + result.warnings
                 if findings and status == "completed":
-                    explanation = provider.explain(
-                        ECGExplanationRequest(
-                            study.study_id,
-                            f"analysis://{analysis_id}",
-                            findings[0].finding_code,
+                    try:
+                        explanation = provider.explain(
+                            ECGExplanationRequest(
+                                study.study_id,
+                                f"analysis://{analysis_id}",
+                                findings[0].finding_code,
+                                waveform_bytes=waveform_bytes,
+                                input_quality=study.quality_status,
+                                artifact_checksum=input_artifact.checksum_sha256,
+                            )
                         )
-                    )
-                    if explanation.content and explanation.content_type:
-                        explanation_artifact = self._artifacts.write(
-                            explanation.content,
-                            artifact_kind="explanation",
-                            content_type=explanation.content_type,
+                        warnings = warnings + (explanation.warning,)
+                        if explanation.content and explanation.content_type:
+                            explanation_artifact = self._artifacts.write(
+                                explanation.content,
+                                artifact_kind="explanation",
+                                content_type=explanation.content_type,
+                            )
+                            uow.ecg_clinical.add_artifact(explanation_artifact)
+                    except Exception as explanation_error:
+                        warnings = warnings + (
+                            (
+                                "Explanation artifact unavailable: "
+                                f"{type(explanation_error).__name__}"
+                            ),
                         )
-                        uow.ecg_clinical.add_artifact(explanation_artifact)
-                warnings = result.warnings
                 completed_at = result.completed_at
                 started_at = result.started_at
                 synthetic = result.synthetic
             except TimeoutError as error:
-                status, failure_category, failure_detail = (
-                    "timed_out",
-                    "provider_timeout",
-                    _safe_failure(error),
-                )
-                findings, warnings, completed_at, started_at, synthetic = (
-                    (),
-                    (),
-                    utc_now(),
-                    requested_at,
-                    model.synthetic,
-                )
+                fallback = self._fallback_provider(command.provider_name)
+                if fallback is None:
+                    status, failure_category, failure_detail = (
+                        "timed_out",
+                        "provider_timeout",
+                        _safe_failure(error),
+                    )
+                    findings, warnings, completed_at, started_at, synthetic = (
+                        (),
+                        (),
+                        utc_now(),
+                        requested_at,
+                        model.synthetic,
+                    )
+                else:
+                    provider_warning = (
+                        _provider_fallback_warning(
+                            command.provider_name,
+                            self._fallback_provider_name,
+                            "timed out",
+                        ),
+                    )
+                    model = fallback.get_model_info()
+                    try:
+                        result = _validated_prediction(
+                            fallback, model, prediction_request, requested_at
+                        )
+                        status = _completed_or_rejected_status(result)
+                        findings = _findings(result.label_scores, result.thresholds, model)
+                        warnings = provider_warning + result.warnings
+                        completed_at = result.completed_at
+                        started_at = result.started_at
+                        synthetic = result.synthetic
+                    except Exception as fallback_error:
+                        status, failure_category, failure_detail = (
+                            "failed",
+                            "provider_failure",
+                            _safe_failure(fallback_error),
+                        )
+                        findings, warnings, completed_at, started_at, synthetic = (
+                            (),
+                            provider_warning,
+                            utc_now(),
+                            requested_at,
+                            model.synthetic,
+                        )
             except Exception as error:
-                status, failure_category, failure_detail = (
-                    "failed",
-                    "provider_failure",
-                    _safe_failure(error),
-                )
-                findings, warnings, completed_at, started_at, synthetic = (
-                    (),
-                    (),
-                    utc_now(),
-                    requested_at,
-                    model.synthetic,
-                )
+                fallback = self._fallback_provider(command.provider_name)
+                if fallback is None:
+                    status, failure_category, failure_detail = (
+                        "failed",
+                        "provider_failure",
+                        _safe_failure(error),
+                    )
+                    findings, warnings, completed_at, started_at, synthetic = (
+                        (),
+                        (),
+                        utc_now(),
+                        requested_at,
+                        model.synthetic,
+                    )
+                else:
+                    provider_warning = (
+                        _provider_fallback_warning(
+                            command.provider_name,
+                            self._fallback_provider_name,
+                            "failed",
+                        ),
+                    )
+                    model = fallback.get_model_info()
+                    try:
+                        result = _validated_prediction(
+                            fallback, model, prediction_request, requested_at
+                        )
+                        status = _completed_or_rejected_status(result)
+                        findings = _findings(result.label_scores, result.thresholds, model)
+                        warnings = provider_warning + result.warnings
+                        completed_at = result.completed_at
+                        started_at = result.started_at
+                        synthetic = result.synthetic
+                    except Exception as fallback_error:
+                        status, failure_category, failure_detail = (
+                            "failed",
+                            "provider_failure",
+                            _safe_failure(fallback_error),
+                        )
+                        findings, warnings, completed_at, started_at, synthetic = (
+                            (),
+                            provider_warning,
+                            utc_now(),
+                            requested_at,
+                            model.synthetic,
+                        )
             duration_ms = max(0, round((perf_counter() - started) * 1000))
             value = ECGAnalysisSnapshot(
                 analysis_id,
@@ -565,7 +664,7 @@ class ECGApplicationService:
                 "safe-labels-r3-v1",
                 model.threshold_source,
                 study.normalized_waveform_artifact_id,
-                study.artifact_checksum,
+                input_artifact.checksum_sha256,
                 status,
                 study.quality_status,
                 command.actor.actor_id,
@@ -772,7 +871,14 @@ class ECGApplicationService:
             comparability, reasons = _comparability(
                 baseline, current, baseline_waveform, current_waveform
             )
+            score_deltas, score_compatibility = _score_deltas(
+                uow.ecg_clinical.list_analyses(baseline.study_id),
+                uow.ecg_clinical.list_analyses(current.study_id),
+            )
             lead_values: tuple[LeadComparison, ...] = ()
+            signal_feature_deltas: tuple[SignalFeatureDelta, ...] = ()
+            rhythm_indicators: tuple[str, ...] = ()
+            st_t_indicators: tuple[str, ...] = ()
             indicators: tuple[str, ...]
             if comparability is ComparabilityStatus.NON_COMPARABLE:
                 status = ComparisonStatus.NON_COMPARABLE
@@ -784,41 +890,55 @@ class ECGApplicationService:
                 baseline_samples = self._samples(baseline)
                 current_samples = self._samples(current)
                 lead_values = _compare_leads(baseline_samples, current_samples)
-                changed = sum(1 for item in lead_values if item.normalized_difference >= 0.15)
-                indicators = (
-                    ("multiple leads changed", "physician review required")
-                    if changed >= 2
-                    else ("technical change detected", "physician review required")
-                    if changed
-                    else ("no material technical change detected", "physician review required")
+                signal_feature_deltas, rhythm_indicators, st_t_indicators = (
+                    _signal_feature_deltas(
+                        baseline_samples,
+                        current_samples,
+                        baseline.sampling_rate_hz,
+                        current.sampling_rate_hz,
+                    )
                 )
-                comparability = ComparabilityStatus.COMPARABLE
+                indicators = _technical_change_indicators(
+                    lead_values,
+                    tuple(reasons),
+                    rhythm_indicators,
+                    st_t_indicators,
+                    score_deltas,
+                    score_compatibility,
+                )
                 status = (
                     ComparisonStatus.COMPLETED_WITH_WARNING
-                    if comparability is not ComparabilityStatus.COMPARABLE
+                    if _comparison_has_warning(
+                        comparability,
+                        lead_values,
+                        rhythm_indicators,
+                        st_t_indicators,
+                        score_deltas,
+                        score_compatibility,
+                    )
                     else ComparisonStatus.COMPLETED
                 )
             now = utc_now()
-            score_deltas, score_compatibility = _score_deltas(
-                uow.ecg_clinical.list_analyses(baseline.study_id),
-                uow.ecg_clinical.list_analyses(current.study_id),
-            )
             value = DynamicECGComparison(
                 id=uuid4(),
                 clinical_case_id=command.clinical_case_id,
                 baseline_study_id=baseline.study_id,
                 current_study_id=current.study_id,
-                comparison_policy_version="technical-comparison-2.0.0",
+                comparison_policy_version=R18_COMPARISON_POLICY_VERSION,
                 preprocessing_version=current.preprocessing_version or "none",
                 status=status,
                 comparability_status=comparability,
                 comparability_reasons=tuple(reasons),
                 lead_comparisons=lead_values,
                 technical_change_indicators=tuple(indicators),
+                signal_feature_deltas=signal_feature_deltas,
+                rhythm_change_indicators=rhythm_indicators,
+                st_t_change_indicators=st_t_indicators,
                 model_score_deltas=score_deltas,
                 quality_context=(
                     f"baseline={baseline.quality_status}; current={current.quality_status}"
                 ),
+                review_recommendation=R18_REVIEW_RECOMMENDATION,
                 requested_by=command.actor.actor_id,
                 requested_by_role=command.actor.actor_role,
                 requested_at=now,
@@ -860,6 +980,8 @@ class ECGApplicationService:
                         "baseline_study_id": str(baseline.study_id),
                         "current_study_id": str(current.study_id),
                         "comparability_status": comparability.value,
+                        "rhythm_change_indicators": list(rhythm_indicators),
+                        "st_t_change_indicators": list(st_t_indicators),
                     },
                     command.actor,
                     "DynamicECGComparison",
@@ -1188,6 +1310,11 @@ class ECGApplicationService:
         except KeyError as error:
             raise ValueError("ECG source adapter is not configured") from error
 
+    def _fallback_provider(self, primary_name: str) -> ECGAIProvider | None:
+        if self._fallback_provider_name is None or self._fallback_provider_name == primary_name:
+            return None
+        return self._providers.get(self._fallback_provider_name)
+
     def _samples(self, study: ECGStudySnapshot) -> dict[str, tuple[float, ...]]:
         if study.normalized_waveform_artifact_id is None:
             return {}
@@ -1310,6 +1437,21 @@ class ECGQueryService:
                 raise ResourceNotFoundError("ECG analysis not found")
             return value
 
+    def explanation_artifact(self, analysis_id: UUID) -> tuple[bytes, str]:
+        with self._uow() as uow:
+            value = uow.ecg_clinical.get_analysis(analysis_id)
+            if value is None:
+                raise ResourceNotFoundError("ECG analysis not found")
+            if value.explanation_artifact_id is None:
+                raise ResourceNotFoundError("ECG explanation artifact not found")
+            artifact = uow.ecg_clinical.get_artifact(value.explanation_artifact_id)
+            if artifact is None or not self._artifacts.verify(
+                artifact.artifact_id, artifact.checksum_sha256
+            ):
+                raise ResourceConflictError("ECG explanation artifact integrity check failed")
+            with self._artifacts.open(artifact.artifact_id) as stream:
+                return stream.read(), artifact.content_type
+
     def interpretations(self, study_id: UUID) -> tuple[PhysicianInterpretationSnapshot, ...]:
         with self._uow() as uow:
             return uow.ecg_clinical.list_interpretations(study_id)
@@ -1412,6 +1554,50 @@ def _findings(
     )
 
 
+def _validated_prediction(
+    provider: ECGAIProvider,
+    model: ModelInfo,
+    request: ECGPredictionRequest,
+    requested_at: datetime,
+) -> ECGPredictionResult:
+    validation = provider.validate_input(request)
+    if validation.valid:
+        return provider.predict(request)
+    completed_at = utc_now()
+    return ECGPredictionResult(
+        request.study_id,
+        model.name,
+        model.version,
+        model.provider_name,
+        requested_at,
+        completed_at,
+        request.input_quality,
+        {},
+        {},
+        (),
+        (),
+        validation.warnings,
+        {
+            "input_artifact_checksum": request.artifact_checksum or "unavailable",
+            "input_reference": request.input_reference,
+            "validation_status": "rejected",
+        },
+        validation.failure_reason,
+        model.synthetic,
+    )
+
+
+def _completed_or_rejected_status(result: ECGPredictionResult) -> str:
+    return "rejected_quality" if result.failure_reason else "completed_with_warning"
+
+
+def _provider_fallback_warning(primary: str, fallback: str | None, reason: str) -> str:
+    return (
+        f"Primary ECG provider '{primary}' {reason}; explicitly configured fallback "
+        f"provider '{fallback or 'unavailable'}' was used."
+    )
+
+
 def _comparability(
     left: ECGStudySnapshot,
     right: ECGStudySnapshot,
@@ -1459,9 +1645,11 @@ def _comparability(
 def _compare_leads(
     left: dict[str, tuple[float, ...]], right: dict[str, tuple[float, ...]]
 ) -> tuple[LeadComparison, ...]:
-    output = []
-    for name in sorted(set(left) & set(right)):
+    output: list[LeadComparison] = []
+    for name in sorted(set(left) & set(right), key=_lead_sort_key):
         count = min(len(left[name]), len(right[name]))
+        if count == 0:
+            continue
         a, b = left[name][:count], right[name][:count]
         scale = max(
             max((abs(item) for item in a), default=1.0),
@@ -1473,19 +1661,333 @@ def _compare_leads(
         numerator = sum((x - mean_a) * (y - mean_b) for x, y in zip(a, b, strict=True))
         denominator = sqrt(sum((x - mean_a) ** 2 for x in a) * sum((y - mean_b) ** 2 for y in b))
         similarity = numerator / denominator if denominator else 0.0
-        amplitude = (max(b) - min(b)) / max(max(a) - min(a), 1e-9)
+        baseline_spread = max(max(a) - min(a), 1e-9)
+        amplitude = (max(b) - min(b)) / baseline_spread
+        baseline_shift = (mean_b - mean_a) / scale
+        alignment = "aligned" if len(left[name]) == len(right[name]) else "truncated_to_overlap"
+        quality = (
+            "possible_signal_change"
+            if difference >= 0.15 or abs(baseline_shift) >= 0.1 or amplitude >= 1.35
+            else "possible_low_amplitude_change"
+            if amplitude <= 0.75
+            else "unchanged"
+        )
         output.append(
             LeadComparison(
                 name,
                 round(similarity, 4),
                 round(difference, 4),
                 round(amplitude, 4),
-                round((mean_b - mean_a) / scale, 4),
+                round(baseline_shift, 4),
                 0.0,
-                "unchanged",
+                quality,
+                alignment,
             )
         )
     return tuple(output)
+
+
+def _signal_feature_deltas(
+    left: dict[str, tuple[float, ...]],
+    right: dict[str, tuple[float, ...]],
+    left_sampling_rate_hz: float | None,
+    right_sampling_rate_hz: float | None,
+) -> tuple[tuple[SignalFeatureDelta, ...], tuple[str, ...], tuple[str, ...]]:
+    if left_sampling_rate_hz is None or right_sampling_rate_hz is None:
+        return (
+            (
+                SignalFeatureDelta(
+                    "sampling_rate",
+                    "Sampling rate",
+                    left_sampling_rate_hz,
+                    right_sampling_rate_hz,
+                    None,
+                    "Hz",
+                    "unavailable",
+                    "technical-comparability",
+                ),
+            ),
+            ("rhythm proxy unavailable because sampling metadata is incomplete",),
+            ("ST/T proxy unavailable because sampling metadata is incomplete",),
+        )
+    if left_sampling_rate_hz != right_sampling_rate_hz:
+        return (
+            (
+                SignalFeatureDelta(
+                    "sampling_rate",
+                    "Sampling rate",
+                    left_sampling_rate_hz,
+                    right_sampling_rate_hz,
+                    abs(right_sampling_rate_hz - left_sampling_rate_hz),
+                    "Hz",
+                    "incompatible",
+                    "technical-comparability",
+                ),
+            ),
+            ("rhythm proxy unavailable because sampling rates differ",),
+            ("ST/T proxy unavailable because sampling rates differ",),
+        )
+    sampling_rate = left_sampling_rate_hz
+    before = _extract_signal_features(left, sampling_rate)
+    after = _extract_signal_features(right, sampling_rate)
+    definitions = (
+        ("heart_rate_proxy_bpm", "Heart-rate proxy", "beats/min", 15.0, "rhythm"),
+        ("rhythm_regularity_cv", "Rhythm regularity proxy", "CV", 0.08, "rhythm"),
+        ("qrs_width_proxy_ms", "QRS width proxy", "ms", 20.0, "rhythm"),
+        ("st_level_proxy_uv", "ST-level morphology proxy", "uV", 75.0, "st-t"),
+        ("t_wave_proxy_uv", "T-wave morphology proxy", "uV", 100.0, "st-t"),
+        ("global_amplitude_proxy_uv", "Global amplitude proxy", "uV", 180.0, "technical"),
+    )
+    deltas: list[SignalFeatureDelta] = []
+    rhythm: list[str] = []
+    st_t: list[str] = []
+    for name, label, unit, threshold, scope in definitions:
+        previous = before.get(name)
+        current = after.get(name)
+        delta = abs(current - previous) if previous is not None and current is not None else None
+        status = "unavailable" if delta is None else "changed" if delta >= threshold else "stable"
+        deltas.append(
+            SignalFeatureDelta(
+                name,
+                label,
+                _rounded(previous),
+                _rounded(current),
+                _rounded(delta),
+                unit,
+                status,
+                scope,
+            )
+        )
+        if status != "changed":
+            continue
+        if scope == "rhythm":
+            rhythm.append(f"possible {label.lower()} change by demonstration technical policy")
+        elif scope == "st-t":
+            st_t.append(f"possible {label.lower()} change by demonstration technical policy")
+    if not rhythm and before.get("r_peak_count") is None:
+        rhythm.append("rhythm proxy unavailable because R-peak detection was insufficient")
+    if not st_t and before.get("r_peak_count") is None:
+        st_t.append("ST/T proxy unavailable because R-peak detection was insufficient")
+    return tuple(deltas), tuple(rhythm), tuple(st_t)
+
+
+def _extract_signal_features(
+    samples_by_lead: dict[str, tuple[float, ...]], sampling_rate_hz: float
+) -> dict[str, float | None]:
+    reference = _reference_lead(samples_by_lead)
+    if reference is None:
+        return {
+            "r_peak_count": None,
+            "heart_rate_proxy_bpm": None,
+            "rhythm_regularity_cv": None,
+            "qrs_width_proxy_ms": None,
+            "st_level_proxy_uv": None,
+            "t_wave_proxy_uv": None,
+            "global_amplitude_proxy_uv": _global_amplitude(samples_by_lead),
+        }
+    peaks = _r_peak_indices(reference, sampling_rate_hz)
+    return {
+        "r_peak_count": float(len(peaks)),
+        "heart_rate_proxy_bpm": _heart_rate(peaks, sampling_rate_hz),
+        "rhythm_regularity_cv": _rhythm_cv(peaks),
+        "qrs_width_proxy_ms": _qrs_width(reference, peaks, sampling_rate_hz),
+        "st_level_proxy_uv": _segment_proxy(samples_by_lead, peaks, sampling_rate_hz, 0.08, 0.16),
+        "t_wave_proxy_uv": _segment_proxy(samples_by_lead, peaks, sampling_rate_hz, 0.22, 0.38),
+        "global_amplitude_proxy_uv": _global_amplitude(samples_by_lead),
+    }
+
+
+def _reference_lead(samples_by_lead: dict[str, tuple[float, ...]]) -> tuple[float, ...] | None:
+    for name in ("II", "I", "V5", "V2"):
+        if samples_by_lead.get(name):
+            return samples_by_lead[name]
+    return next(iter(samples_by_lead.values()), None)
+
+
+def _r_peak_indices(samples: tuple[float, ...], sampling_rate_hz: float) -> tuple[int, ...]:
+    if len(samples) < 3:
+        return ()
+    centered = tuple(value - _mean(samples) for value in samples)
+    absolute = tuple(abs(value) for value in centered)
+    peak = max(absolute, default=0.0)
+    if peak <= 1e-9:
+        return ()
+    threshold = max(peak * 0.48, 75.0)
+    refractory = max(1, int(0.25 * sampling_rate_hz))
+    candidates = [
+        index
+        for index in range(1, len(absolute) - 1)
+        if absolute[index] >= threshold
+        and absolute[index] >= absolute[index - 1]
+        and absolute[index] >= absolute[index + 1]
+    ]
+    selected: list[int] = []
+    for candidate in candidates:
+        if not selected or candidate - selected[-1] > refractory:
+            selected.append(candidate)
+            continue
+        if absolute[candidate] > absolute[selected[-1]]:
+            selected[-1] = candidate
+    return tuple(selected)
+
+
+def _heart_rate(peaks: tuple[int, ...], sampling_rate_hz: float) -> float | None:
+    intervals = _peak_intervals(peaks)
+    if not intervals:
+        return None
+    mean_interval = _mean(tuple(float(item) for item in intervals))
+    return 60.0 / (mean_interval / sampling_rate_hz) if mean_interval else None
+
+
+def _rhythm_cv(peaks: tuple[int, ...]) -> float | None:
+    intervals = _peak_intervals(peaks)
+    if len(intervals) < 2:
+        return None
+    values = tuple(float(item) for item in intervals)
+    average = _mean(values)
+    if average <= 0:
+        return None
+    variance = sum((item - average) ** 2 for item in values) / len(values)
+    return sqrt(variance) / average
+
+
+def _qrs_width(
+    samples: tuple[float, ...], peaks: tuple[int, ...], sampling_rate_hz: float
+) -> float | None:
+    if not peaks:
+        return None
+    baseline = _mean(samples)
+    widths: list[float] = []
+    for peak in peaks:
+        height = abs(samples[peak] - baseline)
+        if height <= 1e-9:
+            continue
+        threshold = height * 0.5
+        left = peak
+        while left > 0 and abs(samples[left] - baseline) >= threshold:
+            left -= 1
+        right = peak
+        while right < len(samples) - 1 and abs(samples[right] - baseline) >= threshold:
+            right += 1
+        widths.append(((right - left) / sampling_rate_hz) * 1000.0)
+    return _mean(tuple(widths)) if widths else None
+
+
+def _segment_proxy(
+    samples_by_lead: dict[str, tuple[float, ...]],
+    peaks: tuple[int, ...],
+    sampling_rate_hz: float,
+    start_seconds: float,
+    end_seconds: float,
+) -> float | None:
+    if not peaks:
+        return None
+    values: list[float] = []
+    for lead_name in STANDARD_12_LEADS:
+        samples = samples_by_lead.get(lead_name)
+        if not samples:
+            continue
+        for peak in peaks:
+            baseline_start = max(0, peak - int(0.2 * sampling_rate_hz))
+            baseline_end = max(0, peak - int(0.06 * sampling_rate_hz))
+            segment_start = peak + int(start_seconds * sampling_rate_hz)
+            segment_end = peak + int(end_seconds * sampling_rate_hz)
+            if baseline_end <= baseline_start or segment_end >= len(samples):
+                continue
+            baseline = _mean(samples[baseline_start:baseline_end])
+            segment = _mean(samples[segment_start:segment_end])
+            values.append(segment - baseline)
+    if not values:
+        return None
+    return _mean(tuple(abs(item) for item in values))
+
+
+def _global_amplitude(samples_by_lead: dict[str, tuple[float, ...]]) -> float | None:
+    amplitudes = tuple(max(values) - min(values) for values in samples_by_lead.values() if values)
+    return _mean(amplitudes) if amplitudes else None
+
+
+def _technical_change_indicators(
+    lead_values: tuple[LeadComparison, ...],
+    comparability_reasons: tuple[str, ...],
+    rhythm_indicators: tuple[str, ...],
+    st_t_indicators: tuple[str, ...],
+    score_deltas: tuple[ModelScoreEvolution, ...],
+    score_compatibility: str,
+) -> tuple[str, ...]:
+    indicators: list[str] = []
+    if comparability_reasons:
+        indicators.append("technical comparability warning: " + ", ".join(comparability_reasons))
+    changed_leads = tuple(
+        item.lead_name for item in lead_values if item.quality_difference != "unchanged"
+    )
+    if len(changed_leads) >= 2:
+        indicators.append(
+            "multiple lead-level waveform changes detected: " + ", ".join(changed_leads[:6])
+        )
+    elif changed_leads:
+        indicators.append("lead-level waveform change detected: " + changed_leads[0])
+    indicators.extend(rhythm_indicators)
+    indicators.extend(st_t_indicators)
+    if score_compatibility == "compatible":
+        shifted = tuple(
+            item.finding_code for item in score_deltas if abs(item.absolute_delta) >= 0.2
+        )
+        threshold_changed = tuple(
+            item.finding_code for item in score_deltas if item.threshold_state_changed is True
+        )
+        if shifted:
+            indicators.append(
+                "model-score delta >= 0.20 for labels: " + ", ".join(shifted)
+            )
+        if threshold_changed:
+            indicators.append(
+                "model threshold state changed for labels: " + ", ".join(threshold_changed)
+            )
+    elif score_compatibility != "analysis_unavailable":
+        indicators.append(f"model-score comparison unavailable: {score_compatibility}")
+    if not indicators:
+        indicators.append("no material technical ECG change detected by demonstration policy")
+    indicators.append("physician review required before clinical use")
+    return tuple(dict.fromkeys(indicators))
+
+
+def _comparison_has_warning(
+    comparability: ComparabilityStatus,
+    lead_values: tuple[LeadComparison, ...],
+    rhythm_indicators: tuple[str, ...],
+    st_t_indicators: tuple[str, ...],
+    score_deltas: tuple[ModelScoreEvolution, ...],
+    score_compatibility: str,
+) -> bool:
+    return (
+        comparability is not ComparabilityStatus.COMPARABLE
+        or any(item.quality_difference != "unchanged" for item in lead_values)
+        or bool(rhythm_indicators)
+        or bool(st_t_indicators)
+        or score_compatibility not in {"compatible", "analysis_unavailable"}
+        or any(abs(item.absolute_delta) >= 0.2 for item in score_deltas)
+        or any(item.threshold_state_changed is True for item in score_deltas)
+    )
+
+
+def _peak_intervals(peaks: tuple[int, ...]) -> tuple[int, ...]:
+    return tuple(right - left for left, right in zip(peaks, peaks[1:], strict=False))
+
+
+def _lead_sort_key(name: str) -> tuple[int, str]:
+    return (
+        STANDARD_12_LEADS.index(name) if name in STANDARD_12_LEADS else len(STANDARD_12_LEADS),
+        name,
+    )
+
+
+def _mean(values: tuple[float, ...]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
+def _rounded(value: float | None) -> float | None:
+    return round(value, 4) if value is not None else None
 
 
 def _score_deltas(

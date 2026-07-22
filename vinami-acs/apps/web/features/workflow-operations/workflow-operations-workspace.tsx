@@ -13,8 +13,18 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import { createBrowserApiClient } from "@web/shared/api/browser";
-import { formatTimestamp } from "@web/shared/formatting";
+import { formatDueTimestamp, formatTimestamp } from "@web/shared/formatting";
+import {
+  viAction,
+  viDecisionType,
+  viPriority,
+  viSafetyNotice,
+  viStatus,
+  viTaskType,
+  viWorkflowState,
+} from "@web/shared/locale/vi";
 import type { DecisionView } from "@web/features/clinical-reasoning/model";
+import { AlertDigestPanel } from "@web/features/evidence/evidence-automation-panel";
 import {
   workflowOperationsSchema,
   type WorkflowAlertView,
@@ -24,13 +34,13 @@ import {
 import { ClinicalWorkflowBoard } from "./clinical-workflow-board";
 
 const taskLabels: Record<string, string> = {
-  repeat_ecg: "Repeat ECG",
-  repeat_troponin: "Repeat troponin",
-  obtain_additional_information: "Obtain additional information",
-  cardiology_review: "Cardiology review",
-  cath_lab_review: "Physician request for cath-lab review",
-  physician_reassessment: "Physician reassessment",
-  other_documented_task: "Other documented task",
+  repeat_ecg: "Lặp lại ECG",
+  repeat_troponin: "Lặp lại Troponin",
+  obtain_additional_information: "Bổ sung thông tin",
+  cardiology_review: "Hội chẩn Tim mạch",
+  cath_lab_review: "Bác sĩ yêu cầu xem xét can thiệp",
+  physician_reassessment: "Bác sĩ đánh giá lại",
+  other_documented_task: "Công việc khác đã ghi nhận",
 };
 
 const actionableDecisions = new Set([
@@ -94,7 +104,7 @@ export function WorkflowOperationsWorkspace({
 
   const generateMutation = useMutation({
     mutationFn: async (form: GenerateForm) => {
-      if (!selectedDecision) throw new Error("Select a physician decision.");
+      if (!selectedDecision) throw new Error("Chọn một quyết định của bác sĩ.");
       return api.generateWorkflowTask(
         caseId,
         {
@@ -115,7 +125,7 @@ export function WorkflowOperationsWorkspace({
   });
   const taskMutation = useMutation({
     mutationFn: async (form: ReasonForm) => {
-      if (!taskAction) throw new Error("Select a task action.");
+      if (!taskAction) throw new Error("Chọn một hành động công việc.");
       return api.changeWorkflowTask(
         caseId,
         taskAction.task.task_id,
@@ -140,7 +150,7 @@ export function WorkflowOperationsWorkspace({
   });
   const alertMutation = useMutation({
     mutationFn: async (form: ReasonForm) => {
-      if (!alertAction) throw new Error("Select an alert action.");
+      if (!alertAction) throw new Error("Chọn một hành động cảnh báo.");
       return api.changeWorkflowAlert(
         caseId,
         alertAction.alert.alert_id,
@@ -183,10 +193,10 @@ export function WorkflowOperationsWorkspace({
       <section className="vm-card vm-workflow-hero">
         <div className="vm-card__body">
           <div>
-            <p className="vm-eyebrow">Operational workflow</p>
-            <h2>{formatCode(value.workflow.state)}</h2>
+            <p className="vm-eyebrow">Quy trình điều phối</p>
+            <h2>{viWorkflowState(value.workflow.state)}</h2>
             <p>
-              Workflow v{value.workflow.version} · Definition{" "}
+              Quy trình v{value.workflow.version} | Định nghĩa{" "}
               {value.workflow.definition_version}
             </p>
           </div>
@@ -195,26 +205,28 @@ export function WorkflowOperationsWorkspace({
             disabled={overdueMutation.isPending}
             onClick={() => overdueMutation.mutate()}
           >
-            <Clock3 size={16} /> Evaluate due times
+            <Clock3 size={16} /> Đánh giá hạn xử lý
           </button>
         </div>
-        <p className="vm-safety-note">{value.safety_notice}</p>
-        <p className="vm-demo-notice">{value.workflow.demonstration_notice}</p>
+        <p className="vm-safety-note">{viSafetyNotice(value.safety_notice)}</p>
+        <p className="vm-demo-notice">
+          {viSafetyNotice(value.workflow.demonstration_notice)}
+        </p>
       </section>
 
-      <div className="vm-workflow-summary" aria-label="Workflow summary">
-        <Metric label="Active tasks" value={activeTasks.length} />
+      <div className="vm-workflow-summary" aria-label="Tóm tắt quy trình">
+        <Metric label="Công việc đang mở" value={activeTasks.length} />
         <Metric
-          label="Overdue / escalated"
+          label="Quá hạn / leo thang"
           value={activeTasks.filter((task) => task.status === "overdue").length}
         />
         <Metric
-          label="Unresolved alerts"
+          label="Cảnh báo chưa xử lý"
           value={
             value.alerts.filter((alert) => alert.status !== "resolved").length
           }
         />
-        <Metric label="Completed / cancelled" value={historicalTasks.length} />
+        <Metric label="Hoàn tất / đã hủy" value={historicalTasks.length} />
       </div>
 
       <ClinicalWorkflowBoard
@@ -229,27 +241,27 @@ export function WorkflowOperationsWorkspace({
         <div className="vm-card__body">
           <div className="vm-section-heading">
             <div>
-              <h3>Physician-authored requests awaiting operationalization</h3>
-              <p>
-                Tasks can only be generated from effective persisted decisions.
-              </p>
+              <h3>
+                Yêu cầu do bác sĩ ghi nhận đang chờ chuyển thành công việc
+              </h3>
+              <p>Công việc chỉ được tạo từ quyết định hiệu lực đã lưu.</p>
             </div>
           </div>
           {!availableDecisions.length && (
-            <p>No unprocessed physician request is currently available.</p>
+            <p>Hiện không có yêu cầu bác sĩ nào chưa xử lý.</p>
           )}
           {availableDecisions.map((decision) => (
             <article className="vm-workflow-row" key={decision.decision_id}>
               <div>
                 <strong>{decisionLabel(decision.decision_type)}</strong>
                 <p>{decision.rationale}</p>
-                <small>Recorded {formatTimestamp(decision.recorded_at)}</small>
+                <small>Ghi nhận {formatTimestamp(decision.recorded_at)}</small>
               </div>
               <button
                 className="vm-button vm-button--primary"
                 onClick={() => setSelectedDecision(decision)}
               >
-                Create operational task
+                Tạo công việc điều phối
               </button>
             </article>
           ))}
@@ -259,9 +271,9 @@ export function WorkflowOperationsWorkspace({
       <section className="vm-card" aria-labelledby="active-task-heading">
         <div className="vm-card__body">
           <h3 id="active-task-heading">
-            <ListChecks size={18} /> Active tasks
+            <ListChecks size={18} /> Công việc đang mở
           </h3>
-          {!activeTasks.length && <p>No active operational task.</p>}
+          {!activeTasks.length && <p>Không có công việc điều phối đang mở.</p>}
           <div className="vm-workflow-list">
             {activeTasks.map((task) => (
               <TaskCard
@@ -280,9 +292,14 @@ export function WorkflowOperationsWorkspace({
       <section className="vm-card" aria-labelledby="alert-heading">
         <div className="vm-card__body">
           <h3 id="alert-heading">
-            <BellRing size={18} /> Alerts requiring human review
+            <BellRing size={18} /> Cảnh báo cần con người rà soát
           </h3>
-          {!value.alerts.length && <p>No operational alert recorded.</p>}
+          <p>
+            Được nhóm theo chính sách backend; cảnh báo thô vẫn hiển thị bên
+            dưới.
+          </p>
+          <AlertDigestPanel digest={value.alert_digest} />
+          {!value.alerts.length && <p>Chưa ghi nhận cảnh báo điều phối.</p>}
           {value.alerts.map((alert) => (
             <article
               className={`vm-alert-row vm-alert-row--${alert.severity}`}
@@ -292,7 +309,7 @@ export function WorkflowOperationsWorkspace({
                 <strong>{formatCode(alert.alert_type)}</strong>
                 <p>{alert.message}</p>
                 <small>
-                  {alert.status} · v{alert.version} ·{" "}
+                  {viStatus(alert.status)} | v{alert.version} |{" "}
                   {formatTimestamp(alert.raised_at)}
                 </small>
               </div>
@@ -304,7 +321,7 @@ export function WorkflowOperationsWorkspace({
                       setAlertAction({ alert, action: "acknowledge" })
                     }
                   >
-                    Acknowledge
+                    Ghi nhận
                   </button>
                 )}
                 {alert.status === "acknowledged" && (
@@ -312,7 +329,7 @@ export function WorkflowOperationsWorkspace({
                     className="vm-button"
                     onClick={() => setAlertAction({ alert, action: "resolve" })}
                   >
-                    Resolve
+                    Xử lý xong
                   </button>
                 )}
               </div>
@@ -324,9 +341,11 @@ export function WorkflowOperationsWorkspace({
       <section className="vm-card">
         <div className="vm-card__body">
           <h3>
-            <History size={18} /> Completed and cancelled history
+            <History size={18} /> Lịch sử hoàn tất và đã hủy
           </h3>
-          {!historicalTasks.length && <p>No completed or cancelled task.</p>}
+          {!historicalTasks.length && (
+            <p>Chưa có công việc hoàn tất hoặc đã hủy.</p>
+          )}
           {historicalTasks.map((task) => (
             <article className="vm-workflow-row" key={task.task_id}>
               <div>
@@ -346,15 +365,15 @@ export function WorkflowOperationsWorkspace({
         aria-label="Related workflow records"
       >
         <Link href={`/cases/${caseId}/clinical-reasoning`}>
-          Clinical Reasoning
+          Tổng hợp lâm sàng
         </Link>
-        <Link href={`/cases/${caseId}/timeline`}>Timeline</Link>
-        <Link href={`/cases/${caseId}/audit`}>Audit</Link>
+        <Link href={`/cases/${caseId}/timeline`}>Dòng thời gian</Link>
+        <Link href={`/cases/${caseId}/audit`}>Nhật ký kiểm chứng</Link>
       </nav>
 
       {selectedDecision && (
         <Dialog
-          title="Create operational task"
+          title="Tạo công việc điều phối"
           onCancel={() => setSelectedDecision(null)}
         >
           <form
@@ -367,29 +386,29 @@ export function WorkflowOperationsWorkspace({
               <strong>{decisionLabel(selectedDecision.decision_type)}</strong>
             </p>
             <label>
-              Priority
+              Ưu tiên
               <select {...generateForm.register("priority")}>
-                <option value="routine">Routine</option>
-                <option value="priority">Priority</option>
-                <option value="urgent">Urgent</option>
+                <option value="routine">Thường quy</option>
+                <option value="priority">Ưu tiên</option>
+                <option value="urgent">Ưu tiên cao</option>
               </select>
             </label>
             <label>
-              Due time (optional)
+              Hạn xử lý (tùy chọn)
               <input
                 type="datetime-local"
                 {...generateForm.register("dueAt")}
               />
             </label>
             <p>
-              This task records operational work only. It does not create a
-              diagnosis, treatment instruction, or case closure.
+              Công việc này chỉ ghi nhận hoạt động điều phối. Không tạo chẩn
+              đoán, chỉ định điều trị hoặc đóng ca.
             </p>
             <button
               className="vm-button vm-button--primary"
               disabled={generateMutation.isPending}
             >
-              Confirm task creation
+              Xác nhận tạo công việc
             </button>
             <MutationError error={generateMutation.error} />
           </form>
@@ -398,7 +417,7 @@ export function WorkflowOperationsWorkspace({
 
       {taskAction && (
         <Dialog
-          title={`${formatCode(taskAction.action)} task`}
+          title={`${viAction(taskAction.action)} công việc`}
           onCancel={() => setTaskAction(null)}
         >
           <form
@@ -412,13 +431,13 @@ export function WorkflowOperationsWorkspace({
             </p>
             {taskAction.action === "assign" && (
               <p>
-                <UserRoundCheck size={16} /> Assign this task to your verified
-                identity.
+                <UserRoundCheck size={16} /> Gán công việc này cho danh tính đã
+                xác thực của bạn.
               </p>
             )}
             {["complete", "cancel"].includes(taskAction.action) && (
               <label>
-                Required reason
+                Lý do bắt buộc
                 <textarea
                   {...reasonForm.register("reason", { required: true })}
                 />
@@ -428,7 +447,7 @@ export function WorkflowOperationsWorkspace({
               className="vm-button vm-button--primary"
               disabled={taskMutation.isPending}
             >
-              Confirm {taskAction.action}
+              Xác nhận {viAction(taskAction.action)}
             </button>
             <MutationError error={taskMutation.error} />
           </form>
@@ -437,7 +456,7 @@ export function WorkflowOperationsWorkspace({
 
       {alertAction && (
         <Dialog
-          title={`${formatCode(alertAction.action)} alert`}
+          title={`${viAction(alertAction.action)} cảnh báo`}
           onCancel={() => setAlertAction(null)}
         >
           <form
@@ -449,20 +468,20 @@ export function WorkflowOperationsWorkspace({
             <p>{alertAction.alert.message}</p>
             {alertAction.action === "resolve" && (
               <label>
-                Resolution reason
+                Lý do xử lý
                 <textarea
                   {...reasonForm.register("reason", { required: true })}
                 />
               </label>
             )}
             <p>
-              Acknowledgement and resolution do not replace clinical authority.
+              Ghi nhận và xử lý cảnh báo không thay thế thẩm quyền lâm sàng.
             </p>
             <button
               className="vm-button vm-button--primary"
               disabled={alertMutation.isPending}
             >
-              Confirm {alertAction.action}
+              Xác nhận {viAction(alertAction.action)}
             </button>
             <MutationError error={alertMutation.error} />
           </form>
@@ -493,42 +512,40 @@ function TaskCard({
           <span
             className={`vm-priority-pill vm-priority-pill--${task.priority}`}
           >
-            {task.priority}
+            {viPriority(task.priority)}
           </span>
           <h4>{taskLabel(task.task_type)}</h4>
         </div>
         <span className={`vm-status-pill vm-status-pill--${task.status}`}>
-          {formatCode(task.status)}
+          {viStatus(task.status)}
         </span>
       </div>
       <dl>
-        <dt>Due</dt>
-        <dd>{task.due_at ? formatTimestamp(task.due_at) : "Not specified"}</dd>
-        <dt>Owner</dt>
+        <dt>Hạn xử lý</dt>
+        <dd>{formatDueTimestamp(task.due_at)}</dd>
+        <dt>Phụ trách</dt>
         <dd>
           {task.owner_user_id
-            ? "Assigned user"
+            ? "Người dùng đã được gán"
             : task.owner_team_id
-              ? "Assigned team"
-              : "Unassigned"}
+              ? "Nhóm đã được gán"
+              : "Chưa phân công"}
         </dd>
-        <dt>Escalation</dt>
+        <dt>Leo thang</dt>
         <dd>{task.escalation_level}</dd>
-        <dt>Origin</dt>
+        <dt>Nguồn</dt>
         <dd>
-          {task.originating_decision?.rationale ?? "Persisted workflow effect"}
+          {task.originating_decision?.rationale ?? "Hiệu ứng quy trình đã lưu"}
         </dd>
       </dl>
       <div className="vm-inline-actions">
         {(actions[task.status] ?? []).map((action) => (
           <button
-            className={
-              action === "cancel" ? "vm-button vm-button--danger" : "vm-button"
-            }
+            className="vm-button"
             key={action}
             onClick={() => onAction(action)}
           >
-            {formatCode(action)}
+            {viAction(action)}
           </button>
         ))}
       </div>
@@ -564,7 +581,7 @@ function Dialog({
         <div className="vm-section-heading">
           <h3 id="workflow-dialog-title">{title}</h3>
           <button className="vm-button" onClick={onCancel}>
-            Close
+            Đóng
           </button>
         </div>
         {children}
@@ -580,12 +597,12 @@ function MutationError({ error }: { error: Error | null }) {
   ) : null;
 }
 function taskLabel(code: string) {
-  return taskLabels[code] ?? formatCode(code);
+  return taskLabels[code] ?? viTaskType(code);
 }
 function decisionLabel(code: string) {
   return code === "request_cath_lab_review"
-    ? "Physician request for cath-lab review"
-    : formatCode(code);
+    ? "Bác sĩ yêu cầu xem xét can thiệp"
+    : viDecisionType(code);
 }
 function formatCode(value: string) {
   return value

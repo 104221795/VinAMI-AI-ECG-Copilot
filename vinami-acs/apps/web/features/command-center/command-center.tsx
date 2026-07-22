@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   EmptyState,
   ErrorState,
@@ -17,7 +18,6 @@ import { useConnectivity } from "@web/shared/hooks/use-connectivity";
 import { IntegrationStatusPanel } from "@web/features/realtime/integration-status-panel";
 import { RealtimeStatus } from "@web/features/realtime/connection-status";
 import { useRealtimeUpdates } from "@web/features/realtime/use-realtime-updates";
-import { useState } from "react";
 import { ActiveCaseTable } from "./active-case-table";
 import { loadCommandCenterWith } from "./data";
 import { FilterBar, type CommandFilters } from "./filter-bar";
@@ -40,13 +40,19 @@ export function CommandCenter({
   const online = useConnectivity();
   const [state, setState] = useState(initialState);
   const serverQuery = toServerQuery(state);
+  const initialServerQuery = useMemo(
+    () => toServerQuery(initialState),
+    [initialState],
+  );
+  const usesInitialQuery = sameQuery(serverQuery, initialServerQuery);
   const realtime = useRealtimeUpdates({
     invalidate: [["r7-command-center"], ["r10-integration-status"]],
   });
   const query = useQuery({
     queryKey: ["r7-command-center", serverQuery],
     queryFn: () => loadCommandCenterWith(createBrowserApiClient(), serverQuery),
-    initialData: initialData,
+    initialData: usesInitialQuery ? initialData : undefined,
+    placeholderData: keepPreviousData,
     staleTime: 20_000,
     refetchInterval: 30_000,
   });
@@ -59,7 +65,7 @@ export function CommandCenter({
       overdue: next.overdue,
       alert_status: next.alertStatus,
       evidence_status: next.evidenceStatus,
-      owner: next.owner,
+      owner: next.owner.trim(),
       sort: next.sort,
       direction: next.direction,
       page: next.page > 1 ? String(next.page) : "",
@@ -113,7 +119,7 @@ export function CommandCenter({
       {inlineError && (
         <div className="vm-banner vm-banner--critical" role="alert">
           <div>
-            <strong>Using cached operational data</strong>
+            <strong>Đang dùng dữ liệu điều phối đã lưu tạm</strong>
             <p>{inlineError.description}</p>
           </div>
           {inlineError.retryable && (
@@ -122,31 +128,31 @@ export function CommandCenter({
               type="button"
               onClick={() => query.refetch()}
             >
-              Retry
+              Thử lại
             </button>
           )}
         </div>
       )}
-      <section className="vm-command-summary" aria-label="Operational summary">
+      <section className="vm-command-summary" aria-label="Tóm tắt điều phối">
         <MetricTile
-          label="Active cases"
+          label="Ca đang hoạt động"
           value={data.total}
-          detail={`Page ${data.page}`}
+          detail={`Trang ${data.page}`}
         />
         <MetricTile
-          label="Cases overdue"
+          label="Ca quá hạn"
           value={summary.overdue}
-          detail="Current server page"
+          detail="Trong trang hiện tại"
         />
         <MetricTile
-          label="Cases with alerts"
+          label="Ca có cảnh báo"
           value={summary.alerts}
-          detail="Unresolved"
+          detail="Chưa xử lý"
         />
         <MetricTile
-          label="Evidence attention"
+          label="Cần chú ý bằng chứng"
           value={summary.evidence}
-          detail="Missing, stale or limited"
+          detail="Thiếu, cũ hoặc giới hạn"
         />
       </section>
       <FilterBar
@@ -155,13 +161,16 @@ export function CommandCenter({
           updateUrl({ ...state, ...filters, page: 1, selected: undefined })
         }
       />
-      {query.isFetching && (
-        <div className="vm-inline-refresh" role="status">
-          Refreshing operational state…
-        </div>
-      )}
       <div className="vm-command-layout">
-        <section aria-label="Active case queue">
+        <section aria-label="Hàng đợi ca đang hoạt động">
+          {query.isFetching && (
+            <div className="vm-refresh-skeleton">
+              <LoadingSkeleton
+                lines={3}
+                label="Đang làm mới trạng thái điều phối"
+              />
+            </div>
+          )}
           {data.items.length ? (
             <ActiveCaseTable
               rows={data.items}
@@ -173,8 +182,8 @@ export function CommandCenter({
             />
           ) : (
             <EmptyState
-              title="No active cases match this view"
-              description="Adjust the operational filters. Missing evidence is never treated as negative evidence."
+              title="Không có ca phù hợp với góc nhìn này"
+              description="Hãy điều chỉnh bộ lọc. Bằng chứng thiếu không bao giờ được xem là bằng chứng âm tính."
             />
           )}
           <Pagination
@@ -198,6 +207,7 @@ export function CommandCenter({
 }
 
 function toServerQuery(state: CommandCenterState) {
+  const owner = state.owner.trim();
   return {
     page: state.page,
     page_size: state.pageSize,
@@ -206,8 +216,26 @@ function toServerQuery(state: CommandCenterState) {
     overdue: state.overdue ? state.overdue === "true" : undefined,
     alert_status: state.alertStatus || undefined,
     evidence_status: state.evidenceStatus || undefined,
-    owner_id: state.owner || undefined,
+    owner_id: isUuid(owner) ? owner : undefined,
     sort: state.sort,
     direction: state.direction,
   } as const;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+function sameQuery(
+  first: ReturnType<typeof toServerQuery>,
+  second: ReturnType<typeof toServerQuery>,
+) {
+  const keys = new Set([...Object.keys(first), ...Object.keys(second)]);
+  for (const key of keys) {
+    const typedKey = key as keyof ReturnType<typeof toServerQuery>;
+    if (first[typedKey] !== second[typedKey]) return false;
+  }
+  return true;
 }

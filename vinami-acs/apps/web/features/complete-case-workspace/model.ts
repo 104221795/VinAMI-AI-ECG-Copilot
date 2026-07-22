@@ -1,6 +1,23 @@
 import { z } from "zod";
 
 const optionalRecord = z.record(z.string(), z.unknown()).nullable();
+const automationSchema = z.object({
+  policy_version: z.string(),
+  safety_notice: z.string(),
+  completeness: z.object({
+    score: z.number().int(),
+    status: z.string(),
+    required_count: z.number().int(),
+    current_count: z.number().int(),
+    items: z.array(z.record(z.string(), z.unknown())),
+    missing_evidence: z.array(z.string()),
+    stale_evidence: z.array(z.string()),
+    technical_limits: z.array(z.string()),
+    not_negative_evidence_notice: z.string(),
+  }),
+  suggested_tasks: z.array(z.record(z.string(), z.unknown())),
+  alert_digest: z.array(z.record(z.string(), z.unknown())),
+});
 
 export const completeCaseWorkspaceSchema = z.object({
   case_id: z.string().uuid(),
@@ -33,6 +50,7 @@ export const completeCaseWorkspaceSchema = z.object({
   missing_evidence: z.array(z.string()),
   stale_evidence: z.array(z.string()),
   technical_limits: z.array(z.string()),
+  automation: automationSchema,
   update_token: z.string(),
   evaluated_at: z.string(),
 });

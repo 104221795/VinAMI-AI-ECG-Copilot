@@ -7,14 +7,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="en">
+    <html lang="vi">
       <body>
         <main className="vm-main">
           <div className="vm-state vm-state--error" role="alert">
-            <h1>Application unavailable</h1>
-            <p>The research workspace could not start safely.</p>
+            <h1>Ứng dụng không khả dụng</h1>
+            <p>Không thể khởi động an toàn không gian làm việc nghiên cứu.</p>
             <button className="vm-button" onClick={reset}>
-              Retry
+              Thử lại
             </button>
           </div>
         </main>

@@ -8,6 +8,7 @@ from typing import Any, Protocol
 from uuid import UUID, uuid4
 
 from vinami.alerts.domain.model import Alert, AlertSeverity
+from vinami.clinical_case.application.automation import summarize_alert_digest
 from vinami.reasoning.domain.clinical_evidence import ClinicalDecisionType
 from vinami.shared.actor import ActorContext
 from vinami.shared.application_errors import ResourceConflictError, ResourceNotFoundError
@@ -529,6 +530,7 @@ class WorkflowOperationsQueryService:
             if workflow is None:
                 raise ResourceNotFoundError("clinical workflow was not found")
             tasks = uow.tasks.list_by_case(case_id)
+            alerts = [_alert_dict(alert) for alert in uow.alerts.list_by_case(case_id)]
             decisions = {item.decision_id: item for item in uow.reasoning.decisions(case_id)}
             return {
                 "case_id": str(case_id),
@@ -551,7 +553,8 @@ class WorkflowOperationsQueryService:
                     }
                     for task in tasks
                 ],
-                "alerts": [_alert_dict(alert) for alert in uow.alerts.list_by_case(case_id)],
+                "alerts": alerts,
+                "alert_digest": summarize_alert_digest(alerts),
                 "safety_notice": (
                     "Operational workflow only. Task completion does not imply diagnosis, "
                     "treatment success, or case closure."

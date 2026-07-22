@@ -42,6 +42,7 @@ class CompleteCaseWorkspace:
     missing_evidence: tuple[str, ...]
     stale_evidence: tuple[str, ...]
     technical_limits: tuple[str, ...]
+    automation: dict[str, object]
     update_token: str
     evaluated_at: datetime
 

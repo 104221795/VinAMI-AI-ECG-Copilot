@@ -351,6 +351,28 @@ class ModelScoreEvolution:
 
 
 @dataclass(frozen=True, slots=True)
+class SignalFeatureDelta:
+    """Technical signal-feature delta for serial ECG review, not a diagnosis."""
+
+    feature_name: str
+    display_label: str
+    previous_value: float | None
+    current_value: float | None
+    absolute_delta: float | None
+    unit: str | None
+    status: str
+    evidence_scope: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "feature_name", require_text(self.feature_name, "feature_name"))
+        object.__setattr__(self, "display_label", require_text(self.display_label, "display_label"))
+        object.__setattr__(self, "status", require_text(self.status, "status"))
+        object.__setattr__(
+            self, "evidence_scope", require_text(self.evidence_scope, "evidence_scope")
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class DynamicECGPhysicianReview:
     review_id: UUID
     comparison_id: UUID
@@ -402,6 +424,12 @@ class DynamicECGComparison(AggregateRoot):
     started_at: datetime | None = None
     physician_review_status: str = "pending"
     model_score_compatibility: str = "not_available"
+    signal_feature_deltas: tuple[SignalFeatureDelta, ...] = ()
+    rhythm_change_indicators: tuple[str, ...] = ()
+    st_t_change_indicators: tuple[str, ...] = ()
+    review_recommendation: str = (
+        "Technical serial ECG comparison only; physician interpretation is required."
+    )
 
     def __post_init__(self) -> None:
         if self.baseline_study_id == self.current_study_id:
@@ -411,6 +439,8 @@ class DynamicECGComparison(AggregateRoot):
             and self.lead_comparisons
         ):
             raise DomainInvariantError("non-comparable studies cannot contain lead comparisons")
+        if not self.review_recommendation.strip():
+            raise DomainInvariantError("dynamic comparison requires a review recommendation")
 
 
 @dataclass(slots=True)

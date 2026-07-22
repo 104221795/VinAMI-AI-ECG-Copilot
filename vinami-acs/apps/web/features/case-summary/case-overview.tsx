@@ -6,6 +6,7 @@ import {
   formatTimestamp,
   shortReference,
 } from "@web/shared/formatting";
+import { viPriority, viStatus } from "@web/shared/locale/vi";
 
 export function CaseOverview({
   value,
@@ -19,56 +20,56 @@ export function CaseOverview({
   )[0];
   return (
     <div className="vm-section-stack">
-      <section className="vm-summary-grid" aria-label="Case summary">
+      <section className="vm-summary-grid" aria-label="Tóm tắt ca">
         <div className="vm-summary-block">
-          <span>Current lifecycle state</span>
-          <strong>{value.status.replaceAll("_", " ")}</strong>
-          <p>Operational state, not a diagnosis</p>
+          <span>Trạng thái vòng đời hiện tại</span>
+          <strong>{viStatus(value.status)}</strong>
+          <p>Trạng thái điều phối, không phải chẩn đoán</p>
         </div>
         <div className="vm-summary-block">
-          <span>Clinical priority</span>
-          <strong>{value.priority}</strong>
-          <p>Recorded by the lifecycle command</p>
+          <span>Ưu tiên lâm sàng</span>
+          <strong>{viPriority(value.priority)}</strong>
+          <p>Được ghi nhận bởi lệnh vòng đời</p>
         </div>
         <div className="vm-summary-block">
-          <span>Arrival</span>
+          <span>Thời điểm đến</span>
           <strong>{formatRelative(value.arrivalAt)}</strong>
           <p>{formatTimestamp(value.arrivalAt)}</p>
         </div>
         <div className="vm-summary-block">
-          <span>Encounter location</span>
+          <span>Vị trí tiếp nhận</span>
           <strong>{value.location}</strong>
-          <p>{value.encounterStatus} encounter</p>
+          <p>Tiếp nhận {viStatus(value.encounterStatus)}</p>
         </div>
         <div className="vm-summary-block">
-          <span>Case opened</span>
+          <span>Mở ca</span>
           <strong>{formatRelative(value.openedAt)}</strong>
           <p>{formatTimestamp(value.openedAt)}</p>
         </div>
         <div className="vm-summary-block">
-          <span>Last persisted update</span>
+          <span>Cập nhật đã lưu gần nhất</span>
           <strong>{formatRelative(value.updatedAt)}</strong>
-          <p>Aggregate version {value.aggregateVersion}</p>
+          <p>Phiên bản aggregate {value.aggregateVersion}</p>
         </div>
       </section>
       <div className="vm-layout-split">
-        <ClinicalCard title="Patient and encounter">
+        <ClinicalCard title="Bệnh nhân và lần tiếp nhận">
           <dl className="vm-definition-list">
-            <dt>Patient reference</dt>
+            <dt>Mã bệnh nhân</dt>
             <dd>{value.patientReference}</dd>
-            <dt>Safe demographics</dt>
+            <dt>Thông tin nhân khẩu học an toàn</dt>
             <dd>{value.demographics}</dd>
-            <dt>Reference system</dt>
+            <dt>Hệ thống tham chiếu</dt>
             <dd>{value.patientReferenceSystem}</dd>
-            <dt>Encounter reference</dt>
+            <dt>Mã tiếp nhận</dt>
             <dd>{value.encounterReference}</dd>
-            <dt>Location</dt>
+            <dt>Vị trí</dt>
             <dd>{value.location}</dd>
-            <dt>Arrival time</dt>
+            <dt>Thời điểm đến</dt>
             <dd>{formatTimestamp(value.arrivalAt)}</dd>
           </dl>
         </ClinicalCard>
-        <ClinicalCard title="Latest lifecycle activity">
+        <ClinicalCard title="Hoạt động vòng đời gần nhất">
           {latest ? (
             <ol className="vm-timeline">
               <TimelineItem
@@ -77,27 +78,27 @@ export function CaseOverview({
                 actor={
                   latest.actorId
                     ? shortReference(latest.actorId, "ACT")
-                    : "System"
+                    : "Hệ thống"
                 }
                 last
-                detail={<p>Projection source: {latest.source}</p>}
+                detail={<p>Nguồn projection: {latest.source}</p>}
               />
             </ol>
           ) : (
             <p>
-              Lifecycle projections may still be processing. Use Timeline to
-              refresh.
+              Projection vòng đời có thể vẫn đang xử lý. Dùng Dòng thời gian để
+              làm mới.
             </p>
           )}
         </ClinicalCard>
       </div>
-      <ClinicalCard title="Case opening context">
+      <ClinicalCard title="Ngữ cảnh mở ca">
         <p>{value.openingReason}</p>
       </ClinicalCard>
       <section className="vm-capabilities">
-        <strong>Capabilities not yet enabled:</strong> serial troponin,
-        reasoning, tasks, and alerts remain outside the verified R3 slice. No
-        clinical data is inferred here.
+        <strong>Năng lực chưa bật:</strong> Troponin nối tiếp, tổng hợp lâm
+        sàng, công việc và cảnh báo vẫn nằm ngoài lát cắt R3 đã xác thực. Không
+        suy luận dữ liệu lâm sàng tại đây.
       </section>
     </div>
   );

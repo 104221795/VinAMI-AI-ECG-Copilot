@@ -15,22 +15,34 @@ export async function loadECGWorkspaceWith(
   api: VinamiApiClient,
   caseId: string,
 ): Promise<ECGWorkspaceView> {
-  const [workspace, connectors] = await Promise.all([
-    api
-      .getECGWorkspace(caseId)
-      .then((result) => parseContract(ecgWorkspaceSchema, result)),
-    api
-      .getECGConnectors()
-      .then((result) =>
-        result.map((item) => parseContract(ecgConnectorSchema, item)),
-      ),
-  ]);
+  const technicalWarnings: string[] = [];
+  const workspace = await api
+    .getECGWorkspace(caseId)
+    .then((result) => parseContract(ecgWorkspaceSchema, result));
+
+  const connectors = await api
+    .getECGConnectors()
+    .then((result) =>
+      result.map((item) => parseContract(ecgConnectorSchema, item)),
+    )
+    .catch(() => {
+      technicalWarnings.push(
+        "Hospital ECG connector status is temporarily unavailable. Persisted ECG studies remain visible.",
+      );
+      return [];
+    });
+
   const waveform =
     workspace.current_study?.waveform_available === true
-      ? parseContract(
-          ecgWaveformSchema,
-          await api.getECGWaveform(workspace.current_study.study_id),
-        )
+      ? await api
+          .getECGWaveform(workspace.current_study.study_id)
+          .then((result) => parseContract(ecgWaveformSchema, result))
+          .catch(() => {
+            technicalWarnings.push(
+              "Structured waveform could not be fetched for the current ECG. The study record and review workflow are still available.",
+            );
+            return null;
+          })
       : null;
   return {
     caseId: workspace.clinical_case_id,
@@ -93,6 +105,18 @@ export async function loadECGWorkspaceWith(
         sampleAlignmentStatus: lead.sample_alignment_status,
       })),
       technicalChangeIndicators: item.technical_change_indicators,
+      signalFeatureDeltas: item.signal_feature_deltas.map((feature) => ({
+        featureName: feature.feature_name,
+        displayLabel: feature.display_label,
+        previousValue: feature.previous_value,
+        currentValue: feature.current_value,
+        absoluteDelta: feature.absolute_delta,
+        unit: feature.unit,
+        status: feature.status,
+        evidenceScope: feature.evidence_scope,
+      })),
+      rhythmChangeIndicators: item.rhythm_change_indicators,
+      stTChangeIndicators: item.st_t_change_indicators,
       scoreEvolution: item.model_score_deltas.map((score) => ({
         findingCode: score.finding_code,
         previousScore: score.previous_score,
@@ -102,6 +126,7 @@ export async function loadECGWorkspaceWith(
       })),
       scoreCompatibility: item.model_score_compatibility,
       policyVersion: item.comparison_policy_version,
+      reviewRecommendation: item.review_recommendation,
       recordVersion: item.record_version,
       safetyNotice: item.safety_notice,
     })),
@@ -150,6 +175,7 @@ export async function loadECGWorkspaceWith(
         }
       : null,
     safetyNotice: workspace.safety_notice,
+    technicalWarnings,
   };
 }
 
@@ -199,6 +225,7 @@ function analysisView(
     })),
     warnings: value.warnings,
     explanationStatus: value.explanation_status,
+    explanationArtifactId: value.explanation_artifact_id,
     safetyNotice: value.safety_notice,
   };
 }

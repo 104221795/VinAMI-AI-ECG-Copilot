@@ -27,6 +27,7 @@ streamlit_stderr.log
 
 # Generated ECG data, checkpoints, and experiment artifacts
 VinStroke_ECG_artifacts/
+PTBXL/
 data/
 models/
 reports/

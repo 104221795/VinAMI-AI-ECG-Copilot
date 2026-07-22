@@ -43,13 +43,13 @@ describe("TimelineView", () => {
       />,
     );
     expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(
-      "Clinical case opened",
+      "Mở ca ACS nghi ngờ",
     );
-    fireEvent.change(screen.getByLabelText("Order"), {
+    fireEvent.change(screen.getByLabelText("Thứ tự"), {
       target: { value: "oldest" },
     });
     expect(screen.getAllByRole("listitem")[0]).toHaveTextContent(
-      "Patient registered",
+      "Đăng ký bệnh nhân",
     );
   });
 });

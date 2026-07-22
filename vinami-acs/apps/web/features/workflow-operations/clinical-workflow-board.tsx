@@ -7,8 +7,10 @@ import {
   CalendarClock,
   CheckCircle2,
   Clock3,
+  ShieldAlert,
 } from "lucide-react";
-import { formatTimestamp } from "@web/shared/formatting";
+import { formatDueLabel, formatTimestamp } from "@web/shared/formatting";
+import { viClinicalTerm, viStatus, viTaskType } from "@web/shared/locale/vi";
 import type { DecisionView } from "@web/features/clinical-reasoning/model";
 import type {
   WorkflowAlertView,
@@ -29,19 +31,19 @@ interface WorkflowStage {
 }
 
 const stageTemplate = [
-  ["patient", "Patient and Encounter"],
-  ["triage", "Triage and Vitals"],
-  ["ecg-acquisition", "ECG Acquisition"],
-  ["ecg-ai", "ECG AI-supported Analysis"],
-  ["physician-ecg", "Physician ECG Interpretation"],
+  ["patient", "Bệnh nhân và lần tiếp nhận"],
+  ["triage", "Tiếp nhận và sinh hiệu"],
+  ["ecg-acquisition", "Thu nhận ECG"],
+  ["ecg-ai", "Phân tích ECG có AI hỗ trợ"],
+  ["physician-ecg", "Bác sĩ diễn giải ECG"],
   ["troponin-t0", "Troponin T0"],
-  ["repeat-evidence", "Repeat Evidence"],
-  ["snapshot", "Clinical Evidence Snapshot"],
-  ["assessment", "Physician Assessment"],
-  ["decision", "Physician Decision"],
-  ["workflow", "Workflow and Tasks"],
-  ["scheduling", "Follow-up Scheduling"],
-  ["outcome", "Outcome and Audit"],
+  ["repeat-evidence", "Bằng chứng lặp lại"],
+  ["snapshot", "Snapshot bằng chứng lâm sàng"],
+  ["assessment", "Đánh giá của bác sĩ"],
+  ["decision", "Quyết định của bác sĩ"],
+  ["workflow", "Quy trình và công việc"],
+  ["scheduling", "Lịch theo dõi"],
+  ["outcome", "Kết cục và kiểm chứng"],
 ] as const;
 
 export function ClinicalWorkflowBoard({
@@ -80,22 +82,22 @@ export function ClinicalWorkflowBoard({
     >
       <div className="vm-clinical-board__intro">
         <div>
-          <p className="vm-eyebrow">Clinical workflow board</p>
+          <p className="vm-eyebrow">Bảng quy trình lâm sàng</p>
           <h3 id="clinical-workflow-board-title">
-            Evidence and physician-directed operations
+            Bằng chứng và điều phối theo chỉ đạo bác sĩ
           </h3>
           <p>
-            Operational board only. It visualizes persisted evidence, physician
-            authority and workflow tasks; it does not choose a diagnostic path.
+            Đây chỉ là bảng điều phối. Nó hiển thị bằng chứng đã lưu, thẩm quyền
+            bác sĩ và công việc quy trình; không tự chọn hướng chẩn đoán.
           </p>
         </div>
         <span className="vm-status-pill vm-status-pill--technically-limited">
-          Demonstration workflow
+          Quy trình minh họa
         </span>
       </div>
 
       <div className="vm-clinical-board__layout">
-        <ol className="vm-workflow-rail" aria-label="ACS workflow stages">
+        <ol className="vm-workflow-rail" aria-label="Các bước quy trình ACS">
           {stages.map((stage) => (
             <li key={stage.id}>
               <Link
@@ -104,7 +106,7 @@ export function ClinicalWorkflowBoard({
               >
                 <span className="vm-stage-card__marker" aria-hidden="true" />
                 <strong>{stage.label}</strong>
-                <span>{stage.status}</span>
+                <span>{viStatus(stage.status)}</span>
                 {stage.time ? (
                   <small>{formatTimestamp(stage.time)}</small>
                 ) : null}
@@ -113,12 +115,12 @@ export function ClinicalWorkflowBoard({
           ))}
         </ol>
 
-        <div className="vm-branch-board" aria-label="Current workflow branches">
+        <div className="vm-branch-board" aria-label="Nhánh quy trình hiện tại">
           <BranchCard
-            title="Active physician-directed tasks"
+            title="Công việc đang mở theo chỉ đạo bác sĩ"
             icon={<Clock3 size={17} aria-hidden />}
             status={activeTasks.length ? "in progress" : "not started"}
-            detail={`${activeTasks.length} active task(s).`}
+            detail={`${activeTasks.length} công việc đang mở.`}
             href={`/cases/${caseId}/workflow`}
           >
             {activeTasks.length ? (
@@ -127,26 +129,22 @@ export function ClinicalWorkflowBoard({
                 .map((task) => (
                   <BranchItem
                     key={task.task_id}
-                    title={taskLabel(task.task_type)}
+                    title={viTaskType(task.task_type)}
                     status={task.status}
-                    detail={
-                      task.due_at
-                        ? `Due ${formatTimestamp(task.due_at)}`
-                        : "No due time recorded"
-                    }
+                    detail={formatDueLabel(task.due_at)}
                     source={task.source_type}
                   />
                 ))
             ) : (
-              <p>No active operational task has been generated.</p>
+              <p>Chưa tạo công việc điều phối đang mở.</p>
             )}
           </BranchCard>
 
           <BranchCard
-            title="Review alerts"
+            title="Cảnh báo cần rà soát"
             icon={<AlertTriangle size={17} aria-hidden />}
             status={alerts.length ? "under review" : "available"}
-            detail={`${alerts.length} unresolved alert(s).`}
+            detail={`${alerts.length} cảnh báo chưa xử lý.`}
             href={`/cases/${caseId}/workflow`}
           >
             {alerts.length ? (
@@ -155,58 +153,91 @@ export function ClinicalWorkflowBoard({
                 .map((alert) => (
                   <BranchItem
                     key={alert.alert_id}
-                    title={formatCode(alert.alert_type)}
+                    title={viClinicalTerm(alert.alert_type)}
                     status={alert.status}
                     detail={alert.message}
                     source={alert.source}
                   />
                 ))
             ) : (
-              <p>No unresolved workflow alert is currently recorded.</p>
+              <p>Hiện chưa ghi nhận cảnh báo quy trình chưa xử lý.</p>
             )}
           </BranchCard>
 
           <BranchCard
-            title="Follow-up scheduling"
+            title="Luồng rà soát ngay"
+            icon={<ShieldAlert size={17} aria-hidden />}
+            status={immediateReviewStatus(effectiveDecision, alerts)}
+            detail="Hành động hướng khẩn cấp chỉ được hiển thị khi thẩm quyền bác sĩ, công việc hoặc cảnh báo đã được lưu."
+            href={`/cases/${caseId}/workflow`}
+          >
+            {effectiveDecision?.decision_type === "request_cath_lab_review" ? (
+              <BranchItem
+                title="Bác sĩ yêu cầu xem xét can thiệp"
+                status={effectiveDecision.status}
+                detail={effectiveDecision.rationale}
+                source="quyết định bác sĩ"
+              />
+            ) : alerts.some((alert) => alert.severity === "critical") ? (
+              alerts
+                .filter((alert) => alert.severity === "critical")
+                .slice(0, 2)
+                .map((alert) => (
+                  <BranchItem
+                    key={alert.alert_id}
+                    title={viClinicalTerm(alert.alert_type)}
+                    status={alert.status}
+                    detail={alert.message}
+                    source={alert.source}
+                  />
+                ))
+            ) : (
+              <p>
+                Chưa có thẩm quyền rà soát ngay được lưu. UI không suy luận
+                chuyển tuyến, kích hoạt can thiệp hoặc điều phối cấp cứu.
+              </p>
+            )}
+          </BranchCard>
+
+          <BranchCard
+            title="Bằng chứng lặp lại đã lên hạn"
             icon={<CalendarClock size={17} aria-hidden />}
-            status={schedulingStatus(effectiveDecision)}
-            detail="Physician recommendation -> appointment request -> staff confirmation -> reminder -> completion/missed state."
+            status={schedulingStatus(effectiveDecision, activeTasks)}
+            detail="ECG lặp lại, Troponin lặp lại và công việc theo dõi chỉ xuất hiện từ công việc/nhắc việc backend đã lưu."
             href={`/cases/${caseId}/timeline`}
           >
             <ol className="vm-schedule-flow">
-              <li>Physician recommendation</li>
-              <li>Administrative appointment request</li>
-              <li>Specialty/service and requested window</li>
-              <li>Confirmation, reminder, reschedule/cancel</li>
-              <li>Missed/no-show or completed follow-up</li>
+              <li>Yêu cầu do bác sĩ ghi nhận</li>
+              <li>Công việc quy trình backend hoặc nhắc ECG</li>
+              <li>Hạn xử lý và phân công phụ trách</li>
+              <li>Hoàn tất, hủy hoặc leo thang quá hạn</li>
             </ol>
             <small>
-              Scheduling engine and hospital calendar integration are not
-              implemented in this MVP. Emergency findings remain outside normal
-              scheduling.
+              MVP này chưa triển khai lịch hẹn bệnh viện. Tín hiệu cần rà soát
+              ngay được tách khỏi lịch thường quy.
             </small>
           </BranchCard>
         </div>
 
         <aside
           className="vm-board-detail"
-          aria-label="Selected workflow detail"
+          aria-label="Chi tiết bước quy trình đang chọn"
         >
           <h3>{selectedStage.label}</h3>
           <dl>
-            <dt>Status</dt>
-            <dd>{selectedStage.status}</dd>
-            <dt>Responsible owner</dt>
+            <dt>Trạng thái</dt>
+            <dd>{viStatus(selectedStage.status)}</dd>
+            <dt>Phụ trách</dt>
             <dd>{selectedStage.owner}</dd>
-            <dt>Evidence source</dt>
+            <dt>Nguồn bằng chứng</dt>
             <dd>{selectedStage.source}</dd>
-            <dt>Quality or limitation</dt>
+            <dt>Chất lượng hoặc giới hạn</dt>
             <dd>{selectedStage.quality}</dd>
-            <dt>Next action</dt>
+            <dt>Hành động tiếp theo</dt>
             <dd>{selectedStage.nextAction}</dd>
           </dl>
           <Link className="vm-button" href={selectedStage.href}>
-            Open source workspace
+            Mở không gian nguồn
           </Link>
         </aside>
       </div>
@@ -232,8 +263,8 @@ function buildStages(
       label,
       owner: ownerForStage(id),
       source: sourceForStage(id),
-      quality: "No technical limitation surfaced in this board.",
-      nextAction: "Review source workspace.",
+      quality: "Bảng này chưa ghi nhận giới hạn kỹ thuật.",
+      nextAction: "Rà soát không gian nguồn.",
       href,
     };
     if (id === "workflow") {
@@ -246,11 +277,11 @@ function buildStages(
             : "available",
         time: activeTasks[0]?.due_at ?? null,
         quality: alerts.length
-          ? `${alerts.length} unresolved alert(s)`
-          : "No unresolved workflow alert.",
+          ? `${alerts.length} cảnh báo chưa xử lý`
+          : "Không có cảnh báo quy trình chưa xử lý.",
         nextAction: activeTasks.length
-          ? "Work through active physician-directed tasks."
-          : "Await physician-directed operational task.",
+          ? "Xử lý các công việc đang mở theo chỉ đạo bác sĩ."
+          : "Chờ công việc điều phối do bác sĩ chỉ đạo.",
       };
     }
     if (id === "decision") {
@@ -259,11 +290,11 @@ function buildStages(
         status: decision ? "available" : "pending",
         time: decision?.recorded_at ?? null,
         quality: decision
-          ? "Current non-revoked physician-authored decision."
-          : "No effective physician decision available.",
+          ? "Quyết định hiện hành chưa bị thu hồi do bác sĩ ghi nhận."
+          : "Chưa có quyết định hiệu lực của bác sĩ.",
         nextAction: decision
-          ? "Generate operational work only when appropriate."
-          : "Record physician decision in Clinical Reasoning.",
+          ? "Chỉ tạo công việc điều phối khi phù hợp."
+          : "Ghi nhận quyết định bác sĩ trong Tổng hợp lâm sàng.",
       };
     }
     if (id === "repeat-evidence") {
@@ -275,21 +306,21 @@ function buildStages(
           taskByType.get("repeat_troponin")?.due_at ??
           null,
         quality: hasRepeatTask
-          ? "Repeat evidence requested by persisted workflow task."
-          : "No repeat evidence task currently active.",
+          ? "Bằng chứng lặp lại được yêu cầu bởi công việc quy trình đã lưu."
+          : "Hiện không có công việc bằng chứng lặp lại đang mở.",
         nextAction: hasRepeatTask
-          ? "Complete repeat evidence through the owning ECG or Troponin workspace."
-          : "No action unless physician requests repeat evidence.",
+          ? "Hoàn tất bằng chứng lặp lại trong không gian ECG hoặc Troponin phụ trách."
+          : "Không thao tác nếu bác sĩ chưa yêu cầu bằng chứng lặp lại.",
       };
     }
     if (id === "scheduling") {
       return {
         ...base,
-        status: schedulingStatus(decision),
+        status: schedulingStatus(decision, activeTasks),
         quality:
-          "Scheduling is represented, not automated, in the current MVP.",
+          "Lịch được biểu diễn nhưng chưa tự động hóa trong MVP hiện tại.",
         nextAction:
-          "Use outcome/timeline documentation until a scheduling module exists.",
+          "Dùng ghi nhận kết cục/dòng thời gian cho đến khi có module lịch.",
       };
     }
     return {
@@ -303,12 +334,12 @@ function buildStages(
 function fallbackStage(caseId: string): WorkflowStage {
   return {
     id: "workflow",
-    label: "Workflow and Tasks",
+    label: "Quy trình và công việc",
     status: "pending",
-    owner: "Clinical team",
-    source: "Workflow operations",
-    quality: "Workflow projection unavailable.",
-    nextAction: "Refresh the workflow workspace.",
+    owner: "Đội lâm sàng",
+    source: "Vận hành quy trình",
+    quality: "Projection quy trình không khả dụng.",
+    nextAction: "Làm mới không gian Quy trình.",
     href: `/cases/${caseId}/workflow`,
   };
 }
@@ -337,10 +368,32 @@ function inferredStageStatus(
   return "pending";
 }
 
-function schedulingStatus(decision?: DecisionView) {
+function schedulingStatus(
+  decision: DecisionView | undefined,
+  activeTasks: WorkflowTaskView[],
+) {
+  if (
+    activeTasks.some((task) =>
+      ["repeat_ecg", "repeat_troponin", "cardiology_review"].includes(
+        task.task_type,
+      ),
+    )
+  ) {
+    return "in progress";
+  }
   return decision?.decision_type === "other_documented_plan"
     ? "pending"
     : "not started";
+}
+
+function immediateReviewStatus(
+  decision: DecisionView | undefined,
+  alerts: WorkflowAlertView[],
+) {
+  if (decision?.decision_type === "request_cath_lab_review")
+    return "under review";
+  if (alerts.some((alert) => alert.severity === "critical")) return "overdue";
+  return "not started";
 }
 
 function hrefForStage(caseId: string, id: string) {
@@ -359,30 +412,31 @@ function hrefForStage(caseId: string, id: string) {
 
 function ownerForStage(id: string) {
   if (id.includes("physician") || ["assessment", "decision"].includes(id)) {
-    return "Physician";
+    return "Bác sĩ";
   }
   if (id === "scheduling")
-    return "Administrative staff after physician recommendation";
-  if (id === "workflow") return "Assigned operational owner or team";
-  return "Clinical team";
+    return "Nhân viên hành chính sau khuyến nghị của bác sĩ";
+  if (id === "workflow") return "Người hoặc nhóm điều phối được phân công";
+  return "Đội lâm sàng";
 }
 
 function sourceForStage(id: string) {
-  if (id.includes("ecg")) return "ECG workspace";
-  if (id.includes("troponin")) return "Troponin workspace";
-  if (id === "scheduling") return "Outcome/Timeline representation";
-  if (id === "workflow") return "Workflow operations";
-  return "Case workspace";
+  if (id.includes("ecg")) return "Không gian ECG";
+  if (id.includes("troponin")) return "Không gian Troponin";
+  if (id === "scheduling") return "Biểu diễn kết cục/dòng thời gian";
+  if (id === "workflow") return "Vận hành quy trình";
+  return "Không gian ca";
 }
 
 function nextActionForStage(id: string) {
-  if (id === "triage") return "Review or correct documentation.";
-  if (id === "ecg-ai") return "Run or review model inference with provenance.";
-  if (id === "physician-ecg") return "Record physician ECG interpretation.";
+  if (id === "triage") return "Rà soát hoặc chỉnh sửa ghi nhận.";
+  if (id === "ecg-ai")
+    return "Chạy hoặc rà soát suy luận mô hình kèm nguồn gốc.";
+  if (id === "physician-ecg") return "Ghi nhận diễn giải ECG của bác sĩ.";
   if (id === "troponin-t0")
-    return "Review serial result and delta owner output.";
-  if (id === "assessment") return "Record physician assessment.";
-  return "Review source workspace.";
+    return "Rà soát kết quả nối tiếp và delta do backend phụ trách.";
+  if (id === "assessment") return "Ghi nhận đánh giá của bác sĩ.";
+  return "Rà soát không gian nguồn.";
 }
 
 function BranchCard({
@@ -415,7 +469,7 @@ function BranchCard({
         </span>
       </header>
       <div>{children}</div>
-      <Link href={href}>Open source workspace</Link>
+      <Link href={href}>Mở không gian nguồn</Link>
     </article>
   );
 }
@@ -438,7 +492,7 @@ function BranchItem({
         <strong>{title}</strong>
         <p>{detail}</p>
         <small>
-          {formatCode(status)} - {formatCode(source)}
+          {viStatus(status)} - {viClinicalTerm(source)}
         </small>
       </div>
     </div>
@@ -447,14 +501,14 @@ function BranchItem({
 
 function taskLabel(code: string) {
   const labels: Record<string, string> = {
-    repeat_ecg: "Repeat ECG",
-    repeat_troponin: "Repeat troponin",
-    obtain_additional_information: "Obtain additional information",
-    cardiology_review: "Cardiology review",
-    cath_lab_review: "Physician request for cath-lab review",
-    physician_reassessment: "Physician reassessment",
+    repeat_ecg: "Lặp lại ECG",
+    repeat_troponin: "Lặp lại Troponin",
+    obtain_additional_information: "Bổ sung thông tin",
+    cardiology_review: "Hội chẩn Tim mạch",
+    cath_lab_review: "Bác sĩ yêu cầu xem xét can thiệp",
+    physician_reassessment: "Bác sĩ đánh giá lại",
   };
-  return labels[code] ?? formatCode(code);
+  return labels[code] ?? viTaskType(code);
 }
 
 function formatCode(value: string) {

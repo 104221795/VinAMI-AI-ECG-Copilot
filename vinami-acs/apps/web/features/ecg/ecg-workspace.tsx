@@ -7,17 +7,23 @@ import {
   CheckCircle2,
   Clock3,
   FileInput,
-  FileHeart,
+  Info,
   RefreshCw,
   ShieldAlert,
   Upload,
 } from "lucide-react";
-import { Badge, ClinicalCard } from "@vinami/ui";
+import { Badge, ClinicalCard, EmptyState } from "@vinami/ui";
 import type { ECGWaveform } from "@vinami/api-client";
 import type { ECGWorkspaceView } from "@web/entities/ecg/model";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import {
+  viAction,
+  viClinicalTerm,
+  viSafetyNotice,
+  viStatus,
+} from "@web/shared/locale/vi";
 import { loadECGWorkspaceWith } from "./data";
 import { WaveformGrid } from "./waveform-grid";
 
@@ -59,7 +65,7 @@ export function ECGWorkspace({
   >(initialValue.waveform);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [reminderReason, setReminderReason] = useState(
-    "Physician-requested repeat technical ECG review",
+    "Bác sĩ yêu cầu lặp lại ECG để rà soát kỹ thuật",
   );
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +115,7 @@ export function ECGWorkspace({
       );
       await api.uploadECGStudy(caseId, form, crypto.randomUUID());
       await refresh();
-      setMessage("Synthetic 12-lead ECG ingested and quality assessed.");
+      setMessage("Đã nạp ECG 12 chuyển đạo mô phỏng và đánh giá chất lượng.");
     });
   }
 
@@ -135,7 +141,7 @@ export function ECGWorkspace({
       await api.uploadECGStudy(caseId, form, crypto.randomUUID());
       setUploadFile(null);
       await refresh();
-      setMessage(`${sourceType.replaceAll("_", " ")} stored with provenance.`);
+      setMessage(`${viClinicalTerm(sourceType)} đã được lưu kèm nguồn gốc.`);
     });
   }
 
@@ -158,7 +164,7 @@ export function ECGWorkspace({
         throw failure;
       }
       await refresh();
-      setMessage("Mock hospital DICOM request persisted.");
+      setMessage("Đã lưu yêu cầu DICOM bệnh viện mô phỏng.");
     });
   }
 
@@ -170,7 +176,7 @@ export function ECGWorkspace({
         crypto.randomUUID(),
       );
       await refresh();
-      setMessage("Ingestion retry completed without creating a duplicate job.");
+      setMessage("Đã thử nạp lại an toàn và không tạo job trùng.");
     });
   }
 
@@ -192,15 +198,14 @@ export function ECGWorkspace({
       setBaselineWaveform(baseline ? mapWaveform(baseline) : null);
       setCurrentWaveform(current ? mapWaveform(current) : null);
       await refresh();
-      setMessage(
-        "Technical serial ECG comparison persisted for physician review.",
-      );
+      setMessage("Đã lưu so sánh ECG nối tiếp kỹ thuật để bác sĩ rà soát.");
     });
   }
 
   function recordComparisonReview(comparisonId: string, version: number) {
     if (!comparisonReview.trim()) return;
-    if (!window.confirm("Record this physician Dynamic ECG review?")) return;
+    if (!window.confirm("Ghi nhận rà soát so sánh ECG động của bác sĩ?"))
+      return;
     execute(async () => {
       await api.recordECGComparisonReview(
         comparisonId,
@@ -214,7 +219,7 @@ export function ECGWorkspace({
       );
       setComparisonReview("");
       await refresh();
-      setMessage("Physician Dynamic ECG review recorded immutably.");
+      setMessage("Đã ghi nhận rà soát so sánh ECG động của bác sĩ.");
     });
   }
 
@@ -232,7 +237,7 @@ export function ECGWorkspace({
         crypto.randomUUID(),
       );
       await refresh();
-      setMessage("Repeat ECG reminder scheduled by physician request.");
+      setMessage("Đã đặt nhắc lặp lại ECG theo yêu cầu bác sĩ.");
     });
   }
 
@@ -240,7 +245,11 @@ export function ECGWorkspace({
     reminder: ECGWorkspaceView["reminders"][number],
     action: "acknowledge" | "complete" | "cancel",
   ) {
-    if (!window.confirm(`Confirm repeat ECG reminder action: ${action}?`))
+    if (
+      !window.confirm(
+        `Xác nhận thao tác "${viAction(action)}" cho nhắc lại ECG?`,
+      )
+    )
       return;
     execute(async () => {
       const subsequent = value.studies.find(
@@ -254,14 +263,14 @@ export function ECGWorkspace({
           completed_study_id:
             action === "complete" ? subsequent?.studyId : null,
           cancellation_reason:
-            action === "cancel"
-              ? "Physician cancelled demonstration reminder"
-              : null,
+            action === "cancel" ? "Bác sĩ hủy nhắc việc minh họa" : null,
         },
         crypto.randomUUID(),
       );
       await refresh();
-      setMessage(`Repeat ECG reminder ${action} action recorded.`);
+      setMessage(
+        `Đã ghi nhận thao tác ${viClinicalTerm(action)} cho nhắc ECG.`,
+      );
     });
   }
 
@@ -274,13 +283,13 @@ export function ECGWorkspace({
         crypto.randomUUID(),
       );
       await refresh();
-      setMessage("Deterministic research-use analysis completed.");
+      setMessage("Đã hoàn tất phân tích mô phỏng dùng cho nghiên cứu.");
     });
   }
 
   function recordReview() {
     if (!value.currentStudy || !reviewSummary.trim()) return;
-    if (!window.confirm("Record this physician ECG review in the audit trail?"))
+    if (!window.confirm("Ghi nhận rà soát ECG của bác sĩ vào audit trail?"))
       return;
     execute(async () => {
       const currentVersion =
@@ -303,24 +312,24 @@ export function ECGWorkspace({
       );
       setReviewSummary("");
       await refresh();
-      setMessage("Physician review recorded with model provenance.");
+      setMessage("Đã ghi nhận rà soát của bác sĩ kèm nguồn gốc mô hình.");
     });
   }
 
   return (
     <section className="vm-ecg-workspace" aria-labelledby="ecg-workspace-title">
       <div className="vm-section-heading">
-        <div>
+        <div className="vm-source-action-card">
           <span className="vm-eyebrow">R3 ECG Intelligence</span>
-          <h2 id="ecg-workspace-title">ECG review workspace</h2>
+          <h2 id="ecg-workspace-title">Không gian rà soát ECG</h2>
         </div>
-        <Badge tone="warning">Research-use prototype</Badge>
+        <Badge tone="warning">Nguyên mẫu nghiên cứu</Badge>
       </div>
       <div className="vm-safety-banner" role="note">
         <ShieldAlert size={18} aria-hidden="true" />
         <span>
-          ECG and model scores cannot rule out AMI or activate a cath lab.
-          Physician review and clinical correlation are required.
+          ECG và điểm mô hình không thể loại trừ nhồi máu cơ tim cấp hoặc kích
+          hoạt phòng can thiệp. Cần bác sĩ rà soát và đối chiếu lâm sàng.
         </span>
       </div>
       {message ? (
@@ -331,27 +340,34 @@ export function ECGWorkspace({
       {error ? (
         <p className="vm-action-message vm-action-message--error">{error}</p>
       ) : null}
+      {value.technicalWarnings.length ? (
+        <div className="vm-technical-warning" role="status">
+          <Info size={17} aria-hidden="true" />
+          <div>
+            <strong>Đã tải một phần dữ liệu ECG</strong>
+            {value.technicalWarnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {!value.currentStudy ? (
         <div className="vm-section-stack">
-          <div className="vm-ecg-empty">
-            <FileHeart size={28} aria-hidden="true" />
-            <div>
-              <h3>No ECG study recorded for this case</h3>
-              <p>
-                Load a deterministic synthetic waveform to exercise the R3
-                clinical workflow.
-              </p>
-            </div>
-            <button
-              className="vm-button vm-button--primary"
-              disabled={isPending}
-              onClick={addDemoStudy}
-            >
-              <Upload size={16} aria-hidden="true" />
-              {isPending ? "Processing..." : "Load synthetic 12-lead ECG"}
-            </button>
-          </div>
+          <EmptyState
+            title="Ca này chưa có ECG"
+            description="Nạp dạng sóng mô phỏng xác định để kiểm thử luồng lâm sàng R3."
+            action={
+              <button
+                className="vm-button vm-button--primary"
+                disabled={isPending}
+                onClick={addDemoStudy}
+              >
+                <Upload size={16} aria-hidden="true" />
+                {isPending ? "Đang xử lý..." : "Nạp ECG 12 chuyển đạo mô phỏng"}
+              </button>
+            }
+          />
           {supportsHospitalIngestion(value) ? (
             <SourceIntegrationPanel
               value={value}
@@ -368,55 +384,55 @@ export function ECGWorkspace({
         <div className="vm-section-stack">
           <section
             className="vm-ecg-status-strip"
-            aria-label="Current ECG status"
+            aria-label="Trạng thái ECG hiện tại"
           >
             <StatusMetric
-              label="Study"
+              label="Lần đo"
               value={value.currentStudy.studyReference}
             />
             <StatusMetric
-              label="Quality"
-              value={value.quality?.status ?? "pending"}
+              label="Chất lượng"
+              value={viStatus(value.quality?.status ?? "pending")}
             />
             <StatusMetric
-              label="Acquired"
+              label="Thời điểm đo"
               value={formatTimestamp(value.currentStudy.acquisitionAt)}
             />
             <StatusMetric
-              label="Analysis"
-              value={latestAnalysis?.status ?? "not requested"}
+              label="Phân tích"
+              value={viStatus(latestAnalysis?.status ?? "not_requested")}
             />
           </section>
 
-          <ClinicalCard title="Twelve-lead waveform">
+          <ClinicalCard title="Dạng sóng 12 chuyển đạo">
             <div className="vm-panel-toolbar">
               <p>
-                {value.currentStudy.samplingRateHz ?? "-"} Hz ·{" "}
-                {value.currentStudy.durationSeconds ?? "-"} s ·{" "}
-                {value.currentStudy.amplitudeUnit ?? "unit unavailable"}
+                {value.currentStudy.samplingRateHz ?? "-"} Hz |{" "}
+                {value.currentStudy.durationSeconds ?? "-"} s |{" "}
+                {value.currentStudy.amplitudeUnit ?? "chưa có đơn vị"}
               </p>
               <button
                 className="vm-button vm-button--secondary"
                 disabled={isPending}
                 onClick={addDemoStudy}
               >
-                <Upload size={15} aria-hidden="true" /> Add serial ECG
+                <Upload size={15} aria-hidden="true" /> Thêm ECG nối tiếp
               </button>
             </div>
             {value.waveform ? (
               <WaveformGrid value={value.waveform} />
             ) : (
               <p className="vm-inline-empty">
-                Structured waveform is unavailable for this study.
+                Lần đo này chưa có dạng sóng có cấu trúc.
               </p>
             )}
           </ClinicalCard>
 
           <div className="vm-layout-split vm-layout-split--ecg">
-            <ClinicalCard title="Technical quality">
+            <ClinicalCard title="Chất lượng kỹ thuật">
               <QualityPanel value={value} />
             </ClinicalCard>
-            <ClinicalCard title="Serial evidence">
+            <ClinicalCard title="Bằng chứng nối tiếp">
               <SerialPanel value={value} />
             </ClinicalCard>
           </div>
@@ -427,7 +443,7 @@ export function ECGWorkspace({
             latestInterpretation={latestInterpretation}
           />
 
-          <ClinicalCard title="AI-supported multi-label findings">
+          <ClinicalCard title="Kết quả đa nhãn có AI hỗ trợ">
             {latestAnalysis ? (
               <AnalysisPanel
                 value={latestAnalysis}
@@ -437,10 +453,10 @@ export function ECGWorkspace({
               <div className="vm-inline-action">
                 <BrainCircuit size={22} aria-hidden="true" />
                 <div>
-                  <strong>No model analysis for the current study</strong>
+                  <strong>Chưa có phân tích mô hình cho lần đo hiện tại</strong>
                   <p>
-                    Run the deterministic mock provider to verify the normalized
-                    contract.
+                    Chạy provider mô phỏng xác định để kiểm tra hợp đồng đầu ra
+                    chuẩn hóa.
                   </p>
                 </div>
                 <button
@@ -448,13 +464,13 @@ export function ECGWorkspace({
                   disabled={isPending}
                   onClick={requestAnalysis}
                 >
-                  Run research-use analysis
+                  Chạy phân tích nghiên cứu
                 </button>
               </div>
             ) : (
               <p className="vm-inline-empty">
-                Automated waveform analysis is unavailable for a document-only
-                ECG study.
+                Phân tích dạng sóng tự động không khả dụng với ECG chỉ có tài
+                liệu.
               </p>
             )}
           </ClinicalCard>
@@ -462,20 +478,20 @@ export function ECGWorkspace({
           <ClinicalCard
             title={
               value.currentStudy.waveformAvailable
-                ? "Physician ECG review"
-                : "Physician document review"
+                ? "Bác sĩ rà soát ECG"
+                : "Bác sĩ rà soát tài liệu"
             }
           >
             <div className="vm-review-layout">
               <div>
                 <label className="vm-field-label" htmlFor="ecg-review-summary">
-                  Structured review summary
+                  Tóm tắt rà soát có cấu trúc
                 </label>
                 <textarea
                   id="ecg-review-summary"
                   value={reviewSummary}
                   onChange={(event) => setReviewSummary(event.target.value)}
-                  placeholder="Document physician interpretation and clinical correlation"
+                  placeholder="Ghi nhận diễn giải của bác sĩ và đối chiếu lâm sàng"
                   rows={4}
                 />
                 <button
@@ -483,24 +499,24 @@ export function ECGWorkspace({
                   disabled={isPending || !reviewSummary.trim()}
                   onClick={recordReview}
                 >
-                  <CheckCircle2 size={16} aria-hidden="true" /> Record physician
-                  review
+                  <CheckCircle2 size={16} aria-hidden="true" /> Ghi nhận rà soát
+                  của bác sĩ
                 </button>
               </div>
               <div className="vm-review-history">
-                <h3>Review history</h3>
+                <h3>Lịch sử rà soát</h3>
                 {value.interpretations.length ? (
                   value.interpretations.map((item) => (
                     <article key={item.interpretationId}>
-                      <strong>{item.status.replaceAll("_", " ")}</strong>
+                      <strong>{viStatus(item.status)}</strong>
                       <p>{item.summary}</p>
                       <small>
-                        {item.actorRole} · {formatTimestamp(item.recordedAt)}
+                        {item.actorRole} | {formatTimestamp(item.recordedAt)}
                       </small>
                     </article>
                   ))
                 ) : (
-                  <p>No physician interpretation recorded.</p>
+                  <p>Chưa ghi nhận diễn giải của bác sĩ.</p>
                 )}
               </div>
             </div>
@@ -568,67 +584,70 @@ function AIPathPanel({
       : "technically limited";
   const providerLabel = latestAnalysis
     ? latestAnalysis.synthetic
-      ? `Synthetic/mock provider: ${latestAnalysis.providerName}`
-      : `Provider: ${latestAnalysis.providerName}`
-    : "No provider result recorded";
+      ? `Bộ cung cấp mô phỏng: ${latestAnalysis.providerName}`
+      : `Bộ cung cấp mô hình: ${latestAnalysis.providerName}`
+    : "Chưa có kết quả từ bộ cung cấp mô hình";
   const steps = [
     {
-      label: "ECG acquired",
+      label: "Đã ghi nhận ECG",
       status: study ? "available" : "missing",
       detail: study
         ? `${study.studyReference} - ${formatTimestamp(study.acquisitionAt)}`
-        : "No ECG study selected.",
-      source: "ECG study",
+        : "Chưa chọn lần đo ECG.",
+      source: "Lần đo ECG",
       tone: "evidence",
     },
     {
-      label: "Technical quality check",
+      label: "Kiểm tra chất lượng kỹ thuật",
       status: value.quality?.status ?? "pending",
       detail: value.quality
-        ? `${value.quality.engineVersion} - ${value.quality.reasonCodes.join(", ") || "no reason code"}`
-        : "Quality assessment has not been recorded.",
-      source: "Machine-generated evidence",
+        ? `${value.quality.engineVersion} - ${value.quality.reasonCodes.map(viClinicalTerm).join(", ") || "không có mã lý do"}`
+        : "Chưa ghi nhận đánh giá chất lượng.",
+      source: "Bằng chứng do máy tạo",
       tone: "machine",
     },
     {
-      label: "Model inference",
+      label: "Suy luận mô hình",
       status: machineStatus,
       detail: latestAnalysis
-        ? `${latestAnalysis.modelName} ${latestAnalysis.modelVersion} - ${latestAnalysis.completedAt ? formatTimestamp(latestAnalysis.completedAt) : "completion time unavailable"}`
-        : "Run research-use analysis only when waveform input is available.",
+        ? `${latestAnalysis.modelName} ${latestAnalysis.modelVersion} - ${latestAnalysis.completedAt ? formatTimestamp(latestAnalysis.completedAt) : "chưa có thời điểm hoàn tất"}`
+        : "Chỉ chạy phân tích nghiên cứu khi có dữ liệu dạng sóng.",
       source: providerLabel,
       tone: "machine",
     },
     {
-      label: "Model result and explanation",
+      label: "Kết quả và giải thích mô hình",
       status: latestAnalysis?.explanationStatus ?? "pending",
       detail: latestAnalysis
-        ? `${latestAnalysis.findings.length} model score(s). Scores are not disease probabilities.`
-        : "No model score or explanation reference recorded.",
-      source: "AI-supported finding",
+        ? `${latestAnalysis.findings.length} điểm mô hình. Điểm số không phải xác suất bệnh.`
+        : "Chưa ghi nhận điểm mô hình hoặc tham chiếu giải thích.",
+      source: "Nhận định ECG có AI hỗ trợ",
       tone: "machine",
     },
     {
-      label: "Physician ECG review",
+      label: "Bác sĩ rà soát ECG",
       status: latestInterpretation ? latestInterpretation.status : "pending",
       detail: latestInterpretation
         ? latestInterpretation.summary
-        : "Physician interpretation is required before clinical authority.",
-      source: "Physician-authored interpretation",
+        : "Cần bác sĩ diễn giải trước mọi thẩm quyền lâm sàng.",
+      source: "Diễn giải do bác sĩ ghi nhận",
       tone: "physician",
     },
     {
-      label: "Evidence snapshot and decision",
+      label: "Tổng hợp bằng chứng và quyết định",
       status: latestInterpretation ? "under review" : "not started",
       detail:
-        "Clinical Reasoning owns evidence synthesis, assessment and physician decision.",
-      source: "Clinical Reasoning workspace",
+        "Không gian tổng hợp lâm sàng là nơi tổng hợp bằng chứng, đánh giá và ghi nhận quyết định của bác sĩ.",
+      source: "Không gian tổng hợp lâm sàng",
       tone: "authority",
     },
   ];
   return (
-    <ClinicalCard title="AI-supported ECG path">
-      <div className="vm-ai-path" aria-label="AI-supported ECG evidence path">
+    <ClinicalCard title="Luồng ECG có AI hỗ trợ">
+      <div
+        className="vm-ai-path"
+        aria-label="Luồng bằng chứng ECG có AI hỗ trợ"
+      >
         {steps.map((step) => (
           <article
             className={`vm-ai-step vm-ai-step--${step.tone}`}
@@ -637,7 +656,7 @@ function AIPathPanel({
             <span
               className={`vm-status-pill vm-status-pill--${step.status.replaceAll(" ", "-")}`}
             >
-              {step.status}
+              {viStatus(step.status)}
             </span>
             <h3>{step.label}</h3>
             <p>{step.detail}</p>
@@ -646,10 +665,9 @@ function AIPathPanel({
         ))}
       </div>
       <p className="vm-safety-note">
-        Machine-generated ECG evidence is visually separated from
-        physician-authored interpretation and physician-authorized decisions. AI
-        output cannot create tasks, alerts, workflow transitions or cath-lab
-        authority.
+        Bằng chứng ECG do máy tạo được tách riêng với diễn giải của bác sĩ và
+        quyết định do bác sĩ xác nhận. AI không thể tự tạo công việc, cảnh báo,
+        chuyển trạng thái quy trình hoặc thẩm quyền can thiệp.
       </p>
     </ClinicalCard>
   );
@@ -673,12 +691,12 @@ function SourceIntegrationPanel({
   onRetry: (jobId: string, version: number) => void;
 }) {
   return (
-    <ClinicalCard title="Source and integration">
+    <ClinicalCard title="Nguồn ECG và tích hợp">
       <div className="vm-source-actions">
-        <div>
-          <span className="vm-field-label">Local hospital-format artifact</span>
+        <div className="vm-source-action-card">
+          <span className="vm-field-label">Tệp ECG định dạng bệnh viện</span>
           <input
-            aria-label="DICOM XML or PDF ECG file"
+            aria-label="Tệp ECG DICOM, XML hoặc PDF"
             type="file"
             accept=".dcm,.dicom,.xml,.pdf,application/dicom,application/xml,application/pdf"
             onChange={(event) => onFile(event.target.files?.[0] ?? null)}
@@ -688,26 +706,24 @@ function SourceIntegrationPanel({
             disabled={!uploadFile || isPending}
             onClick={onUpload}
           >
-            <FileInput size={15} aria-hidden="true" /> Import selected file
+            <FileInput size={15} aria-hidden="true" /> Nạp tệp đã chọn
           </button>
         </div>
-        <div>
-          <span className="vm-field-label">
-            Deterministic hospital connector
-          </span>
+        <div className="vm-source-action-card">
+          <span className="vm-field-label">Bộ kết nối bệnh viện mô phỏng</span>
           <button
             className="vm-button vm-button--secondary"
             disabled={isPending}
             onClick={() => onImport("R3-DICOM-001")}
           >
-            Import mock DICOM
+            Nạp DICOM mô phỏng
           </button>
           <button
             className="vm-button vm-button--secondary"
             disabled={isPending}
             onClick={() => onImport("R3-DICOM-RETRY")}
           >
-            Exercise timeout path
+            Kiểm thử lỗi quá thời gian
           </button>
         </div>
       </div>
@@ -717,24 +733,30 @@ function SourceIntegrationPanel({
             <div>
               <strong>{connector.displayName}</strong>
               <Badge tone={connector.available ? "success" : "critical"}>
-                {connector.available ? "Available" : "Unavailable"}
+                {connector.available ? "Có sẵn" : "Không khả dụng"}
               </Badge>
             </div>
             <p>{connector.detail}</p>
             <small>
-              {connector.connectorType.replaceAll("_", " ")} ·{" "}
-              {connector.profile ?? "No profile"} ·{" "}
-              {connector.version ?? "Unknown version"}
+              {viClinicalTerm(connector.connectorType)} |{" "}
+              {connector.profile ?? "Chưa có hồ sơ"} |{" "}
+              {connector.version ?? "Chưa rõ phiên bản"}
             </small>
           </article>
         ))}
+        {!value.connectors.length ? (
+          <p className="vm-inline-empty">
+            Chưa có registry bộ kết nối hoặc chưa đăng ký connector mô phỏng.
+            Vẫn có thể nạp ECG tại chỗ để demo.
+          </p>
+        ) : null}
       </div>
-      <div className="vm-ingestion-list" aria-label="ECG ingestion jobs">
+      <div className="vm-ingestion-list" aria-label="Các job nạp ECG">
         {value.ingestionJobs.length ? (
           value.ingestionJobs.map((job) => (
             <article key={job.jobId} className="vm-integration-item">
               <div>
-                <strong>{job.sourceType.replaceAll("_", " ")}</strong>
+                <strong>{viClinicalTerm(job.sourceType)}</strong>
                 <Badge
                   tone={
                     job.status === "completed"
@@ -744,16 +766,16 @@ function SourceIntegrationPanel({
                         : "warning"
                   }
                 >
-                  {job.status.replaceAll("_", " ")}
+                  {viStatus(job.status)}
                 </Badge>
               </div>
               <p>
-                {job.connectorId ?? "Local upload"} · requested{" "}
+                {job.connectorId ?? "Tải lên tại chỗ"} | yêu cầu lúc{" "}
                 {formatTimestamp(job.requestedAt)}
               </p>
               <small>
-                Parser {job.parser ?? "pending"} {job.parserVersion ?? ""} ·
-                retries {job.retryCount}
+                Bộ phân tích {job.parser ?? "đang chờ"}{" "}
+                {job.parserVersion ?? ""} | số lần thử lại {job.retryCount}
               </small>
               {job.failureDetail ? (
                 <p className="vm-action-message vm-action-message--error">
@@ -766,32 +788,32 @@ function SourceIntegrationPanel({
                   disabled={isPending}
                   onClick={() => onRetry(job.jobId, job.recordVersion)}
                 >
-                  <RefreshCw size={14} aria-hidden="true" /> Safe retry
+                  <RefreshCw size={14} aria-hidden="true" /> Thử lại an toàn
                 </button>
               ) : null}
               <details>
-                <summary>Technical details</summary>
+                <summary>Chi tiết kỹ thuật</summary>
                 <code>{job.correlationId}</code>
                 {job.warnings.map((warning) => (
-                  <p key={warning}>{warning}</p>
+                  <p key={warning}>{viSafetyNotice(warning)}</p>
                 ))}
               </details>
             </article>
           ))
         ) : (
           <p className="vm-inline-empty">
-            No ingestion job has been requested.
+            Chưa có job nạp ECG nào được yêu cầu.
           </p>
         )}
       </div>
       {value.currentStudy?.sourceType === "pdf_document" ? (
         <div className="vm-pdf-state">
           <div className="vm-safety-banner" role="note">
-            Source document only. Structured waveform and automated waveform
-            analysis are unavailable.
+            Chỉ có tài liệu nguồn. Dạng sóng có cấu trúc và phân tích dạng sóng
+            tự động không khả dụng.
           </div>
           <iframe
-            title="PDF ECG source document preview"
+            title="Xem trước tài liệu ECG PDF nguồn"
             src={`/api/backend/api/v1/ecg-studies/${value.currentStudy.studyId}/preview`}
           />
         </div>
@@ -829,35 +851,36 @@ function DynamicECGPanel({
 }) {
   const comparison = value.comparisons[0] ?? null;
   return (
-    <ClinicalCard title="Dynamic ECG">
+    <ClinicalCard title="So sánh ECG động">
       <p className="vm-score-explainer">
-        Technical ECG change indicator — physician interpretation required.
+        Chỉ báo thay đổi ECG về mặt kỹ thuật - cần bác sĩ diễn giải trước khi
+        dùng trong quyết định lâm sàng.
       </p>
       <div className="vm-comparison-controls">
-        <label>
-          Baseline study
+        <label className="vm-field">
+          <span>ECG nền</span>
           <select
             value={baselineStudyId}
             onChange={(event) => onBaseline(event.target.value)}
           >
-            <option value="">Select baseline</option>
+            <option value="">Chọn ECG nền</option>
             {value.studies.map((study) => (
               <option key={study.studyId} value={study.studyId}>
-                {study.studyReference} · {formatTimestamp(study.acquisitionAt)}
+                {study.studyReference} | {formatTimestamp(study.acquisitionAt)}
               </option>
             ))}
           </select>
         </label>
-        <label>
-          Current study
+        <label className="vm-field">
+          <span>ECG hiện tại</span>
           <select
             value={currentStudyId}
             onChange={(event) => onCurrent(event.target.value)}
           >
-            <option value="">Select current</option>
+            <option value="">Chọn ECG hiện tại</option>
             {value.studies.map((study) => (
               <option key={study.studyId} value={study.studyId}>
-                {study.studyReference} · {formatTimestamp(study.acquisitionAt)}
+                {study.studyReference} | {formatTimestamp(study.acquisitionAt)}
               </option>
             ))}
           </select>
@@ -872,61 +895,80 @@ function DynamicECGPanel({
           }
           onClick={onCompare}
         >
-          Compare technical signals
+          So sánh tín hiệu kỹ thuật
         </button>
       </div>
       {comparison ? (
         <div className="vm-section-stack">
           <div className="vm-comparison-summary">
             <StatusMetric
-              label="Comparability"
-              value={comparison.comparabilityStatus}
+              label="Khả năng so sánh"
+              value={viStatus(comparison.comparabilityStatus)}
             />
             <StatusMetric
-              label="Score compatibility"
-              value={comparison.scoreCompatibility}
+              label="Tương thích điểm mô hình"
+              value={viStatus(comparison.scoreCompatibility)}
             />
-            <StatusMetric label="Policy" value={comparison.policyVersion} />
+            <StatusMetric label="Chính sách" value={comparison.policyVersion} />
           </div>
           {comparison.comparabilityReasons.length ? (
             <div className="vm-safety-banner" role="status">
-              {comparison.comparabilityReasons
-                .map((reason) => reason.replaceAll("_", " "))
-                .join(" · ")}
+              {comparison.comparabilityReasons.map(viClinicalTerm).join(" | ")}
             </div>
+          ) : null}
+          <div className="vm-r18-review-note" role="note">
+            <Info size={17} aria-hidden="true" />
+            <span>{comparison.reviewRecommendation}</span>
+          </div>
+          <div className="vm-r18-signal-grid">
+            <IndicatorDigest
+              title="Nhịp và tần số"
+              indicators={comparison.rhythmChangeIndicators}
+              empty="Không phát hiện thay đổi proxy nhịp/tần số theo chính sách demo."
+            />
+            <IndicatorDigest
+              title="ST/T proxy"
+              indicators={comparison.stTChangeIndicators}
+              empty="Không phát hiện thay đổi ST/T proxy theo chính sách demo."
+            />
+          </div>
+          {comparison.signalFeatureDeltas.length ? (
+            <FeatureDeltaGrid values={comparison.signalFeatureDeltas} />
           ) : null}
           <div
             className="vm-dynamic-waveforms"
-            aria-label="Synchronized serial ECG waveforms"
+            aria-label="Dạng sóng ECG nối tiếp đã đồng bộ"
           >
             <div>
-              <h3>Baseline</h3>
+              <h3>ECG nền</h3>
               {baselineWaveform ? (
                 <WaveformGrid value={baselineWaveform} />
               ) : (
-                <p>Load comparison to view the structured waveform.</p>
+                <p>Chạy so sánh để xem dạng sóng có cấu trúc.</p>
               )}
             </div>
             <div>
-              <h3>Current</h3>
+              <h3>ECG hiện tại</h3>
               {currentWaveform ? (
                 <WaveformGrid value={currentWaveform} />
               ) : (
-                <p>Structured waveform unavailable.</p>
+                <p>Dạng sóng có cấu trúc không khả dụng.</p>
               )}
             </div>
           </div>
           {comparison.leadComparisons.length ? (
             <div className="vm-table-scroll">
               <table>
-                <caption>Lead-by-lead non-diagnostic technical metrics</caption>
+                <caption>
+                  Chỉ số kỹ thuật theo từng chuyển đạo, không phải chẩn đoán
+                </caption>
                 <thead>
                   <tr>
-                    <th>Lead</th>
-                    <th>Similarity</th>
-                    <th>Normalized difference</th>
-                    <th>Baseline shift</th>
-                    <th>Alignment</th>
+                    <th>Chuyển đạo</th>
+                    <th>Độ tương đồng</th>
+                    <th>Khác biệt chuẩn hóa</th>
+                    <th>Lệch nền</th>
+                    <th>Căn chỉnh</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -936,7 +978,7 @@ function DynamicECGPanel({
                       <td>{lead.waveformSimilarity.toFixed(3)}</td>
                       <td>{lead.normalizedDifference.toFixed(3)}</td>
                       <td>{lead.baselineShiftIndicator.toFixed(3)}</td>
-                      <td>{lead.sampleAlignmentStatus.replaceAll("_", " ")}</td>
+                      <td>{viStatus(lead.sampleAlignmentStatus)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -945,29 +987,40 @@ function DynamicECGPanel({
           ) : null}
           {comparison.scoreEvolution.length ? (
             <div className="vm-score-evolution">
-              <h3>Compatible model-score evolution</h3>
+              <h3>Diễn tiến điểm mô hình tương thích</h3>
               {comparison.scoreEvolution.map((score) => (
                 <div key={score.findingCode}>
                   <strong>{score.findingCode}</strong>
                   <span>
-                    {score.previousScore.toFixed(3)} →{" "}
+                    {score.previousScore.toFixed(3)}
+                    {" -> "}
                     {score.currentScore.toFixed(3)}
                   </span>
                   <small>
-                    Δ {score.absoluteDelta.toFixed(3)} ·{" "}
-                    {score.compatibilityStatus}
+                    Delta {score.absoluteDelta.toFixed(3)} |{" "}
+                    {viStatus(score.compatibilityStatus)}
                   </small>
                 </div>
               ))}
             </div>
           ) : (
             <p>
-              Score deltas are withheld when model or preprocessing provenance
-              is incompatible.
+              Không hiển thị delta điểm mô hình khi provenance mô hình hoặc tiền
+              xử lý không tương thích.
             </p>
           )}
+          {comparison.technicalChangeIndicators.length ? (
+            <div className="vm-r18-technical-list">
+              <h3>Tóm tắt kỹ thuật từ backend</h3>
+              <ul>
+                {comparison.technicalChangeIndicators.map((indicator) => (
+                  <li key={indicator}>{viClinicalTerm(indicator)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <label className="vm-field-label" htmlFor="dynamic-review">
-            Physician comparison review
+            Bác sĩ rà soát so sánh
           </label>
           <textarea
             id="dynamic-review"
@@ -987,16 +1040,92 @@ function DynamicECGPanel({
               )
             }
           >
-            Record physician review
+            Ghi nhận rà soát của bác sĩ
           </button>
         </div>
       ) : (
         <p className="vm-inline-empty">
-          Select two structured studies to assess technical comparability.
+          Chọn hai lần đo ECG có cấu trúc để đánh giá khả năng so sánh kỹ thuật.
         </p>
       )}
     </ClinicalCard>
   );
+}
+
+function IndicatorDigest({
+  title,
+  indicators,
+  empty,
+}: {
+  title: string;
+  indicators: string[];
+  empty: string;
+}) {
+  return (
+    <article className="vm-r18-digest">
+      <h3>{title}</h3>
+      {indicators.length ? (
+        <ul>
+          {indicators.map((indicator) => (
+            <li key={indicator}>{viClinicalTerm(indicator)}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{empty}</p>
+      )}
+    </article>
+  );
+}
+
+function FeatureDeltaGrid({
+  values,
+}: {
+  values: ECGWorkspaceView["comparisons"][number]["signalFeatureDeltas"];
+}) {
+  return (
+    <div className="vm-r18-feature-grid" aria-label="R18 signal feature deltas">
+      {values.map((feature) => (
+        <article
+          className={`vm-r18-feature vm-r18-feature--${feature.status}`}
+          key={feature.featureName}
+        >
+          <span>{featureLabel(feature.displayLabel)}</span>
+          <strong>{featureValue(feature.currentValue, feature.unit)}</strong>
+          <small>
+            Baseline {featureValue(feature.previousValue, feature.unit)} | Δ{" "}
+            {featureValue(feature.absoluteDelta, feature.unit)}
+          </small>
+          <em>{featureStatus(feature.status)}</em>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function featureValue(value: number | null, unit: string | null): string {
+  if (value === null || Number.isNaN(value)) return "không đủ dữ liệu";
+  const rounded = Math.abs(value) >= 10 ? value.toFixed(1) : value.toFixed(3);
+  return unit ? `${rounded} ${unit}` : rounded;
+}
+
+function featureStatus(value: string): string {
+  if (value === "changed") return "Có thay đổi proxy";
+  if (value === "stable") return "Ổn định theo policy demo";
+  if (value === "incompatible") return "Không tương thích kỹ thuật";
+  return "Không đủ dữ liệu";
+}
+
+function featureLabel(value: string): string {
+  const labels: Record<string, string> = {
+    "Global amplitude proxy": "Biên độ toàn cục proxy",
+    "Heart-rate proxy": "Tần số tim proxy",
+    "QRS width proxy": "Độ rộng QRS proxy",
+    "Rhythm regularity proxy": "Độ đều nhịp proxy",
+    "ST-level morphology proxy": "ST-level proxy",
+    "Sampling rate": "Tần số lấy mẫu",
+    "T-wave morphology proxy": "Sóng T proxy",
+  };
+  return labels[value] ?? value;
 }
 
 function RepeatECGPanel({
@@ -1018,12 +1147,12 @@ function RepeatECGPanel({
   ) => void;
 }) {
   return (
-    <ClinicalCard title="Repeat ECG workflow">
+    <ClinicalCard title="Nhắc lại ECG">
       <div className="vm-inline-action">
         <Clock3 size={22} aria-hidden="true" />
-        <div>
+        <div className="vm-field">
           <label className="vm-field-label" htmlFor="repeat-reason">
-            Reason
+            Lý do
           </label>
           <input
             id="repeat-reason"
@@ -1036,7 +1165,7 @@ function RepeatECGPanel({
           disabled={isPending || !value.currentStudy || !reason.trim()}
           onClick={onCreate}
         >
-          Schedule +30 min
+          Hẹn sau 30 phút
         </button>
       </div>
       <div className="vm-ingestion-list">
@@ -1053,16 +1182,16 @@ function RepeatECGPanel({
                       : "warning"
                 }
               >
-                {reminder.status}
+                {viStatus(reminder.status)}
               </Badge>
             </div>
             <p>
-              Due {formatTimestamp(reminder.dueAt)} ·{" "}
-              {reminder.origin.replaceAll("_", " ")} · requested by{" "}
+              Hạn {formatTimestamp(reminder.dueAt)} |{" "}
+              {viClinicalTerm(reminder.origin)} | người yêu cầu{" "}
               {reminder.requestedByRole}
             </p>
             {reminder.completedAt ? (
-              <small>Completed {formatTimestamp(reminder.completedAt)}</small>
+              <small>Hoàn tất {formatTimestamp(reminder.completedAt)}</small>
             ) : null}
             {reminder.cancellationReason ? (
               <small>{reminder.cancellationReason}</small>
@@ -1074,7 +1203,7 @@ function RepeatECGPanel({
                     className="vm-button vm-button--secondary"
                     onClick={() => onTransition(reminder, "acknowledge")}
                   >
-                    Acknowledge
+                    Ghi nhận
                   </button>
                 ) : null}
                 <button
@@ -1082,13 +1211,13 @@ function RepeatECGPanel({
                   disabled={value.studies.length < 2}
                   onClick={() => onTransition(reminder, "complete")}
                 >
-                  Complete with subsequent ECG
+                  Hoàn tất bằng ECG sau đó
                 </button>
                 <button
                   className="vm-button vm-button--secondary"
                   onClick={() => onTransition(reminder, "cancel")}
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             ) : null}
@@ -1109,21 +1238,25 @@ function StatusMetric({ label, value }: { label: string; value: string }) {
 }
 
 function QualityPanel({ value }: { value: ECGWorkspaceView }) {
-  if (!value.quality) return <p>Quality assessment pending.</p>;
+  if (!value.quality) return <p>Chưa có đánh giá chất lượng.</p>;
   return (
     <div className="vm-quality-panel">
       <div
         className={`vm-quality-mark vm-quality-mark--${value.quality.status}`}
       >
-        <Activity size={18} aria-hidden="true" /> {value.quality.status}
+        <Activity size={18} aria-hidden="true" />{" "}
+        {viStatus(value.quality.status)}
       </div>
       <dl className="vm-definition-list">
-        <dt>Engine</dt>
+        <dt>Bộ đánh giá</dt>
         <dd>{value.quality.engineVersion}</dd>
-        <dt>Affected leads</dt>
-        <dd>{value.quality.affectedLeads.join(", ") || "None detected"}</dd>
-        <dt>Reason codes</dt>
-        <dd>{value.quality.reasonCodes.join(", ") || "None"}</dd>
+        <dt>Chuyển đạo ảnh hưởng</dt>
+        <dd>{value.quality.affectedLeads.join(", ") || "Không phát hiện"}</dd>
+        <dt>Mã lý do</dt>
+        <dd>
+          {value.quality.reasonCodes.map(viClinicalTerm).join(", ") ||
+            "Không có"}
+        </dd>
       </dl>
     </div>
   );
@@ -1132,25 +1265,23 @@ function QualityPanel({ value }: { value: ECGWorkspaceView }) {
 function SerialPanel({ value }: { value: ECGWorkspaceView }) {
   return (
     <div>
-      <strong>
-        {value.studies.length} ECG{" "}
-        {value.studies.length === 1 ? "study" : "studies"}
-      </strong>
+      <strong>{value.studies.length} lần đo ECG</strong>
       <ol className="vm-serial-list">
         {[...value.studies].reverse().map((study, index) => (
           <li key={study.studyId}>
-            <span>{index === 0 ? "Current" : `Prior ${index}`}</span>
+            <span>{index === 0 ? "Hiện tại" : `Trước đó ${index}`}</span>
             <strong>{study.studyReference}</strong>
             <small>
-              {formatTimestamp(study.acquisitionAt)} · {study.qualityStatus}
+              {formatTimestamp(study.acquisitionAt)} |{" "}
+              {viStatus(study.qualityStatus)}
             </small>
           </li>
         ))}
       </ol>
       {value.comparisons.length ? (
-        <p>{value.comparisons.length} technical comparison recorded.</p>
+        <p>{value.comparisons.length} so sánh kỹ thuật đã ghi nhận.</p>
       ) : (
-        <p>Comparison becomes available after a serial pair is requested.</p>
+        <p>So sánh sẽ có sau khi yêu cầu một cặp ECG nối tiếp.</p>
       )}
     </div>
   );
@@ -1167,30 +1298,30 @@ function AnalysisPanel({
     <div className="vm-analysis-panel">
       <div className="vm-model-provenance">
         <div>
-          <span>Model</span>
+          <span>Mô hình</span>
           <strong>{value.modelName}</strong>
         </div>
         <div>
-          <span>Version</span>
+          <span>Phiên bản</span>
           <strong>{value.modelVersion}</strong>
         </div>
         <div>
-          <span>Provider</span>
+          <span>Bộ cung cấp</span>
           <strong>{value.providerName}</strong>
         </div>
         <div>
-          <span>Run</span>
+          <span>Lần chạy</span>
           <strong>{shortReference(value.analysisId, "AI")}</strong>
         </div>
       </div>
       <p className="vm-score-explainer">
-        Five independent model outputs, ranked high to low. A threshold crossing
-        marks review priority; it is not a diagnosis and the scores do not need
-        to sum to 1.
+        Năm đầu ra mô hình độc lập, xếp từ cao xuống thấp. Vượt ngưỡng chỉ đánh
+        dấu ưu tiên rà soát, không phải chẩn đoán và điểm số không cần cộng lại
+        bằng 1.
       </p>
       {suppress ? (
         <div className="vm-safety-banner vm-safety-banner--critical">
-          Technical quality blocks normal score emphasis.
+          Chất lượng kỹ thuật không đạt nên không nhấn mạnh điểm số bình thường.
         </div>
       ) : null}
       <ol
@@ -1201,16 +1332,16 @@ function AnalysisPanel({
             <span className="vm-finding-rank">{finding.rank}</span>
             <div className="vm-finding-label">
               <strong>{finding.code}</strong>
-              <span>{finding.label}</span>
+              <span>{viClinicalTerm(finding.label)}</span>
             </div>
             <div
               className="vm-score-track"
               role="progressbar"
-              aria-label={`${finding.code} model score ${finding.score.toFixed(3)}`}
+              aria-label={`${finding.code} điểm mô hình ${finding.score.toFixed(3)}`}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={Math.round(finding.score * 100)}
-              aria-valuetext={`${(finding.score * 100).toFixed(1)} percent; ${finding.thresholdMet ? "above" : "below"} the model threshold`}
+              aria-valuetext={`${(finding.score * 100).toFixed(1)} phần trăm; ${finding.thresholdMet ? "trên" : "dưới"} ngưỡng mô hình`}
             >
               <span style={{ width: `${finding.score * 100}%` }} />
               {finding.threshold !== null ? (
@@ -1219,13 +1350,43 @@ function AnalysisPanel({
             </div>
             <div className="vm-finding-value">
               <strong>{finding.score.toFixed(3)}</strong>
-              <span>{finding.thresholdMet ? "Review" : "Below threshold"}</span>
+              <span>
+                {finding.thresholdMet ? "Cần rà soát" : "Dưới ngưỡng"}
+              </span>
             </div>
           </li>
         ))}
       </ol>
+      {value.explanationStatus === "available" && value.explanationArtifactId ? (
+        <section className="vm-gradcam-showcase" aria-label="Grad-CAM model-attention artifact">
+          <div className="vm-gradcam-copy">
+            <BrainCircuit size={19} aria-hidden="true" />
+            <div>
+              <strong>Grad-CAM model-attention artifact</strong>
+              <p>
+                Hình ảnh này chỉ cho thấy vùng tín hiệu ảnh hưởng tới điểm model.
+                Không diễn giải như chẩn đoán, xác suất bệnh hoặc định vị tổn thương.
+              </p>
+            </div>
+          </div>
+          <figure className="vm-gradcam-frame">
+            <img
+              src={`/api/backend/api/v1/ecg-analyses/${value.analysisId}/explanation`}
+              alt="Grad-CAM attention overlay for ECG model review"
+            />
+            <figcaption>
+              Artifact đã lưu: {shortReference(value.explanationArtifactId, "EXP")}
+            </figcaption>
+          </figure>
+        </section>
+      ) : (
+        <div className="vm-gradcam-unavailable" role="note">
+          <Info size={16} aria-hidden="true" />
+          <span>Chưa có Grad-CAM artifact cho lần phân tích này.</span>
+        </div>
+      )}
       <p className="vm-model-warning">
-        {value.safetyNotice} {value.warnings.join(" ")}
+        {[value.safetyNotice, ...value.warnings].map(viSafetyNotice).join(" ")}
       </p>
     </div>
   );

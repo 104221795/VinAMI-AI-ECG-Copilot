@@ -111,6 +111,44 @@ const fixture: CompleteCaseWorkspaceView = {
   missing_evidence: ["repeat_troponin"],
   stale_evidence: [],
   technical_limits: [],
+  automation: {
+    policy_version: "vinami-r13-r14-r21-demo-v1",
+    safety_notice: "Demonstration automation - not for clinical use.",
+    completeness: {
+      score: 83,
+      status: "incomplete",
+      required_count: 6,
+      current_count: 5,
+      items: [],
+      missing_evidence: ["troponin"],
+      stale_evidence: [],
+      technical_limits: [],
+      not_negative_evidence_notice:
+        "Missing, unknown, stale, or technically limited evidence is not negative evidence.",
+    },
+    suggested_tasks: [
+      {
+        suggestion_id: "suggest-repeat-troponin",
+        task_type: "repeat_troponin",
+        priority: "priority",
+        due_state: "due_soon",
+        due_at: "2026-07-16T08:50:00Z",
+        reason: "Serial troponin evidence remains pending.",
+        evidence_gaps: ["troponin"],
+      },
+    ],
+    alert_digest: [
+      {
+        group_key: "physician-review",
+        alert_type: "physician_review",
+        source: "clinical_reasoning",
+        severity: "urgent",
+        status: "active",
+        count: 1,
+        message: "Physician review required",
+      },
+    ],
+  },
   update_token: "r8-token-1",
   evaluated_at: new Date().toISOString(),
 };
@@ -139,37 +177,38 @@ describe("R8 CompleteCaseWorkspace", () => {
       </Wrapper>,
     );
     expect(
-      screen.getByRole("heading", { name: "Nguyen An" }),
+      screen.getByRole("heading", { name: "CASE-30000000" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Chest discomfort")).toBeInTheDocument();
+    expect(screen.getByText("82")).toBeInTheDocument();
+    expect(screen.getByText("beats/min")).toBeInTheDocument();
+    expect(screen.getByText("Nhịp tim")).toBeInTheDocument();
     expect(
-      screen.getByText("Current non-revoked physician decision"),
+      screen.getByText("Quyết định hiện hành chưa bị thu hồi của bác sĩ"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Physician requested another sample."),
     ).toBeInTheDocument();
-    expect(screen.getByText("Physician review required")).toBeInTheDocument();
+    expect(screen.getByText("Cần bác sĩ rà soát")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Follow-up Scheduling" }),
+      screen.getByRole("heading", { name: "Lịch theo dõi" }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/chưa có máy lịch bệnh viện/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/no hospital calendar engine/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Open ECG workspace" }),
+      screen.getByRole("link", { name: "Mở không gian ECG" }),
     ).toHaveAttribute("href", `/cases/${caseId}/ecg`);
     expect(
-      screen.getByRole("link", { name: "Open Triage / Vitals" }),
+      screen.getByRole("link", { name: "Mở tiếp nhận / sinh hiệu" }),
     ).toHaveAttribute("href", `/cases/${caseId}/documentation`);
-    expect(screen.getByRole("link", { name: "Audit" })).toHaveAttribute(
-      "href",
-      `/cases/${caseId}/audit`,
-    );
     expect(
-      screen.getByText(/not a diagnosis or clinical probability/i),
+      screen.getByRole("link", { name: "Nhật ký kiểm chứng" }),
+    ).toHaveAttribute("href", `/cases/${caseId}/audit`);
+    expect(
+      screen.getByText(/không tạo thẩm quyền lâm sàng/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Missing or unknown evidence is not negative evidence."),
+      screen.getByText(/không phải bằng chứng âm tính/i),
     ).toBeInTheDocument();
+    expect(screen.getByText("Gợi ý công việc từ backend")).toBeInTheDocument();
   });
 });

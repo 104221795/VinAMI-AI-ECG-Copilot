@@ -6,7 +6,7 @@ import { presentError } from "@web/shared/errors/presentation";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "ECG Workspace" };
+export const metadata: Metadata = { title: "Không gian ECG" };
 
 export default async function ECGWorkspacePage({
   params,
@@ -14,11 +14,15 @@ export default async function ECGWorkspacePage({
   params: Promise<{ caseId: string }>;
 }) {
   const { caseId } = await params;
+  let caseValue: Awaited<ReturnType<typeof loadCaseWorkspace>>;
   try {
-    const [caseValue, ecg] = await Promise.all([
-      loadCaseWorkspace(caseId),
-      loadECGWorkspace(caseId),
-    ]);
+    caseValue = await loadCaseWorkspace(caseId);
+  } catch (error) {
+    return <ErrorPanel presentation={presentError(error)} />;
+  }
+
+  try {
+    const ecg = await loadECGWorkspace(caseId);
     return (
       <>
         <CaseWorkspaceHeader value={caseValue} active="ecg" />
@@ -26,6 +30,11 @@ export default async function ECGWorkspacePage({
       </>
     );
   } catch (error) {
-    return <ErrorPanel presentation={presentError(error)} />;
+    return (
+      <>
+        <CaseWorkspaceHeader value={caseValue} active="ecg" />
+        <ErrorPanel presentation={presentError(error)} />
+      </>
+    );
   }
 }

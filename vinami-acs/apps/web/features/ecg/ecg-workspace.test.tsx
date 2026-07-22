@@ -62,6 +62,7 @@ const populated: ECGWorkspaceView = {
       ],
       warnings: ["Model-attention aid; not causal clinical evidence."],
       explanationStatus: "available",
+      explanationArtifactId: "60000000-0000-4000-8000-000000000001",
       safetyNotice: "Model scores are not clinical probabilities.",
     },
   ],
@@ -87,6 +88,7 @@ const populated: ECGWorkspaceView = {
     })),
   },
   safetyNotice: "Model scores are not clinical probabilities.",
+  technicalWarnings: [],
 };
 populated.currentStudy = populated.studies[0] ?? null;
 
@@ -95,13 +97,17 @@ describe("ECGWorkspace", () => {
 
   it("separates waveform evidence from ranked independent model outputs", () => {
     render(<ECGWorkspace caseId={populated.caseId} initialValue={populated} />);
-    expect(screen.getAllByRole("img", { name: /waveform/ })).toHaveLength(12);
-    expect(screen.getByText("MI-related ECG pattern")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: /dạng sóng/ })).toHaveLength(12);
+    expect(screen.getByText("Mẫu ECG liên quan MI")).toBeInTheDocument();
     expect(
-      screen.getByText(/scores do not need to sum to 1/i),
+      screen.getByText(/điểm số không cần cộng lại bằng 1/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/cannot rule out AMI/i)).toBeInTheDocument();
-    expect(screen.getByText(/not clinical probabilities/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/không thể loại trừ nhồi máu cơ tim cấp/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/không phải xác suất lâm sàng/i),
+    ).toBeInTheDocument();
   });
 
   it("renders a safe empty state with an explicit synthetic-data action", () => {
@@ -118,11 +124,9 @@ describe("ECGWorkspace", () => {
         }}
       />,
     );
+    expect(screen.getByText("Ca này chưa có ECG")).toBeInTheDocument();
     expect(
-      screen.getByText("No ECG study recorded for this case"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Load synthetic 12-lead ECG" }),
+      screen.getByRole("button", { name: "Nạp ECG 12 chuyển đạo mô phỏng" }),
     ).toBeInTheDocument();
   });
 });

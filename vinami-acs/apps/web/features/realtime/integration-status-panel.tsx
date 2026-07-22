@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatTimestamp } from "@web/shared/formatting";
+import { viClinicalTerm, viStatus } from "@web/shared/locale/vi";
 
 export function IntegrationStatusPanel() {
   const query = useQuery({
@@ -24,7 +25,7 @@ export function IntegrationStatusPanel() {
   if (query.isLoading) {
     return (
       <section className="vm-integration-panel">
-        Loading integration status...
+        Đang tải trạng thái tích hợp...
       </section>
     );
   }
@@ -32,23 +33,25 @@ export function IntegrationStatusPanel() {
     const error = presentError(query.error);
     return (
       <section className="vm-integration-panel vm-integration-panel--error">
-        <strong>Integration status unavailable</strong>
+        <strong>Không tải được trạng thái tích hợp</strong>
         <p>{error.description}</p>
       </section>
     );
   }
   const messages = query.data?.messages ?? [];
-  const failed = messages.filter((item) =>
-    ["failed", "dead_letter", "retry_pending"].includes(text(item.status)),
+  const reviewQueue = messages.filter(
+    (item) =>
+      item.review_required === true ||
+      ["failed", "dead_letter", "retry_pending"].includes(text(item.status)),
   );
   return (
-    <section className="vm-integration-panel" aria-label="Integration status">
+    <section className="vm-integration-panel" aria-label="Trạng thái tích hợp">
       <div className="vm-integration-panel__heading">
         <div>
-          <strong>Simulated hospital integration</strong>
+          <strong>Tích hợp bệnh viện mô phỏng</strong>
           <p>
-            No production LIS, HIS, EHR, PACS or device connection is
-            configured.
+            Chưa cấu hình kết nối sản xuất tới LIS, HIS, EHR, PACS hoặc thiết
+            bị.
           </p>
         </div>
         <button
@@ -56,35 +59,41 @@ export function IntegrationStatusPanel() {
           onClick={() => query.refetch()}
           disabled={query.isFetching}
         >
-          {query.isFetching ? "Refreshing" : "Refresh"}
+          {query.isFetching ? "Đang làm mới" : "Làm mới"}
         </button>
       </div>
       <div className="vm-integration-connectors">
         {(query.data?.connectors ?? []).map((connector) => (
           <span key={text(connector.connector_id)}>
-            {text(connector.connector_id)} - {text(connector.status)}
+            {text(connector.connector_id)} - {viStatus(text(connector.status))}
           </span>
         ))}
       </div>
-      {failed.length ? (
+      {reviewQueue.length ? (
         <div className="vm-integration-errors" role="status">
-          {failed.map((item) => (
+          {reviewQueue.map((item) => (
             <article key={text(item.message_id)}>
-              <strong>{text(item.status).replaceAll("_", " ")}</strong>
+              <strong>
+                {viClinicalTerm(
+                  text(item.reconciliation_status, text(item.status)),
+                )}
+              </strong>
               <span>
                 {text(item.source_system)} - {text(item.message_type)}
               </span>
               <small>{formatTimestamp(text(item.received_at))}</small>
               <p>
-                {list(item.validation_errors).join(", ") ||
-                  text(item.dead_letter_reason)}
+                {text(
+                  item.reconciliation_reason,
+                  text(item.dead_letter_reason),
+                )}
               </p>
             </article>
           ))}
         </div>
       ) : (
         <p className="vm-inline-empty">
-          No failed simulated integration messages in the latest ledger view.
+          Không có thông điệp tích hợp mô phỏng nào cần rà soát đối soát.
         </p>
       )}
     </section>
@@ -103,6 +112,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function text(value: unknown, fallback = "unknown") {
+function text(value: unknown, fallback = "chưa rõ") {
   return typeof value === "string" && value.length ? value : fallback;
 }

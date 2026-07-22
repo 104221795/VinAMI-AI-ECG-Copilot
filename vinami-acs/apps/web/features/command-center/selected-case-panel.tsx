@@ -3,6 +3,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
+  CalendarClock,
+  Clock3,
+  ListChecks,
+  ShieldAlert,
+  UserRoundCheck,
+} from "lucide-react";
+import {
   Button,
   ClinicalCard,
   EmptyState,
@@ -10,10 +17,21 @@ import {
   StatusBadge,
 } from "@vinami/ui";
 import {
+  formatDueLabel,
+  formatDueRelative,
   formatRelative,
   formatTimestamp,
   shortReference,
 } from "@web/shared/formatting";
+import {
+  viAction,
+  viClinicalTerm,
+  viDecisionType,
+  viPriority,
+  viStatus,
+  viTaskType,
+} from "@web/shared/locale/vi";
+import { EvidenceAutomationPanel } from "@web/features/evidence/evidence-automation-panel";
 import type { CommandCenterCaseView } from "./model";
 
 export function SelectedCasePanel({
@@ -29,107 +47,127 @@ export function SelectedCasePanel({
     return (
       <ClinicalCard className="vm-selected-panel">
         <EmptyState
-          title="No case selected"
-          description="Select a queue row to review persisted operational context."
+          title="Chưa chọn ca"
+          description="Chọn một dòng trong hàng đợi để xem ngữ cảnh điều phối đã lưu."
         />
       </ClinicalCard>
     );
   }
+
   const now = new Date(referenceTime).getTime();
+  const action = nextOperationalAction(row);
+  const schedule = scheduleSummary(row, now);
+
   return (
     <aside
       className="vm-command-quick-view"
-      aria-label="Selected case quick view"
+      aria-label="Xem nhanh ca đang chọn"
     >
       <ClinicalCard
-        title="Selected case"
         className="vm-selected-panel"
-        action={<Button onClick={onClear}>Clear</Button>}
+        action={<Button onClick={onClear}>Bỏ chọn</Button>}
       >
-        <div className="vm-case-header">
-          <PriorityBadge priority={row.operational_priority} />
-          <StatusBadge status={row.workflow_state ?? row.case_status} />
-        </div>
-        <p className="vm-priority-reason">{row.priority_reason}</p>
-        <dl className="vm-definition-list">
-          <dt>Patient</dt>
-          <dd>{row.patient_reference}</dd>
-          <dt>Case</dt>
-          <dd>{shortReference(row.case_id, "CASE")}</dd>
-          <dt>Location</dt>
-          <dd>{row.location}</dd>
-          <dt>Elapsed</dt>
-          <dd title={formatTimestamp(row.opened_at)}>
-            {formatRelative(row.opened_at, now)}
-          </dd>
-          <dt>Latest activity</dt>
-          <dd title={formatTimestamp(row.latest_activity_at)}>
-            {formatRelative(row.latest_activity_at, now)}
-          </dd>
-          <dt>Owner</dt>
-          <dd>{ownerLabel(row)}</dd>
-        </dl>
-
-        <section className="vm-quick-section">
-          <h3>Physician decision</h3>
-          {row.decision_id ? (
-            <>
-              <strong>
-                {formatCode(row.decision_type ?? "documented decision")}
-              </strong>
-              <p>{row.decision_rationale}</p>
-              <small>
-                Effective persisted record ·{" "}
-                {shortReference(row.decision_id, "DEC")}
-              </small>
-            </>
-          ) : (
-            <p>No effective physician decision is currently persisted.</p>
-          )}
-        </section>
-
-        <section className="vm-quick-section">
-          <h3>Evidence status</h3>
-          <StatusBadge status={row.evidence_status} />
-          <div className="vm-evidence-status-grid">
-            {Object.entries(row.evidence_freshness).map(([source, status]) => (
-              <span key={source}>
-                <strong>{formatCode(source)}</strong>
-                <StatusBadge status={status} />
-              </span>
-            ))}
+        <header className="vm-selected-hero">
+          <div>
+            <p className="vm-eyebrow">Ca đang chọn</p>
+            <h2>{row.patient_reference}</h2>
+            <p className="vm-selected-reference">
+              <strong>{shortReference(row.case_id, "CASE")}</strong>
+              <code>{row.case_id}</code>
+            </p>
           </div>
-          {row.missing_evidence.length > 0 && (
-            <p>
-              <strong>Missing or unknown:</strong>{" "}
-              {row.missing_evidence.map(formatCode).join(", ")}
-            </p>
+          <div className="vm-selected-badges">
+            <PriorityBadge priority={row.operational_priority} />
+            <StatusBadge status={row.workflow_state ?? row.case_status} />
+          </div>
+        </header>
+
+        <section
+          className={`vm-next-action vm-next-action--${action.tone}`}
+          aria-label="Hành động điều phối tiếp theo"
+        >
+          {action.tone === "critical" ? (
+            <ShieldAlert size={18} aria-hidden="true" />
+          ) : (
+            <Clock3 size={18} aria-hidden="true" />
           )}
-          {row.technical_limits.length > 0 && (
-            <p>
-              <strong>Technical limits:</strong>{" "}
-              {row.technical_limits.join("; ")}
-            </p>
+          <div>
+            <strong>{action.title}</strong>
+            <p>{action.detail}</p>
+          </div>
+        </section>
+
+        <div className="vm-quick-facts" aria-label="Thông tin nhanh của ca">
+          <QuickFact label="Vị trí" value={row.location} />
+          <QuickFact
+            label="Đã mở"
+            value={formatRelative(row.opened_at, now)}
+            title={formatTimestamp(row.opened_at)}
+          />
+          <QuickFact
+            label="Hoạt động gần nhất"
+            value={formatRelative(row.latest_activity_at, now)}
+            title={formatTimestamp(row.latest_activity_at)}
+          />
+          <QuickFact label="Phụ trách" value={ownerLabel(row)} />
+        </div>
+
+        <section className="vm-quick-section">
+          <h3>Quyết định của bác sĩ</h3>
+          {row.decision_id ? (
+            <article className="vm-authority-card">
+              <UserRoundCheck size={17} aria-hidden="true" />
+              <div>
+                <strong>
+                  {viDecisionType(row.decision_type ?? "documented_decision")}
+                </strong>
+                <p>{row.decision_rationale}</p>
+                <small>
+                  Bản ghi hiện hành đã lưu |{" "}
+                  {shortReference(row.decision_id, "DEC")}
+                </small>
+              </div>
+            </article>
+          ) : (
+            <p>Chưa có quyết định hiện hành của bác sĩ được lưu.</p>
           )}
         </section>
 
         <section className="vm-quick-section">
-          <h3>Active tasks</h3>
+          <EvidenceAutomationPanel
+            automation={row.automation}
+            compact
+            showAlertDigest
+          />
+        </section>
+
+        <section className="vm-quick-section">
+          <h3>Lịch điều phối</h3>
+          <div className="vm-schedule-card">
+            <CalendarClock size={17} aria-hidden="true" />
+            <div>
+              <strong>{schedule.title}</strong>
+              <p>{schedule.detail}</p>
+              <small>{formatDueLabel(row.next_due_at)}</small>
+            </div>
+          </div>
+        </section>
+
+        <section className="vm-quick-section">
+          <h3>Công việc đang mở</h3>
           {row.tasks.length === 0 ? (
-            <p>No active operational task.</p>
+            <p>Không có công việc điều phối đang mở.</p>
           ) : (
             <ul className="vm-compact-list">
               {row.tasks.slice(0, 4).map((task) => (
                 <li key={task.task_id}>
                   <span>
-                    <strong>{formatCode(task.task_type)}</strong>
-                    <small>{formatCode(task.status)}</small>
+                    <strong>{viTaskType(task.task_type)}</strong>
+                    <small>
+                      {viStatus(task.status)} | {viPriority(task.priority)}
+                    </small>
                   </span>
-                  <span>
-                    {task.due_at
-                      ? formatRelative(task.due_at, now)
-                      : "No due time"}
-                  </span>
+                  <span>{formatDueRelative(task.due_at, now)}</span>
                 </li>
               ))}
             </ul>
@@ -137,16 +175,19 @@ export function SelectedCasePanel({
         </section>
 
         <section className="vm-quick-section">
-          <h3>Unresolved alerts</h3>
+          <h3>Cảnh báo chưa xử lý</h3>
           {row.alerts.length === 0 ? (
-            <p>No unresolved operational alert.</p>
+            <p>Không có cảnh báo điều phối chưa xử lý.</p>
           ) : (
             <ul className="vm-compact-list">
               {row.alerts.slice(0, 4).map((alert) => (
                 <li key={alert.alert_id}>
                   <span>
-                    <strong>{formatCode(alert.alert_type)}</strong>
-                    <small>{formatCode(alert.status)}</small>
+                    <strong>{viClinicalTerm(alert.alert_type)}</strong>
+                    <small>
+                      {viStatus(alert.status)} | mức leo thang{" "}
+                      {alert.escalation_level}
+                    </small>
                   </span>
                   <StatusBadge status={alert.severity} />
                 </li>
@@ -157,49 +198,120 @@ export function SelectedCasePanel({
 
         <nav
           className="vm-workspace-links"
-          aria-label="Selected case workspaces"
+          aria-label="Không gian làm việc của ca đang chọn"
         >
           <WorkspaceLink href={`/cases/${row.case_id}/documentation`}>
-            Triage / Vitals
+            Tiếp nhận / Sinh hiệu
           </WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/clinical-reasoning`}>
-            Clinical Reasoning
+            Tổng hợp lâm sàng
           </WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/ecg`}>ECG</WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/troponin`}>
             Troponin
           </WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/workflow`}>
-            Workflow
+            Quy trình
           </WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/timeline`}>
-            Timeline
+            Dòng thời gian
           </WorkspaceLink>
           <WorkspaceLink href={`/cases/${row.case_id}/audit`}>
-            Audit
+            Nhật ký kiểm chứng
           </WorkspaceLink>
         </nav>
+
         <p className="vm-safety-note">
-          Operational overview only. AI output does not determine priority or
-          clinical authority.
+          Chỉ là tổng quan điều phối. Đầu ra AI không quyết định ưu tiên hoặc
+          thẩm quyền lâm sàng.
         </p>
       </ClinicalCard>
     </aside>
   );
 }
 
+function QuickFact({
+  label,
+  value,
+  title,
+}: {
+  label: string;
+  value: string;
+  title?: string;
+}) {
+  return (
+    <span title={title}>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </span>
+  );
+}
+
 function ownerLabel(row: CommandCenterCaseView) {
   if (row.owner_user_id) return shortReference(row.owner_user_id, "USR");
   if (row.owner_team_id) return shortReference(row.owner_team_id, "TEAM");
-  return "Unassigned";
+  return "Chưa phân công";
 }
 
-function formatCode(value: string) {
-  return value
-    .toLowerCase()
-    .split("_")
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
+function nextOperationalAction(row: CommandCenterCaseView) {
+  const hasCriticalSignal =
+    row.operational_priority === "critical" ||
+    row.alerts.some((alert) => alert.severity === "critical") ||
+    row.decision_type === "request_cath_lab_review";
+  if (hasCriticalSignal) {
+    return {
+      tone: "critical" as const,
+      title: "Cần rà soát ngay theo chỉ đạo bác sĩ",
+      detail:
+        "Dùng không gian Quy trình để xử lý công việc, cảnh báo và rà soát đã được bác sĩ xác nhận. Dashboard không tự kích hoạt bất kỳ hướng xử trí nào.",
+    };
+  }
+  if (row.overdue_task_count > 0) {
+    return {
+      tone: "warning" as const,
+      title: "Có công việc điều phối quá hạn",
+      detail:
+        "Ít nhất một công việc đã lưu đang quá hạn. Rà soát người phụ trách và mức leo thang trước khi dựa vào tóm tắt ca.",
+    };
+  }
+  if (row.next_due_at) {
+    return {
+      tone: "scheduled" as const,
+      title: "Có việc đã lên hạn đang chờ",
+      detail:
+        "Hạn tiếp theo đến từ quy trình hoặc nhắc việc backend, không phải từ luật tự tính trên frontend.",
+    };
+  }
+  return {
+    tone: "neutral" as const,
+    title: "Chưa có việc đến hạn",
+    detail:
+      "Tiếp tục rà soát bằng chứng và quyết định do bác sĩ ghi nhận trong các không gian phụ trách.",
+  };
+}
+
+function scheduleSummary(row: CommandCenterCaseView, now: number) {
+  if (row.operational_priority === "critical") {
+    return {
+      title: "Rà soát ngay, không phải lịch thường quy",
+      detail:
+        "Trạng thái khẩn cấp cần được xử lý qua công việc, cảnh báo và quyết định bác sĩ đã lưu.",
+    };
+  }
+  if (row.next_due_at) {
+    return {
+      title: `Hạn tiếp theo ${formatDueRelative(row.next_due_at, now)}`,
+      detail:
+        row.tasks[0]?.task_type !== undefined
+          ? `Công việc hiện tại: ${viTaskType(row.tasks[0].task_type)}`
+          : "Một nhắc việc hoặc bộ đếm quy trình đã lưu đang đến hạn.",
+    };
+  }
+  return {
+    title: "MVP chưa có lịch hẹn bệnh viện",
+    detail:
+      "MVP hiện chỉ đặt hạn cho bằng chứng lặp lại và công việc điều phối. Lịch hẹn bệnh viện thuộc phạm vi tích hợp sau.",
+  };
 }
 
 function WorkspaceLink({
@@ -209,24 +321,5 @@ function WorkspaceLink({
   href: string;
   children: ReactNode;
 }) {
-  return (
-    <Link
-      href={href}
-      onMouseDown={(event) => {
-        if (
-          event.button !== 0 ||
-          event.metaKey ||
-          event.ctrlKey ||
-          event.altKey ||
-          event.shiftKey
-        ) {
-          return;
-        }
-        event.preventDefault();
-        window.location.assign(href);
-      }}
-    >
-      {children}
-    </Link>
-  );
+  return <Link href={href}>{children}</Link>;
 }

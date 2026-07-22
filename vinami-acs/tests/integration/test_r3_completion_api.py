@@ -162,6 +162,9 @@ def test_dynamic_review_score_evolution_and_repeat_reminder_lifecycle(
         comparison_value = comparison.json()
         assert comparison_value["comparability_status"] == "comparable"
         assert comparison_value["model_score_compatibility"] == "compatible"
+        assert comparison_value["comparison_policy_version"].startswith("r18-dynamic-ecg")
+        assert comparison_value["signal_feature_deltas"]
+        assert comparison_value["review_recommendation"].startswith("Dynamic ECG comparison")
         assert len(comparison_value["model_score_deltas"]) == 5
         assert all(
             item["compatibility_status"] == "compatible"

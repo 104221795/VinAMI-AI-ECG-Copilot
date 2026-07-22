@@ -29,10 +29,12 @@ class CommandCenterAlert:
 
     alert_id: UUID
     alert_type: str
+    source: str
     severity: str
     status: str
     raised_at: datetime
     escalation_level: int
+    message: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +78,7 @@ class CommandCenterCase:
     update_token: str
     tasks: tuple[CommandCenterTask, ...]
     alerts: tuple[CommandCenterAlert, ...]
+    automation: dict[str, object]
 
 
 @dataclass(frozen=True, slots=True)

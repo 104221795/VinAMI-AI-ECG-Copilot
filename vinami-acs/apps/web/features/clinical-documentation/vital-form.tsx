@@ -21,13 +21,17 @@ const fields: Array<{
   label: string;
   unit: string;
 }> = [
-  { name: "heartRate", label: "Heart rate", unit: "beats/min" },
-  { name: "systolicBloodPressure", label: "Systolic BP", unit: "mmHg" },
-  { name: "diastolicBloodPressure", label: "Diastolic BP", unit: "mmHg" },
-  { name: "respiratoryRate", label: "Respiratory rate", unit: "breaths/min" },
-  { name: "oxygenSaturation", label: "Oxygen saturation", unit: "%" },
-  { name: "bodyTemperature", label: "Body temperature", unit: "degC" },
-  { name: "painScore", label: "Pain score", unit: "score" },
+  { name: "heartRate", label: "Nhịp tim", unit: "beats/min" },
+  { name: "systolicBloodPressure", label: "Huyết áp tâm thu", unit: "mmHg" },
+  {
+    name: "diastolicBloodPressure",
+    label: "Huyết áp tâm trương",
+    unit: "mmHg",
+  },
+  { name: "respiratoryRate", label: "Nhịp thở", unit: "breaths/min" },
+  { name: "oxygenSaturation", label: "SpO2", unit: "%" },
+  { name: "bodyTemperature", label: "Nhiệt độ", unit: "degC" },
+  { name: "painScore", label: "Điểm đau", unit: "score" },
 ];
 
 export function VitalForm({
@@ -66,7 +70,7 @@ export function VitalForm({
     >
       <div className="vm-form-grid vm-vital-grid">
         <label className="vm-input-field vm-form-span-2">
-          <span>Observation time</span>
+          <span>Thời điểm quan sát</span>
           <input
             type="datetime-local"
             required
@@ -89,25 +93,25 @@ export function VitalForm({
         ))}
       </div>
       <p className="vm-form-note">
-        Units are explicit and fixed by the API contract. Blank values are not
-        submitted.
+        Đơn vị được cố định rõ theo hợp đồng API. Giá trị để trống sẽ không được
+        gửi.
       </p>
       {correcting && (
         <label className="vm-input-field">
-          <span>Correction reason</span>
+          <span>Lý do chỉnh sửa</span>
           <textarea
             rows={2}
             required
             {...register("correctionReason", { required: true })}
           />
           {formState.errors.correctionReason && (
-            <small role="alert">A correction reason is required.</small>
+            <small role="alert">Cần nhập lý do chỉnh sửa.</small>
           )}
         </label>
       )}
       <div className="vm-form-actions">
         <Button type="button" onClick={onCancel} disabled={busy}>
-          Cancel
+          Hủy
         </Button>
         <ConfirmationDialog
           trigger={
@@ -117,23 +121,23 @@ export function VitalForm({
               disabled={busy || !canReview}
             >
               {busy
-                ? "Saving…"
+                ? "Đang lưu..."
                 : correcting
-                  ? "Review correction"
-                  : "Review vital set"}
+                  ? "Rà soát chỉnh sửa"
+                  : "Rà soát bộ sinh hiệu"}
             </Button>
           }
           title={
-            correcting
-              ? "Confirm vital correction"
-              : "Confirm vital observations"
+            correcting ? "Xác nhận chỉnh sửa sinh hiệu" : "Xác nhận sinh hiệu"
           }
           description={
             correcting
-              ? "A new revision will be appended; the original observations remain auditable."
-              : "Record this timestamped observation set in the clinical case?"
+              ? "Một phiên bản mới sẽ được ghi nối tiếp; quan sát gốc vẫn kiểm chứng được."
+              : "Ghi nhận bộ quan sát có thời gian này vào ca lâm sàng?"
           }
-          confirmLabel={correcting ? "Record correction" : "Record vital set"}
+          confirmLabel={
+            correcting ? "Ghi nhận chỉnh sửa" : "Ghi nhận sinh hiệu"
+          }
           onConfirm={handleSubmit(onSubmit)}
         />
       </div>

@@ -502,6 +502,20 @@ export const ecgWorkspaceSchema = z.object({
           }),
         ),
         technical_change_indicators: z.array(z.string()),
+        signal_feature_deltas: z.array(
+          z.object({
+            feature_name: z.string(),
+            display_label: z.string(),
+            previous_value: z.number().nullable(),
+            current_value: z.number().nullable(),
+            absolute_delta: z.number().nullable(),
+            unit: z.string().nullable(),
+            status: z.string(),
+            evidence_scope: z.string(),
+          }),
+        ),
+        rhythm_change_indicators: z.array(z.string()),
+        st_t_change_indicators: z.array(z.string()),
         model_score_deltas: z.array(
           z.object({
             finding_code: z.string(),
@@ -513,6 +527,7 @@ export const ecgWorkspaceSchema = z.object({
         ),
         model_score_compatibility: z.string(),
         comparison_policy_version: z.string(),
+        review_recommendation: z.string(),
         record_version: z.number().int().positive(),
         safety_notice: z.string().min(1),
       })

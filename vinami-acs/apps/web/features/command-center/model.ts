@@ -15,10 +15,30 @@ const taskSchema = z.object({
 const alertSchema = z.object({
   alert_id: z.string().uuid(),
   alert_type: z.string(),
+  source: z.string(),
   severity: z.string(),
   status: z.string(),
   raised_at: z.string(),
   escalation_level: z.number().int(),
+  message: z.string(),
+});
+
+const automationSchema = z.object({
+  policy_version: z.string(),
+  safety_notice: z.string(),
+  completeness: z.object({
+    score: z.number().int(),
+    status: z.string(),
+    required_count: z.number().int(),
+    current_count: z.number().int(),
+    items: z.array(z.record(z.string(), z.unknown())),
+    missing_evidence: z.array(z.string()),
+    stale_evidence: z.array(z.string()),
+    technical_limits: z.array(z.string()),
+    not_negative_evidence_notice: z.string(),
+  }),
+  suggested_tasks: z.array(z.record(z.string(), z.unknown())),
+  alert_digest: z.array(z.record(z.string(), z.unknown())),
 });
 
 export const commandCenterPageSchema = z.object({
@@ -61,6 +81,7 @@ export const commandCenterPageSchema = z.object({
       update_token: z.string(),
       tasks: z.array(taskSchema),
       alerts: z.array(alertSchema),
+      automation: automationSchema,
     }),
   ),
   page: z.number().int(),

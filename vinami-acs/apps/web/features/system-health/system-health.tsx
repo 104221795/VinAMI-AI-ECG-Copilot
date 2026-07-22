@@ -30,53 +30,53 @@ function HealthRow({
 export function SystemHealth({ value }: { value: SystemHealthView }) {
   return (
     <div className="vm-health-grid">
-      <ClinicalCard title="Application services">
+      <ClinicalCard title="Dịch vụ ứng dụng">
         <HealthRow
           label="FastAPI liveness"
           value={value.apiStatus}
-          detail="Process endpoint"
+          detail="Endpoint tiến trình"
         />
         <HealthRow
           label="API readiness"
           value={value.readiness}
-          detail="Dependency-aware check"
+          detail="Kiểm tra kèm phụ thuộc"
         />
         <HealthRow
-          label="Database and schema"
+          label="Cơ sở dữ liệu và schema"
           value={value.dependency}
           detail={`Migration ${value.revision}`}
         />
         <HealthRow
           label="Worker"
-          value="Not exposed"
-          detail="R1 does not expose a worker health contract"
+          value="Chưa công bố"
+          detail="R1 chưa công bố hợp đồng health cho worker"
         />
       </ClinicalCard>
-      <ClinicalCard title="Identity provider">
+      <ClinicalCard title="Nhà cung cấp danh tính">
         <HealthRow
-          label="Provider state"
+          label="Trạng thái provider"
           value={value.identityStatus}
           detail={value.identityProvider}
         />
         <HealthRow
-          label="Identity mode"
+          label="Chế độ danh tính"
           value={value.identityMode}
           detail={
             value.developmentOnly
-              ? "Synthetic identities only"
-              : "Provider-verified"
+              ? "Chỉ dùng danh tính mô phỏng"
+              : "Đã xác thực qua provider"
           }
         />
         {value.developmentOnly && (
           <Badge tone="warning">
-            Development identity is not production authentication
+            Danh tính phát triển không phải xác thực sản xuất
           </Badge>
         )}
         <TechnicalDetailsDisclosure>
           <dl>
-            <dt>Last successful check</dt>
+            <dt>Lần kiểm tra thành công gần nhất</dt>
             <dd>{formatTimestamp(value.checkedAt)}</dd>
-            <dt>Schema revision</dt>
+            <dt>Phiên bản schema</dt>
             <dd>
               <code>{value.revision}</code>
             </dd>

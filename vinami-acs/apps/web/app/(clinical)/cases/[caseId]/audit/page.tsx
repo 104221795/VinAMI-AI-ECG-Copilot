@@ -7,7 +7,7 @@ import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { presentError } from "@web/shared/errors/presentation";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "Immutable Audit" };
+export const metadata: Metadata = { title: "Nhật ký kiểm chứng" };
 
 export default async function AuditPage({
   params,
@@ -24,8 +24,8 @@ export default async function AuditPage({
       <>
         <CaseWorkspaceHeader value={workspace} active="audit" />
         <PageHeader
-          title="Immutable Audit"
-          description="Read-only lifecycle audit with verified actor provenance. Credentials and secrets are never displayed."
+          title="Nhật ký kiểm chứng bất biến"
+          description="Nhật ký vòng đời chỉ đọc với nguồn gốc người thực hiện đã xác thực. Thông tin đăng nhập và bí mật không bao giờ được hiển thị."
         />
         <AuditTable value={audit} />
       </>

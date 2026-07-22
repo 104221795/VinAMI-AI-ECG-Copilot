@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <LoadingSkeleton
       lines={8}
-      label="Loading verified clinical workflow information"
+      label="Đang tải thông tin quy trình lâm sàng đã xác thực"
     />
   );
 }

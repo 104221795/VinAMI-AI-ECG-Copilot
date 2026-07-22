@@ -73,6 +73,21 @@ const fixture: WorkflowOperationsView = {
       history: [],
     },
   ],
+  alert_digest: [
+    {
+      group_key: "task-overdue",
+      alert_type: "task_overdue",
+      source: "workflow_operations",
+      severity: "urgent",
+      status: "active",
+      count: 1,
+      representative_alert_id: "a0000000-0000-4000-8000-000000000001",
+      alert_ids: ["a0000000-0000-4000-8000-000000000001"],
+      latest_raised_at: "2026-07-15T08:16:00Z",
+      max_escalation_level: 0,
+      message: "Human review required.",
+    },
+  ],
   safety_notice: "Task completion does not imply diagnosis or case closure.",
 };
 
@@ -131,32 +146,63 @@ describe("WorkflowOperationsWorkspace", () => {
       </Wrapper>,
     );
     expect(
-      screen.getByRole("heading", { name: "Repeat ECG" }),
+      screen.getByRole("heading", { name: "Lặp lại ECG" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Evidence and physician-directed operations",
+        name: "Bằng chứng và điều phối theo chỉ đạo bác sĩ",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Follow-up scheduling")).toBeInTheDocument();
+    expect(screen.getByText("Luồng rà soát ngay")).toBeInTheDocument();
     expect(
-      screen.getByText(/hospital calendar integration/i),
+      screen.getByText("Bằng chứng lặp lại đã lên hạn"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Physician request for cath-lab review"),
+      screen.getByText(/chưa triển khai lịch hẹn bệnh viện/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Bác sĩ yêu cầu xem xét can thiệp")[0],
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Acknowledge" })[0]!);
+    fireEvent.click(screen.getAllByRole("button", { name: "Ghi nhận" })[0]!);
     expect(
-      screen.getByRole("dialog", { name: "Acknowledge task" }),
+      screen.getByRole("dialog", { name: "Ghi nhận công việc" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Create operational task" }),
+      screen.getByRole("button", { name: "Tạo công việc điều phối" }),
     );
     expect(
-      screen.getByRole("dialog", { name: "Create operational task" }),
+      screen.getByRole("dialog", { name: "Tạo công việc điều phối" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows unset due dates explicitly and keeps task cancel neutral", () => {
+    const noDueFixture = {
+      ...fixture,
+      tasks: [
+        {
+          ...fixture.tasks[0]!,
+          due_at: "2020-01-01T00:00:00Z",
+        },
+      ],
+    };
+    render(
+      <Wrapper>
+        <WorkflowOperationsWorkspace
+          caseId={caseId}
+          actorId={actorId}
+          initialValue={noDueFixture}
+          decisions={decisions}
+        />
+      </Wrapper>,
+    );
+
+    expect(screen.getAllByText("Chưa đặt hạn xử lý").length).toBeGreaterThan(0);
+    for (const cancel of screen.getAllByRole("button", { name: "Hủy" })) {
+      expect(cancel).toHaveClass("vm-button");
+      expect(cancel).not.toHaveClass("vm-button--danger");
+    }
   });
 });

@@ -6,7 +6,7 @@ import { presentError } from "@web/shared/errors/presentation";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "Troponin Workspace" };
+export const metadata: Metadata = { title: "Không gian Troponin" };
 export default async function TroponinPage({
   params,
 }: {

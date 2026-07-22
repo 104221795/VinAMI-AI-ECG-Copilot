@@ -42,6 +42,6 @@ describe("AuditTable", () => {
     expect(
       screen.queryByRole("button", { name: /delete|edit/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Technical details")).toBeInTheDocument();
+    expect(screen.getByText("Chi tiết kỹ thuật")).toBeInTheDocument();
   });
 });

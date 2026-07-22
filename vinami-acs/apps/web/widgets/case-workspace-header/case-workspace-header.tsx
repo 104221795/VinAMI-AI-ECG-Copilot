@@ -6,7 +6,8 @@ import {
   TechnicalDetailsDisclosure,
 } from "@vinami/ui";
 import type { CaseWorkspaceView } from "@web/entities/clinical-case/model";
-import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import { formatTimestamp } from "@web/shared/formatting";
+import { viWorkflowState } from "@web/shared/locale/vi";
 
 type CaseWorkspaceSection =
   | "overview"
@@ -30,27 +31,26 @@ export function CaseWorkspaceHeader({
   return (
     <div className="vm-card vm-case-context">
       <div className="vm-card__body">
-        <nav aria-label="Breadcrumb" className="vm-breadcrumb">
-          <Link href="/command-center">Command Center</Link> /{" "}
+        <nav aria-label="Đường dẫn" className="vm-breadcrumb">
+          <Link href="/command-center">Trung tâm điều phối</Link> /{" "}
           <span aria-current="page">{value.caseReference}</span>
         </nav>
         <div className="vm-page-header vm-case-context__header">
           <div>
-            <p className="vm-eyebrow">Suspected ACS clinical case</p>
-            <h1
-              className="vm-case-context__title"
-              title={value.patientReference}
-            >
-              {value.patientReference}
+            <p className="vm-eyebrow">Ca nghi hội chứng mạch vành cấp</p>
+            <h1 className="vm-case-context__title" title={value.caseId}>
+              {value.caseReference}
             </h1>
             <p className="vm-case-context__meta">
+              <span>Bệnh nhân {value.patientReference}</span>
               <span>{value.demographics}</span>
               <span>{value.location}</span>
               <span>{value.encounterReference}</span>
-              <span>{shortReference(value.caseId, "CASE")}</span>
               <span>
-                Workflow:{" "}
-                {workflowStatus ? formatLabel(workflowStatus) : "open source"}
+                Quy trình:{" "}
+                {workflowStatus
+                  ? viWorkflowState(workflowStatus)
+                  : "Chưa ghi nhận"}
               </span>
             </p>
           </div>
@@ -59,21 +59,18 @@ export function CaseWorkspaceHeader({
             <StatusBadge status={value.status} />
           </div>
         </div>
-        <nav
-          className="vm-case-header vm-case-sections"
-          aria-label="Case workspace sections"
-        >
+        <nav className="vm-case-sections" aria-label="Các khu vực của ca">
           <WorkspaceNavLink
             active={active === "overview"}
             href={`/cases/${value.caseId}`}
           >
-            Overview
+            Tổng quan
           </WorkspaceNavLink>
           <WorkspaceNavLink
             active={active === "documentation"}
             href={`/cases/${value.caseId}/documentation`}
           >
-            Triage / Vitals
+            Tiếp nhận / Sinh hiệu
           </WorkspaceNavLink>
           <WorkspaceNavLink
             active={active === "ecg"}
@@ -91,39 +88,39 @@ export function CaseWorkspaceHeader({
             active={active === "clinical-reasoning"}
             href={`/cases/${value.caseId}/clinical-reasoning`}
           >
-            Clinical Reasoning
+            Tổng hợp lâm sàng
           </WorkspaceNavLink>
           <WorkspaceNavLink
             active={active === "workflow"}
             href={`/cases/${value.caseId}/workflow`}
           >
-            Workflow
+            Quy trình
           </WorkspaceNavLink>
           <WorkspaceNavLink
             active={active === "timeline"}
             href={`/cases/${value.caseId}/timeline`}
           >
-            Timeline
+            Dòng thời gian
           </WorkspaceNavLink>
           <WorkspaceNavLink
             active={active === "audit"}
             href={`/cases/${value.caseId}/audit`}
           >
-            Audit
+            Nhật ký kiểm chứng
           </WorkspaceNavLink>
-          <TechnicalDetailsDisclosure title="Case technical reference">
+          <TechnicalDetailsDisclosure title="Tham chiếu kỹ thuật của ca">
             <dl>
-              <dt>Case UUID</dt>
+              <dt>UUID ca</dt>
               <dd>
                 <code>{value.caseId}</code>
               </dd>
-              <dt>Patient reference</dt>
+              <dt>Mã bệnh nhân</dt>
               <dd>
                 <code>{value.patientReference}</code>
               </dd>
-              <dt>Aggregate version</dt>
+              <dt>Phiên bản aggregate</dt>
               <dd>v{value.aggregateVersion}</dd>
-              <dt>Last update</dt>
+              <dt>Cập nhật gần nhất</dt>
               <dd>{formatTimestamp(value.updatedAt)}</dd>
             </dl>
           </TechnicalDetailsDisclosure>
@@ -131,13 +128,6 @@ export function CaseWorkspaceHeader({
       </div>
     </div>
   );
-}
-
-function formatLabel(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function WorkspaceNavLink({
@@ -151,8 +141,9 @@ function WorkspaceNavLink({
 }) {
   return (
     <Link
-      className={`vm-button${active ? " vm-button--primary" : ""}`}
+      className={`vm-case-tab${active ? " vm-case-tab--active" : ""}`}
       href={href}
+      aria-current={active ? "page" : undefined}
     >
       {children}
     </Link>

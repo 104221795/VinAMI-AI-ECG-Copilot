@@ -8,7 +8,7 @@ import { presentError } from "@web/shared/errors/presentation";
 import { ErrorPanel } from "@web/shared/ui/error-panel";
 import { CaseWorkspaceHeader } from "@web/widgets/case-workspace-header/case-workspace-header";
 
-export const metadata: Metadata = { title: "Workflow, Tasks and Alerts" };
+export const metadata: Metadata = { title: "Quy trình, công việc và cảnh báo" };
 
 export default async function WorkflowPage({
   params,

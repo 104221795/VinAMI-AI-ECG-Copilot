@@ -35,6 +35,7 @@ export interface ECGAnalysisView {
   findings: ECGFindingView[];
   warnings: string[];
   explanationStatus: string;
+  explanationArtifactId: string | null;
   safetyNotice: string;
 }
 
@@ -104,6 +105,18 @@ export interface ECGWorkspaceView {
       sampleAlignmentStatus: string;
     }>;
     technicalChangeIndicators: string[];
+    signalFeatureDeltas: Array<{
+      featureName: string;
+      displayLabel: string;
+      previousValue: number | null;
+      currentValue: number | null;
+      absoluteDelta: number | null;
+      unit: string | null;
+      status: string;
+      evidenceScope: string;
+    }>;
+    rhythmChangeIndicators: string[];
+    stTChangeIndicators: string[];
     scoreEvolution: Array<{
       findingCode: string;
       previousScore: number;
@@ -113,6 +126,7 @@ export interface ECGWorkspaceView {
     }>;
     scoreCompatibility: string;
     policyVersion: string;
+    reviewRecommendation: string;
     recordVersion: number;
     safetyNotice: string;
   }>;
@@ -154,4 +168,5 @@ export interface ECGWorkspaceView {
   dataFreshness: string;
   waveform: ECGWaveformView | null;
   safetyNotice: string;
+  technicalWarnings: string[];
 }

@@ -13,6 +13,7 @@ class ECGPredictionRequest:
     study_id: UUID
     input_reference: str
     image_bytes: bytes | None = None
+    waveform_bytes: bytes | None = None
     input_quality: str = "acceptable"
     artifact_checksum: str | None = None
 
@@ -22,6 +23,10 @@ class ECGExplanationRequest:
     study_id: UUID
     input_reference: str
     target_label: str
+    image_bytes: bytes | None = None
+    waveform_bytes: bytes | None = None
+    input_quality: str = "acceptable"
+    artifact_checksum: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

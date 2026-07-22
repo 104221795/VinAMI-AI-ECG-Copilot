@@ -12,6 +12,7 @@ import {
 import { createBrowserApiClient } from "@web/shared/api/browser";
 import { presentError } from "@web/shared/errors/presentation";
 import { formatTimestamp, shortReference } from "@web/shared/formatting";
+import { viSafetyNotice } from "@web/shared/locale/vi";
 import {
   correctOutcomeWith,
   loadModelProvenanceWith,
@@ -123,12 +124,14 @@ export function CaseHistoryPanel({
 
   const current = outcomes.data.current;
   return (
-    <section className="vm-r9-grid" aria-label="Outcome and learning record">
+    <section className="vm-r9-grid" aria-label="Kết cục và hồ sơ học tập">
       <div className="vm-card">
         <header className="vm-card__header">
           <div>
-            <h2>Clinical Outcome</h2>
-            <p>Physician-authored or explicitly sourced. Never inferred.</p>
+            <h2>Kết cục lâm sàng</h2>
+            <p>
+              Do bác sĩ ghi nhận hoặc có nguồn rõ ràng. Không suy luận tự động.
+            </p>
           </div>
           <button
             className="vm-button vm-button--secondary"
@@ -136,7 +139,7 @@ export function CaseHistoryPanel({
             disabled={outcomes.isFetching}
           >
             <RefreshCw size={15} aria-hidden />
-            Refresh
+            Làm mới
           </button>
         </header>
         <div className="vm-card__body vm-r9-outcome">
@@ -145,19 +148,19 @@ export function CaseHistoryPanel({
               <StatusBadge status={`revision ${current.revisionNumber}`} />
               <h3>{current.finalConclusion}</h3>
               <p>
-                {current.outcomeType} recorded{" "}
-                {formatTimestamp(current.recordedAt)} by{" "}
+                {current.outcomeType} ghi nhận{" "}
+                {formatTimestamp(current.recordedAt)} bởi{" "}
                 {shortReference(current.recordedBy, "ACT")}
               </p>
               <p>
-                {current.disposition ?? "Disposition not documented"} -{" "}
-                {current.destination ?? "Destination not documented"}
+                {current.disposition ?? "Chưa ghi nhận hướng xử trí"} -{" "}
+                {current.destination ?? "Chưa ghi nhận nơi đến"}
               </p>
             </div>
           ) : (
             <EmptyState
-              title="No outcome recorded"
-              description="Missing outcome data remains missing; task completion and workflow state do not create an outcome."
+              title="Chưa ghi nhận kết cục"
+              description="Dữ liệu kết cục còn thiếu vẫn là thiếu; hoàn tất công việc hoặc trạng thái quy trình không tự tạo kết cục."
             />
           )}
           <OutcomeForm
@@ -173,10 +176,10 @@ export function CaseHistoryPanel({
             </p>
           )}
           <div className="vm-r9-revisions">
-            <h3>Revision history</h3>
+            <h3>Lịch sử phiên bản</h3>
             {outcomes.data.revisions.map((item) => (
               <article key={item.outcomeId} className="vm-r9-revision">
-                <strong>Revision {item.revisionNumber}</strong>
+                <strong>Phiên bản {item.revisionNumber}</strong>
                 <span>{formatTimestamp(item.recordedAt)}</span>
                 <p>{item.finalConclusion}</p>
                 {item.correctionReason && (
@@ -185,16 +188,17 @@ export function CaseHistoryPanel({
               </article>
             ))}
           </div>
-          <small>{outcomes.data.safetyNotice}</small>
+          <small>{viSafetyNotice(outcomes.data.safetyNotice)}</small>
         </div>
       </div>
 
       <div className="vm-card">
         <header className="vm-card__header">
           <div>
-            <h2>Model and Evidence Provenance</h2>
+            <h2>Nguồn gốc mô hình và bằng chứng</h2>
             <p>
-              Trace provider, model version, input quality and explanations.
+              Theo dõi nhà cung cấp, phiên bản mô hình, chất lượng đầu vào và
+              giải thích.
             </p>
           </div>
         </header>
@@ -213,20 +217,20 @@ export function CaseHistoryPanel({
                   {item.inputQuality}
                 </p>
                 <small>
-                  Analysis {shortReference(item.analysisId, "AI")} - study{" "}
+                  Phân tích {shortReference(item.analysisId, "AI")} - lần đo{" "}
                   {shortReference(item.studyId, "ECG")} - v{item.recordVersion}
                 </small>
               </article>
             ))
           ) : (
             <EmptyState
-              title="No model provenance"
-              description="No persisted ECG AI analysis has been recorded for this case."
+              title="Chưa có nguồn gốc mô hình"
+              description="Ca này chưa có phân tích ECG AI nào được lưu."
             />
           )}
           <small>
-            Model outputs are scores and attention aids, not diagnoses or
-            validated clinical probabilities.
+            Đầu ra mô hình là điểm số và gợi ý chú ý, không phải chẩn đoán hoặc
+            xác suất lâm sàng đã xác thực.
           </small>
         </div>
       </div>
@@ -234,8 +238,10 @@ export function CaseHistoryPanel({
       <div className="vm-card vm-r9-export">
         <header className="vm-card__header">
           <div>
-            <h2>Research Export</h2>
-            <p>Pseudonymized research-use package for this selected case.</p>
+            <h2>Xuất dữ liệu nghiên cứu</h2>
+            <p>
+              Gói dữ liệu đã giả danh, chỉ dùng cho nghiên cứu của ca đang chọn.
+            </p>
           </div>
           <button
             className="vm-button"
@@ -243,7 +249,7 @@ export function CaseHistoryPanel({
             disabled={exportMutation.isPending}
           >
             <Download size={15} aria-hidden />
-            {exportMutation.isPending ? "Generating" : "Generate"}
+            {exportMutation.isPending ? "Đang tạo" : "Tạo gói"}
           </button>
         </header>
         <div className="vm-card__body">
@@ -256,19 +262,19 @@ export function CaseHistoryPanel({
             <div className="vm-r9-current">
               <StatusBadge status={exportResult.status} />
               <p>
-                {exportResult.rowCount} row - schema{" "}
+                {exportResult.rowCount} dòng - lược đồ{" "}
                 {exportResult.schemaVersion}
               </p>
               <p>
-                Checksum <code>{exportResult.checksumSha256}</code>
+                Mã kiểm tra <code>{exportResult.checksumSha256}</code>
               </p>
               <pre className="vm-r9-csv">{exportResult.contentCsv}</pre>
-              <small>{exportResult.safetyNotice}</small>
+              <small>{viSafetyNotice(exportResult.safetyNotice)}</small>
             </div>
           ) : (
             <EmptyState
-              title="No export generated in this session"
-              description="Exports exclude direct patient identifiers and preserve provenance and missing-data semantics."
+              title="Chưa tạo gói xuất trong phiên này"
+              description="Gói xuất loại bỏ định danh trực tiếp và giữ nguồn gốc cũng như ngữ nghĩa dữ liệu thiếu."
             />
           )}
         </div>
@@ -305,14 +311,14 @@ function OutcomeForm({
       }}
     >
       <label>
-        <span>Outcome type</span>
+        <span>Loại kết cục</span>
         <input
           value={value.outcome_type}
           onChange={(event) => update("outcome_type", event.target.value)}
         />
       </label>
       <label>
-        <span>Outcome timestamp</span>
+        <span>Thời điểm kết cục</span>
         <input
           type="datetime-local"
           value={value.outcome_timestamp.slice(0, 16)}
@@ -325,21 +331,21 @@ function OutcomeForm({
         />
       </label>
       <label className="vm-r9-form__wide">
-        <span>Final physician-documented conclusion</span>
+        <span>Kết luận cuối do bác sĩ ghi nhận</span>
         <textarea
           value={value.final_conclusion}
           onChange={(event) => update("final_conclusion", event.target.value)}
         />
       </label>
       <label>
-        <span>Disposition</span>
+        <span>Hướng xử trí</span>
         <input
           value={value.disposition}
           onChange={(event) => update("disposition", event.target.value)}
         />
       </label>
       <label>
-        <span>Destination</span>
+        <span>Nơi đến</span>
         <input
           value={value.destination}
           onChange={(event) => update("destination", event.target.value)}
@@ -347,7 +353,7 @@ function OutcomeForm({
       </label>
       {correcting && (
         <label className="vm-r9-form__wide">
-          <span>Correction reason</span>
+          <span>Lý do chỉnh sửa</span>
           <textarea
             value={value.correction_reason}
             onChange={(event) =>
@@ -358,7 +364,7 @@ function OutcomeForm({
       )}
       <button className="vm-button" type="submit" disabled={disabled}>
         <Save size={15} aria-hidden />
-        {correcting ? "Save correction" : "Record outcome"}
+        {correcting ? "Lưu chỉnh sửa" : "Ghi nhận kết cục"}
       </button>
     </form>
   );

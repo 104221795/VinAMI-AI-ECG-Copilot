@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, aliased
 
 from vinami.alerts.adapters.persistence import AlertRecord
 from vinami.alerts.domain.model import AlertStatus
+from vinami.clinical_case.application.automation import build_case_automation
 from vinami.clinical_case.adapters.persistence import ClinicalCaseRecord
 from vinami.clinical_case.ports.case_workspace import CompleteCaseWorkspace
 from vinami.ecg.adapters.r3_persistence import (
@@ -121,6 +122,20 @@ class SQLAlchemyCaseWorkspaceReadRepository:
             if stale
             else "current"
         )
+        automation = build_case_automation(
+            case_id=case.id,
+            now=now,
+            triage=triage,
+            vitals=vitals,
+            ecg=ecg,
+            troponin=troponin,
+            evidence_freshness=freshness,
+            missing_evidence=missing,
+            stale_evidence=stale,
+            technical_limits=technical,
+            tasks=tasks,
+            alerts=alerts,
+        )
         token_parts = [
             str(case.version),
             str(case.updated_at),
@@ -169,6 +184,7 @@ class SQLAlchemyCaseWorkspaceReadRepository:
             missing,
             stale,
             technical,
+            automation,
             update_token,
             now,
         )

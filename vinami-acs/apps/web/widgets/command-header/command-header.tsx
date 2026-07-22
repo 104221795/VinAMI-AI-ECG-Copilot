@@ -16,7 +16,9 @@ export function CommandHeader({ identity }: { identity: IdentityView | null }) {
     <header className="vm-command-header">
       <div className="vm-command-header__context">
         <Badge tone="neutral">{publicConfig.environment}</Badge>
-        {publicConfig.researchUse && <Badge tone="warning">Research MVP</Badge>}
+        {publicConfig.researchUse && (
+          <Badge tone="warning">MVP nghiên cứu</Badge>
+        )}
       </div>
       <div className="vm-command-header__status">
         <span
@@ -24,21 +26,21 @@ export function CommandHeader({ identity }: { identity: IdentityView | null }) {
           role="status"
         >
           {online ? <Wifi size={16} /> : <WifiOff size={16} />}
-          {online ? "Connected" : "Offline"}
+          {online ? "Đang kết nối" : "Mất kết nối"}
         </span>
         {identity ? (
           <span className="vm-identity">
             <strong>{identity.displayName}</strong>
             <small>{identity.primaryRole}</small>
             {identity.developmentOnly && (
-              <Badge tone="warning">Development identity</Badge>
+              <Badge tone="warning">Danh tính phát triển</Badge>
             )}
           </span>
         ) : (
-          <Badge tone="critical">Session unavailable</Badge>
+          <Badge tone="critical">Phiên không khả dụng</Badge>
         )}
         <IconButton
-          label="Refresh current information"
+          label="Làm mới thông tin hiện tại"
           disabled={refreshing}
           onClick={() => startTransition(() => router.refresh())}
         >

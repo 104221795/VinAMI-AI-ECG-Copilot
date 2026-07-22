@@ -6,14 +6,17 @@ const PADDING = 12;
 
 export function WaveformGrid({ value }: { value: ECGWaveformView }) {
   return (
-    <div className="vm-ecg-waveform-grid" aria-label="Twelve-lead ECG waveform">
+    <div
+      className="vm-ecg-waveform-grid"
+      aria-label="Dạng sóng ECG 12 chuyển đạo"
+    >
       {value.leads.map((lead) => (
         <figure className="vm-ecg-lead" key={lead.name}>
           <figcaption>{lead.name}</figcaption>
           <svg
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             role="img"
-            aria-label={`${lead.name} waveform`}
+            aria-label={`${lead.name} dạng sóng`}
             preserveAspectRatio="none"
           >
             <path className="vm-ecg-grid-minor" d={gridPath(18, 18)} />

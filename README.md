@@ -1,73 +1,100 @@
-# VinStroke-ECG
+# VinAMI ACS Operating System
 
-Cloud-ready research pipeline for **hierarchical / multi-label 12-lead ECG interpretation** using PTB-XL and time-frequency vision models.
+VinAMI la mot **research-use MVP** cho luong xu ly benh nhan nghi ngo **Acute Coronary Syndrome (ACS)**.
 
-Core scope:
+Muc tieu cua he thong:
 
-- Dataset: PTB-XL
-- Task: multi-label classification of 5 diagnostic superclasses
-  - `NORM`
-  - `MI`
-  - `STTC`
-  - `CD`
-  - `HYP`
-- Representations:
-  - CWT scalogram 12-lead grid
-  - STFT spectrogram 12-lead grid
-- Models:
-  - ResNet18 baseline
-  - ConvNeXt-Tiny main vision baseline
+- giup bac si theo doi ca ACS tren mot workspace ro rang;
+- tong hop triage, sinh hieu, ECG, troponin, task, alert, timeline va audit;
+- dung AI nhu mot module ho tro bang chung, khong thay the quyet dinh cua bac si.
 
-The local machine does not need a GPU. Run data generation/training on Colab or Kaggle.
+> Research-use prototype only. VinAMI chua phai thiet bi y te da duoc kiem dinh, khong tu chan doan, khong tu rule-out AMI va khong tu kich hoat cath-lab.
 
-## Colab/Kaggle quick start
+## Trang thai hien tai
 
-```bash
-pip install -r requirements-colab.txt
+Da co ban MVP gom:
+
+- FastAPI backend, PostgreSQL, Redis, worker va transactional outbox;
+- Next.js clinical dashboard;
+- Command Center cho ca ACS dang active;
+- Clinical Case Workspace;
+- triage va vitals;
+- ECG workspace;
+- troponin timeline;
+- clinical reasoning demo rule;
+- physician assessment va physician decision;
+- task, reminder va alert;
+- timeline, audit, outcome va learning data co ban;
+- real-time/update foundation va integration simulator;
+- ECG AI showcase voi PTB-XL/ConvNeXt artifact path;
+- Dynamic ECG Comparison de so sanh ECG lan 1 va lan 2 o muc technical assist.
+
+## Cau truc repo
+
+```text
+.
+├── vinami-acs/                 # ung dung VinAMI ACS chinh
+│   ├── apps/api/               # FastAPI
+│   ├── apps/web/               # Next.js UI
+│   ├── apps/worker/            # outbox/timer worker
+│   ├── src/vinami/             # domain, application, ports, adapters
+│   ├── migrations/             # Alembic migrations
+│   ├── packages/contracts/     # OpenAPI generated contracts
+│   └── docs/                   # architecture, recovery, validation, UI docs
+├── Research/                   # ECG research reports
+├── src/                        # ECG research prototype utilities
+└── VinStroke_ECG_artifacts/    # local model/data artifacts, ignored by git
 ```
 
-Download PTB-XL 100 Hz in the cloud runtime:
+## Chay local
 
 ```bash
-python src/download_ptbxl.py --sampling 100 --output data/ptb-xl
+cd vinami-acs
+cp .env.example .env
+docker compose up --build
 ```
 
-Create the 5-superclass multi-label manifest:
+Sau khi chay:
 
-```bash
-python src/prepare_ptbxl_superclass_manifest.py --ptbxl-root data/ptb-xl --output data/ptbxl_superclass_manifest.csv
+- Web UI: `http://localhost:3000`
+- API health: `http://localhost:8000/health`
+- API ready: `http://localhost:8000/ready`
+- OpenAPI: `http://localhost:8000/openapi.json`
+
+## Huong phat trien
+
+VinAMI se di theo huong **multimodal clinical evidence support**:
+
+```text
+Patient with suspected ACS
+  -> Triage, symptoms and vitals
+  -> Evidence completeness engine
+  -> ECG quality/OOD, ECG five-label AI, serial ECG comparison
+  -> Serial troponin trend intelligence
+  -> Cardiac imaging AI when available
+  -> Multimodal evidence model
+  -> Clinical copilot with citations
+  -> Physician assessment and decision
+  -> Workflow, cath-lab review, outcome and follow-up
 ```
 
-Analyze and visualize the dataset before training:
+Nguyen tac an toan:
 
-```bash
-python src/analyze_ptbxl_dataset.py --ptbxl-root data/ptb-xl --manifest data/ptbxl_superclass_manifest.csv --outdir reports/ptbxl_eda
-```
+- AI chi ho tro phan tich bang chung;
+- missing data khong duoc xem la negative evidence;
+- ECG AI khong phai chan doan AMI;
+- cath-lab review phai dua tren physician decision hop le;
+- moi hanh dong quan trong can audit trail.
 
-Generate a small CWT image set first:
+## Tai lieu quan trong
 
-```bash
-python src/build_ptbxl_tf_grids.py --ptbxl-root data/ptb-xl --manifest data/ptbxl_superclass_manifest.csv --outdir data/ptbxl_images_cwt --representation cwt --limit 2000
-```
+- `vinami-acs/docs/PROGRAM_CHARTER.md`
+- `vinami-acs/docs/architecture/`
+- `vinami-acs/docs/recovery/`
+- `vinami-acs/docs/frontend/`
+- `vinami-acs/docs/ecg-r23a-real-model-integration.md`
+- `Research/VinStroke_ECG_Research_Proposal.md`
 
-Train a baseline:
+## GitHub
 
-```bash
-python src/train_multilabel_vision.py --manifest data/ptbxl_images_cwt/manifest_images.csv --model resnet18 --epochs 5 --batch-size 32
-```
-
-Train the stronger model:
-
-```bash
-python src/train_multilabel_vision.py --manifest data/ptbxl_images_cwt/manifest_images.csv --model convnext_tiny --epochs 15 --batch-size 32
-```
-
-## Split
-
-PTB-XL recommended split:
-
-- folds 1-8: train
-- fold 9: validation
-- fold 10: test
-
-Do not random-split images, because that can cause patient/record leakage.
+Repository: https://github.com/104221795/VinAMI

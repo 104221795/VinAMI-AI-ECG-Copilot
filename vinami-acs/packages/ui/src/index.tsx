@@ -43,7 +43,7 @@ export function StatusBadge({ status }: { status: string }) {
         : normalized.includes("ready") || normalized.includes("healthy")
           ? "success"
           : "neutral";
-  return <Badge tone={tone}>{status.replaceAll("_", " ")}</Badge>;
+  return <Badge tone={tone}>{vietnameseStatus(status)}</Badge>;
 }
 
 export function PriorityBadge({ priority }: { priority: string }) {
@@ -53,7 +53,7 @@ export function PriorityBadge({ priority }: { priority: string }) {
       : priority === "urgent"
         ? "warning"
         : "neutral";
-  return <Badge tone={tone}>{priority}</Badge>;
+  return <Badge tone={tone}>{vietnameseStatus(priority)}</Badge>;
 }
 
 export function Button({
@@ -170,7 +170,7 @@ export function MetricTile({
 }
 
 export function SearchField({
-  label = "Search",
+  label = "Tìm kiếm",
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
   return (
@@ -195,19 +195,19 @@ export function Pagination({
 }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   return (
-    <nav className="vm-pagination" aria-label="Case queue pages">
+    <nav className="vm-pagination" aria-label="Phân trang danh sách ca">
       <span>
-        Page {page} of {pages}
+        Trang {page} / {pages}
       </span>
       <IconButton
-        label="Previous page"
+        label="Trang trước"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
       >
         <ChevronLeft size={18} />
       </IconButton>
       <IconButton
-        label="Next page"
+        label="Trang sau"
         disabled={page >= pages}
         onClick={() => onChange(page + 1)}
       >
@@ -219,7 +219,7 @@ export function Pagination({
 
 export function LoadingSkeleton({
   lines = 5,
-  label = "Loading clinical information",
+  label = "Đang tải thông tin lâm sàng",
 }: {
   lines?: number;
   label?: string;
@@ -236,15 +236,22 @@ export function LoadingSkeleton({
 export function EmptyState({
   title,
   description,
+  action,
+  compact = false,
 }: {
   title: string;
-  description: string;
+  description?: string;
+  action?: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <div className="vm-state vm-state--empty">
+    <div
+      className={`vm-state vm-state--empty${compact ? " vm-state--compact" : ""}`}
+    >
       <CircleOff size={28} aria-hidden="true" />
       <h2>{title}</h2>
-      <p>{description}</p>
+      {description && <p>{description}</p>}
+      {action}
     </div>
   );
 }
@@ -267,11 +274,11 @@ export function ErrorState({
       <p>{description}</p>
       {onRetry && (
         <Button onClick={onRetry}>
-          <RefreshCw size={16} /> Retry
+          <RefreshCw size={16} /> Thử lại
         </Button>
       )}
       {correlationId && (
-        <TechnicalDetailsDisclosure title="Technical reference">
+        <TechnicalDetailsDisclosure title="Tham chiếu kỹ thuật">
           <code>Correlation {correlationId}</code>
         </TechnicalDetailsDisclosure>
       )}
@@ -282,8 +289,8 @@ export function ErrorState({
 export function OfflineState({ onRetry }: { onRetry?: () => void }) {
   return (
     <ErrorState
-      title="Connection unavailable"
-      description="Check the network connection. Previously loaded information may be out of date."
+      title="Không có kết nối"
+      description="Kiểm tra kết nối mạng. Thông tin đã tải trước đó có thể không còn mới."
       onRetry={onRetry}
     />
   );
@@ -294,14 +301,14 @@ export function StaleDataBanner({ updatedLabel }: { updatedLabel: string }) {
     <div className="vm-banner vm-banner--stale" role="status">
       <TriangleAlert size={17} aria-hidden="true" />
       <span>
-        Displayed information may be stale. Last refreshed {updatedLabel}.
+        Thông tin hiển thị có thể đã cũ. Lần làm mới gần nhất {updatedLabel}.
       </span>
     </div>
   );
 }
 
 export function TechnicalDetailsDisclosure({
-  title = "Technical details",
+  title = "Chi tiết kỹ thuật",
   children,
 }: {
   title?: string;
@@ -338,7 +345,7 @@ export function TimelineItem({
           <strong>{title}</strong>
           <time>{timestamp}</time>
         </div>
-        {actor && <p>Recorded by {actor}</p>}
+        {actor && <p>Ghi nhận bởi {actor}</p>}
         {detail}
       </div>
     </li>
@@ -369,13 +376,13 @@ export function ConfirmationDialog({
           <Dialog.Title>{title}</Dialog.Title>
           <Dialog.Description>{description}</Dialog.Description>
           <Dialog.Close asChild>
-            <IconButton label="Close dialog" className="vm-dialog__close">
+            <IconButton label="Đóng hộp thoại" className="vm-dialog__close">
               <X size={18} />
             </IconButton>
           </Dialog.Close>
           <footer>
             <Dialog.Close asChild>
-              <Button>Cancel</Button>
+              <Button>Hủy</Button>
             </Dialog.Close>
             <Dialog.Close asChild>
               <Button
@@ -416,3 +423,62 @@ export const StateIcon = {
   warning: ShieldAlert,
   loading: LoaderCircle,
 };
+
+const STATUS_LABELS: Record<string, string> = {
+  acknowledged: "Đã ghi nhận",
+  active: "Đang hoạt động",
+  available: "Có sẵn",
+  cancelled: "Đã hủy",
+  completed: "Hoàn tất",
+  critical: "Khẩn cấp",
+  current: "Hiện hành",
+  failed: "Thất bại",
+  healthy: "Ổn định",
+  incomplete: "Chưa đủ",
+  in_progress: "Đang xử lý",
+  missing: "Thiếu dữ liệu",
+  mock: "Mô phỏng",
+  not_started: "Chưa bắt đầu",
+  open: "Đang mở",
+  original: "Bản gốc",
+  overdue: "Quá hạn",
+  pending: "Đang chờ",
+  provider: "Nhà cung cấp",
+  ready: "Sẵn sàng",
+  resolved: "Đã xử lý",
+  revocation: "Thu hồi",
+  review: "Cần rà soát",
+  routine: "Thường quy",
+  stale: "Cũ",
+  success: "Thành công",
+  technical_limit: "Giới hạn kỹ thuật",
+  technically_limited: "Giới hạn kỹ thuật",
+  unavailable: "Không khả dụng",
+  unknown: "Chưa rõ",
+  unresolved: "Chưa xử lý",
+  urgent: "Ưu tiên cao",
+  authorized: "Đã ủy quyền",
+  correction: "Chỉnh sửa",
+  awaiting_ecg: "Chờ ECG",
+  awaiting_troponin: "Chờ Troponin",
+  cath_lab_review: "Xem xét can thiệp",
+  discharge_review: "Rà soát trước ra viện",
+  ecg_under_review: "Đang rà soát ECG",
+  new: "Ca mới",
+  observation: "Theo dõi",
+  pathway_selected: "Đã chọn hướng xử trí",
+  physician_review_required: "Cần bác sĩ đánh giá",
+  transfer_in_progress: "Đang chuyển tuyến/chuyển đơn vị",
+  triage_in_progress: "Đang tiếp nhận ban đầu",
+};
+
+function vietnameseStatus(status: string): string {
+  const normalized = status.toLowerCase();
+  return (
+    STATUS_LABELS[normalized] ??
+    normalized
+      .replaceAll("_", " ")
+      .replaceAll("-", " ")
+      .replace(/^\p{L}/u, (letter) => letter.toUpperCase())
+  );
+}

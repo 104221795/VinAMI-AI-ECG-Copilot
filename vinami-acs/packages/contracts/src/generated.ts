@@ -841,6 +841,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ecg-analyses/{analysis_id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Analysis Explanation */
+        get: operations["get_analysis_explanation_api_v1_ecg_analyses__analysis_id__explanation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ecg-analyses/{analysis_id}/retry": {
         parameters: {
             query?: never;
@@ -2313,6 +2330,8 @@ export interface components {
             alert_type: string;
             /** Escalation Level */
             escalation_level: number;
+            /** Message */
+            message: string;
             /**
              * Raised At
              * Format: date-time
@@ -2320,6 +2339,8 @@ export interface components {
             raised_at: string;
             /** Severity */
             severity: string;
+            /** Source */
+            source: string;
             /** Status */
             status: string;
         };
@@ -2334,6 +2355,10 @@ export interface components {
             age_band: string | null;
             /** Alerts */
             alerts: components["schemas"]["CommandCenterAlertResponse"][];
+            /** Automation */
+            automation: {
+                [key: string]: unknown;
+            };
             /**
              * Case Id
              * Format: uuid
@@ -2638,6 +2663,10 @@ export interface components {
             alerts: {
                 [key: string]: unknown;
             }[];
+            /** Automation */
+            automation: {
+                [key: string]: unknown;
+            };
             /**
              * Case Id
              * Format: uuid
@@ -3308,10 +3337,16 @@ export interface components {
              * Format: date-time
              */
             received_at: string;
+            /** Reconciliation Reason */
+            reconciliation_reason: string;
+            /** Reconciliation Status */
+            reconciliation_status: string;
             /** Record Version */
             record_version: number;
             /** Retry Count */
             retry_count: number;
+            /** Review Required */
+            review_required: boolean;
             /**
              * Safety Notice
              * @default Simulated integration messages are not physician decisions or workflow authority.
@@ -4907,6 +4942,10 @@ export interface components {
          * @description Authoritative case-level R6 workspace contract.
          */
         WorkflowWorkspaceResponse: {
+            /** Alert Digest */
+            alert_digest: {
+                [key: string]: unknown;
+            }[];
             /** Alerts */
             alerts: components["schemas"]["AlertResponse"][];
             /**
@@ -7751,6 +7790,38 @@ export interface operations {
             };
         };
     };
+    get_analysis_explanation_api_v1_ecg_analyses__analysis_id__explanation_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Configured synthetic identity key; development mode only */
+                "X-Development-Identity"?: string | null;
+            };
+            path: {
+                analysis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     retry_analysis_api_v1_ecg_analyses__analysis_id__retry_post: {
         parameters: {
             query?: never;
@@ -8668,6 +8739,7 @@ export interface operations {
             query?: {
                 status?: string | null;
                 source_system?: string | null;
+                reconciliation_status?: string | null;
                 limit?: number;
             };
             header?: {

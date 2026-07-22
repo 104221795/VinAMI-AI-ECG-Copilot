@@ -10,8 +10,8 @@ export default function RouteError({
 }) {
   return (
     <ErrorState
-      title="Workspace unavailable"
-      description="This clinical workspace could not be rendered safely. No clinical action was taken."
+      title="Không mở được không gian làm việc"
+      description="Không thể hiển thị không gian lâm sàng một cách an toàn. Không có thao tác lâm sàng nào được ghi nhận."
       onRetry={reset}
     />
   );
