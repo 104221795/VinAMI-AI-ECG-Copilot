@@ -195,6 +195,12 @@ Check running services:
 docker compose ps
 ```
 
+Check database tables:
+
+```powershell
+docker compose exec postgres psql -U vinami -d vinami_acs -c "\dt"
+```
+
 Backend logs:
 
 ```powershell

@@ -64,6 +64,12 @@ Cần thấy các service chính đang chạy:
 - `redis`
 - `worker`
 
+Nếu muốn kiểm tra trực tiếp database, dùng user `vinami`, không dùng `postgres`:
+
+```powershell
+docker compose exec postgres psql -U vinami -d vinami_acs -c "\dt"
+```
+
 ## 5. Chạy migration
 
 ```powershell
