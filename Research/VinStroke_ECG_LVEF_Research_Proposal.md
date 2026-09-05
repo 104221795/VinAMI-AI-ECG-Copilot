@@ -174,7 +174,24 @@ Raw ECG branch: 1D-ResNet, InceptionTime, TCN (đã có sẵn checkpoint trong p
 Vision branch: CWT/STFT 12-lead grid + ResNet18/ConvNeXtV2 (đã có sẵn checkpoint trên PTB-XL)
 ```
 
-Chiến lược transfer learning: khởi tạo encoder từ trọng số đã huấn luyện trên PTB-XL (diagnostic superclass task), fine-tune trên tập ECG–LVEF, đóng băng (freeze) các layer đầu trong vài epoch đầu để tránh overfitting với tập LVEF thường nhỏ hơn PTB-XL.
+Chiến lược transfer learning: khởi tạo encoder từ trọng số đã huấn luyện trên PTB-XL (diagnostic superclass task), fine-tune trên tập ECG–LVEF, có thể đóng băng (freeze) backbone để chỉ train head (linear probing) khi tập LVEF còn nhỏ.
+
+**Đã triển khai, không cần code mới:** `src/train_signal_1d.py` trong project đã có sẵn `--init-from-checkpoint` (nạp backbone từ checkpoint PTB-XL, tự bỏ qua head) và `--freeze-backbone` (linear probing), cùng pos_weight cho class imbalance và patient-grouped split — đúng những gì Stage 3/4 cần. Phần còn thiếu đã bổ sung trong `scripts/`:
+
+```text
+scripts/build_lvef_label_extraction.py extract/match/sample-qc/score-qc   (Phase 1, đã có)
+scripts/cache_lvef_signals.py                                            (mới: ECG-LVEF matched -> signals.f16.npy + index.csv,
+                                                                            cùng schema/preprocessing với cache_acs_signals.py
+                                                                            để backbone pretrained nhận đúng phân bố input)
+src/train_signal_1d.py --cache data/lvef_signal_cache --labels lvef_binary_40
+                        --model xresnet1d101 --init-from-checkpoint models/ptbxl_xresnet1d101.pt
+                        --output models/lvef_xresnet1d101.pt --probabilities probs_lvef.npz  (không sửa, tái dùng nguyên vẹn)
+scripts/score_lvef_screening.py --probabilities probs_lvef.npz --label lvef_binary_40         (mới: sensitivity/specificity/
+                                                                                                 false-negative rate/Brier/ECE,
+                                                                                                 phần score() gốc chưa có)
+```
+
+`cache_lvef_signals.py` và `score_lvef_screening.py` đã tự kiểm (`--selftest` cho phần scoring) nhưng chưa chạy được với dữ liệu thật vì chưa có ECG-LVEF ghép cặp (phụ thuộc Phase 0 ở mục 8).
 
 ### 9.4. Stage 4: Binary Screening Prediction Layer
 
@@ -301,11 +318,11 @@ Mô hình chỉ là công cụ sàng lọc hỗ trợ, không được overclaim
 * Loại trừ cặp ghép không đáng tin cậy theo tiêu chí đã định.
 
 ### Phase 3: Baseline training
-* Train raw ECG baseline (1D-ResNet/InceptionTime) cho binary screening head.
+* `python3 scripts/cache_lvef_signals.py ...` rồi `python3 src/train_signal_1d.py --cache data/lvef_signal_cache --labels lvef_binary_40 --model resnet1d` (from scratch) cho baseline raw ECG.
 
 ### Phase 4: Transfer learning từ VinStroke-ECG/PTB-XL
-* Khởi tạo encoder từ checkpoint PTB-XL đã có trong project.
-* So sánh from-scratch vs transfer learning.
+* Lặp lại lệnh Phase 3 với `--init-from-checkpoint models/ptbxl_xresnet1d101.pt` (và các checkpoint PTB-XL khác đã có trong `models/`).
+* So sánh from-scratch vs transfer learning (frozen vs fine-tuned) bằng `scripts/score_lvef_screening.py` trên từng `--probabilities` output.
 
 ### Phase 5: Model selection & threshold ablation
 * So sánh ngưỡng 35% vs 40% (Experiment 5).
