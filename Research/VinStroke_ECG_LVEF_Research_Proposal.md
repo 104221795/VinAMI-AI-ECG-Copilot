@@ -119,12 +119,29 @@ Yêu cầu tiên quyết: hoàn tất chứng nhận CITI "Data or Specimens Onl
 
 UK Biobank có phân nhóm hình ảnh với cả ECG (điện tâm đồ khi nghỉ) và MRI tim (LVEF đo bằng CMR, chính xác hơn echo). Đây là nguồn dữ liệu chất lượng cao nhưng đòi hỏi apply access, chi phí, và thời gian chờ duyệt dài — phù hợp làm external validation trong giai đoạn sau, không phải MVP.
 
-### 8.3. Ưu tiên 3 (song song, dài hạn): Dữ liệu nội bộ từ bệnh viện đối tác Việt Nam
+### 8.3. Ưu tiên 3 (song song, dài hạn): Dữ liệu nội bộ — ứng viên chính là Vinmec
 
-Vì mô hình huấn luyện trên MIMIC phản ánh dân số Mỹ (ICU, tuổi, bệnh nền, thiết bị đo khác batch với Việt Nam), giá trị lâm sàng thực sự tại Việt Nam cần được kiểm chứng trên dữ liệu nội bộ. Đề xuất song song làm việc với đơn vị tim mạch của bệnh viện đối tác (liên quan tới project AIA/VN đang triển khai) để:
+Vì mô hình huấn luyện trên MIMIC phản ánh dân số Mỹ (ICU, tuổi, bệnh nền, thiết bị đo khác biệt với Việt Nam), giá trị lâm sàng thực sự tại Việt Nam cần được kiểm chứng trên dữ liệu nội bộ. Đây là bước quan trọng nhất để đánh giá độ tin cậy triển khai thực tế tại Việt Nam, không phải bước tùy chọn.
+
+**Vinmec** được chọn là ứng viên ưu tiên vì: (a) là hệ thống bệnh viện tư nhân lớn, có hạ tầng bệnh án điện tử (EMR) tương đối hiện đại; (b) làm ECG và siêu âm tim thường quy nên hai loại dữ liệu này chắc chắn tồn tại trong hệ thống, khả năng ghép được qua mã bệnh nhân + thời gian; (c) đã có tiền lệ làm AI y tế và public dataset ảnh y khoa (VinDr-CXR, VinDr-Mammo, VinDr-SpineXR qua VinBigData/VinBrain trước đây), nên năng lực kỹ thuật xử lý/ẩn danh hóa dữ liệu không phải rào cản.
+
+**Trạng thái hiện tại:** chưa có xác nhận công khai rằng Vinmec có/sẵn sàng chia sẻ bộ dữ liệu ECG–siêu âm tim ghép cặp. Không tìm thấy dataset ECG/LVEF nào được Vinmec hoặc VinBigData công bố công khai (khác với các dataset ảnh X-quang/nhũ ảnh đã có). Đây là việc cần xác nhận trực tiếp, không thể suy ra từ tìm kiếm công khai.
+
+**Kênh tiếp cận:** không hỏi bác sĩ điều trị đơn lẻ (họ không có thẩm quyền chia sẻ dữ liệu), mà đi qua hai hướng song song:
+1. Phòng/Trung tâm Nghiên cứu khoa học của Vinmec — đầu mối chính thức cho hợp tác nghiên cứu, biết quy trình IRB.
+2. Bác sĩ tim mạch quen biết tại Vinmec (nếu có) — dùng làm người giới thiệu nội bộ sang phòng nghiên cứu, không kỳ vọng họ tự quyết việc chia sẻ dữ liệu.
+
+**Câu hỏi cần xác nhận trước khi lập kế hoạch chi tiết cho nhánh dữ liệu này:**
+* ECG có được lưu số hóa hay chủ yếu bản giấy/PDF scan rời rạc?
+* Kết quả siêu âm tim có nhập số LVEF (%) dạng có cấu trúc trong EMR, hay chỉ là báo cáo free-text?
+* Có thể liên kết ECG và siêu âm tim của cùng bệnh nhân qua mã bệnh án nội bộ không?
+* Ước lượng số bệnh nhân có cả hai loại dữ liệu trong vài năm gần đây (quyết định n khả dụng cho external test set)?
+* Quy trình xin dữ liệu ẩn danh cho nghiên cứu (qua IRB) làm việc qua phòng ban nào, mất bao lâu?
+
+Nếu Vinmec không khả thi (từ chối, dữ liệu không đủ số hóa, hoặc quy trình quá lâu so với timeline đề tài), phương án dự phòng là tìm bệnh viện đối tác khác trong hệ sinh thái project AIA/VN đang triển khai, giữ nguyên vai trò external test set như thiết kế ban đầu.
 
 * Xin phê duyệt IRB/đạo đức cho việc trích xuất ghép ECG–báo cáo siêu âm tim đã ẩn danh.
-* Xây một tập nhỏ (vài trăm đến vài nghìn cặp) làm **external test set**, không dùng để huấn luyện — đây là bước quan trọng nhất để đánh giá độ tin cậy triển khai thực tế tại Việt Nam.
+* Xây một tập nhỏ (vài trăm đến vài nghìn cặp) làm **external test set**, không dùng để huấn luyện.
 
 ### 8.4. Không sử dụng làm nguồn nhãn LVEF
 
@@ -272,7 +289,7 @@ Mô hình chỉ là công cụ sàng lọc hỗ trợ, không được overclaim
 
 ### Phase 0: Data access và pháp lý
 * Hoàn tất CITI training, ký Data Use Agreement để truy cập MIMIC-IV, MIMIC-IV-ECG, MIMIC-IV-Note trên PhysioNet.
-* Đánh giá sơ bộ tính khả thi làm việc với bệnh viện đối tác VN cho external validation (dài hạn).
+* Liên hệ Vinmec (qua Phòng Nghiên cứu khoa học và/hoặc bác sĩ tim mạch quen biết) để xác nhận 5 câu hỏi ở mục 8.3 — kết quả quyết định Vinmec có khả thi làm external test set hay cần tìm bệnh viện đối tác khác.
 
 ### Phase 1: Label extraction & QC
 * Xây regex/NLP pipeline trích LVEF từ notes.
