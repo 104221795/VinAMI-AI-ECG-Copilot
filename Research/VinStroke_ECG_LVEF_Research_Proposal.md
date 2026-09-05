@@ -10,6 +10,8 @@ Nghiên cứu mốc của Attia et al. (Mayo Clinic, *Nature Medicine* 2019) đ�
 
 **Điểm khác biệt quan trọng nhất so với VinStroke-ECG gốc:** bài toán LVEF không phải là bài toán phân loại chẩn đoán ECG thông thường mà là bài toán sàng lọc dựa trên nhãn **ngoài ECG** (echo-derived), do đó thách thức lớn nhất không nằm ở kiến trúc mô hình mà nằm ở **việc xây dựng bộ dữ liệu ECG–LVEF ghép cặp**, vì hiện tại toàn bộ dataset đang có trong project (PTB-XL, Chapman, Georgia, CPSC2018, PTB, INCART, ACS_ECG nội bộ) đều **không có nhãn LVEF**.
 
+**Nguồn dữ liệu ưu tiên (cập nhật):** EchoNext-Mini (PhysioNet) — dataset công khai có sẵn nhãn LVEF cấu trúc (ngưỡng ≤45%, không phải ≤40%) — nay là lựa chọn đầu tiên để chạy MVP, thay vì bắt đầu ngay từ NLP extraction trên MIMIC-IV-ECG + Notes (xem mục 8.1).
+
 **Phạm vi MVP (đã chốt):** thay vì đồng thời làm hồi quy LVEF (%) và sàng lọc nhị phân, MVP chỉ tập trung trả lời đúng **một câu hỏi**: *"Bệnh nhân này có LVEF ≤ 40% hay không?"* — bám sát đúng thiết kế của Attia et al. (2019) và tận dụng được cả các báo cáo siêu âm tim chỉ mô tả định tính (không có số LVEF chính xác), vì loại report này vẫn đủ để gán nhãn nhị phân dù không dùng được cho hồi quy. Việc thu hẹp phạm vi giúp tăng lượng dữ liệu khả dụng, đơn giản hóa đánh giá (so sánh trực tiếp với AUC ≈ 0.93 của Mayo Clinic) và dễ trình bày với đối tác lâm sàng hơn.
 
 ## 2. Tên đề tài
@@ -51,7 +53,7 @@ Mục tiêu tổng quát: xây dựng và đánh giá một pipeline end-to-end 
 
 Các mục tiêu cụ thể:
 
-1. Xác định và thẩm định (validate) ít nhất một nguồn dữ liệu công khai có thể ghép cặp ECG với nhãn LVEF (ưu tiên MIMIC-IV-ECG + MIMIC-IV Echo/Notes).
+1. Xác định và thẩm định (validate) ít nhất một nguồn dữ liệu công khai có nhãn LVEF (ưu tiên EchoNext-Mini vì nhãn đã có cấu trúc sẵn; MIMIC-IV-ECG + MIMIC-IV Echo/Notes là nhánh bổ sung để mở rộng dữ liệu và tiệm cận đúng ngưỡng HFrEF 40%).
 2. Xây dựng pipeline trích xuất LVEF từ báo cáo siêu âm tim dạng free-text (NLP/regex) và quy tắc ghép ECG với lần đo LVEF gần nhất về thời gian.
 3. Thống kê chất lượng nhãn (coverage, độ trễ thời gian ECG–echo, phân bố LVEF) và loại trừ các cặp ghép không đáng tin cậy.
 4. Xây dựng một mô hình phân loại nhị phân duy nhất trả lời câu hỏi "LVEF ≤ 40%?", tái sử dụng backbone/pretrained weights từ VinStroke-ECG khi khả thi (transfer learning từ PTB-XL).
@@ -103,7 +105,22 @@ MVP chủ động **không** làm multi-task (bỏ nhánh hồi quy LVEF %) đ�
 
 Vì đây là điểm nghẽn chính, dataset strategy được trình bày theo thứ tự ưu tiên thực thi, không theo vai trò "core/external" như VinStroke-ECG gốc.
 
-### 8.1. Ưu tiên 1: MIMIC-IV-ECG ghép với MIMIC-IV Echo / Discharge/Radiology Notes
+### 8.1. Ưu tiên 1 (mới, ưu tiên cao nhất): EchoNext-Mini
+
+**EchoNext-Mini** (PhysioNet, Elias & Finer 2026; baseline model: Hughes et al., *NEJM AI* 2026) thay đổi hẳn mức độ ưu tiên so với hướng MIMIC-IV-ECG + Notes ban đầu, vì đây là dataset **đã có nhãn cấu trúc sẵn**, không cần bước NLP/regex trích xuất (Phase 1 gần như biến mất cho nhánh này):
+
+* 100.000 ECG 12 chuyển đạo từ Columbia University Irving Medical Center (2008-2022), 250 Hz, 10 giây.
+* Có sẵn cột nhãn nhị phân `lvef_lte_45_flag` (và các flag bệnh cấu trúc tim khác: độ dày thành thất, hở/hẹp van, tràn dịch màng ngoài tim, tăng áp phổi, rối loạn chức năng thất phải), cộng một nhãn tổng hợp `shd_moderate_or_greater_flag`.
+* Có baseline model công khai (kiến trúc "CradleNet") kèm code tại `github.com/PierreElias/IntroECG` — cho phép đối chứng trực tiếp kết quả của mình với một baseline đã công bố, không chỉ với con số AUC của Attia et al. 2019.
+* Truy cập: **restricted access**, cần ký Data Use Agreement theo PhysioNet Restricted Health Data License 1.5.0 (khác DUA của MIMIC, cần xin riêng).
+
+**Khác biệt quan trọng cần lưu ý — ngưỡng không phải 40%:** EchoNext-Mini định nghĩa nhãn ở **LVEF ≤ 45%** ("moderately reduced systolic function", một phần của tiêu chí "moderate-or-greater structural heart disease"), không phải ngưỡng HFrEF ≤ 40% mà proposal gốc (mục 7.2-7.3) thiết kế theo Attia et al. Vì vậy nhánh dữ liệu này trả lời một câu hỏi lâm sàng liên quan nhưng không giống hệt: *"LVEF ≤ 45%?"* thay vì *"LVEF ≤ 40%?"*. Nhãn được đặt tên riêng là `lvef_binary_45` trong pipeline (xem `scripts/cache_echonext_signals.py`) — **không** gộp chung với `lvef_binary_40` từ nhánh MIMIC/Vinmec để tránh nhầm lẫn hai định nghĩa nhãn khác nhau.
+
+**Vai trò trong đề tài:** dùng làm dataset MVP đầu tiên để chứng minh pipeline (Stage 2-4) chạy được và cho ra kết quả hợp lý, vì rủi ro nhiễu nhãn gần như bằng 0 so với nhãn trích xuất bằng regex. Việc trả lời đúng câu hỏi gốc "≤ 40%" (khớp định nghĩa HFrEF chuẩn) vẫn cần nhánh MIMIC-IV-ECG + Notes (mục 8.2) hoặc Vinmec (mục 8.4).
+
+**Chưa xác nhận cục bộ (cần kiểm tra khi có quyền truy cập):** tên file chính xác của mảng waveform/metadata, cột id dùng để nhóm theo bệnh nhân cho patient-grouped split, và định danh cụ thể của 7 đặc trưng tabular đi kèm (có thể không chứa giá trị LVEF số chính xác, chỉ là demographic/ECG-derived features).
+
+### 8.2. Ưu tiên 1b: MIMIC-IV-ECG ghép với MIMIC-IV Echo / Discharge/Radiology Notes (bổ sung/mở rộng)
 
 MIMIC-IV-ECG (PhysioNet) cung cấp ~800.000 bản ghi ECG 12 chuyển đạo của ~160.000 bệnh nhân tại BIDMC, có `subject_id` và `ecg_time` để ghép nối với các module khác của MIMIC-IV (bao gồm ghi chú lâm sàng chứa báo cáo siêu âm tim).
 
@@ -115,11 +132,11 @@ Quy trình đề xuất:
 
 Yêu cầu tiên quyết: hoàn tất chứng nhận CITI "Data or Specimens Only Research" và ký Data Use Agreement trên PhysioNet để truy cập MIMIC-IV, MIMIC-IV-ECG và MIMIC-IV-Note (Clinical Notes) — đây cần được thực hiện ở Phase 0 trước khi bắt đầu.
 
-### 8.2. Ưu tiên 2: UK Biobank imaging substudy (future, không bắt buộc cho MVP)
+### 8.3. Ưu tiên 2: UK Biobank imaging substudy (future, không bắt buộc cho MVP)
 
 UK Biobank có phân nhóm hình ảnh với cả ECG (điện tâm đồ khi nghỉ) và MRI tim (LVEF đo bằng CMR, chính xác hơn echo). Đây là nguồn dữ liệu chất lượng cao nhưng đòi hỏi apply access, chi phí, và thời gian chờ duyệt dài — phù hợp làm external validation trong giai đoạn sau, không phải MVP.
 
-### 8.3. Ưu tiên 3 (song song, dài hạn): Dữ liệu nội bộ — ứng viên chính là Vinmec
+### 8.4. Ưu tiên 3 (song song, dài hạn): Dữ liệu nội bộ — ứng viên chính là Vinmec
 
 Vì mô hình huấn luyện trên MIMIC phản ánh dân số Mỹ (ICU, tuổi, bệnh nền, thiết bị đo khác biệt với Việt Nam), giá trị lâm sàng thực sự tại Việt Nam cần được kiểm chứng trên dữ liệu nội bộ. Đây là bước quan trọng nhất để đánh giá độ tin cậy triển khai thực tế tại Việt Nam, không phải bước tùy chọn.
 
@@ -143,7 +160,7 @@ Nếu Vinmec không khả thi (từ chối, dữ liệu không đủ số hóa, 
 * Xin phê duyệt IRB/đạo đức cho việc trích xuất ghép ECG–báo cáo siêu âm tim đã ẩn danh.
 * Xây một tập nhỏ (vài trăm đến vài nghìn cặp) làm **external test set**, không dùng để huấn luyện.
 
-### 8.4. Không sử dụng làm nguồn nhãn LVEF
+### 8.5. Không sử dụng làm nguồn nhãn LVEF
 
 Toàn bộ dataset hiện có trong project (PTB-XL, Chapman, Georgia, CPSC2018, PTB, INCART, ACS_ECG nội bộ) **không có LVEF** và không nên chỉnh sửa/giả lập nhãn. Các dataset này vẫn hữu ích để: (a) pretrain backbone qua nhiệm vụ diagnostic classification (transfer learning), (b) kiểm tra domain shift giữa các nguồn ECG khác nhau, nhưng không đóng vai trò ground-truth cho LVEF.
 
@@ -305,20 +322,21 @@ Mô hình chỉ là công cụ sàng lọc hỗ trợ, không được overclaim
 ## 17. Roadmap thực hiện
 
 ### Phase 0: Data access và pháp lý
-* Hoàn tất CITI training, ký Data Use Agreement để truy cập MIMIC-IV, MIMIC-IV-ECG, MIMIC-IV-Note trên PhysioNet.
-* Liên hệ Vinmec (qua Phòng Nghiên cứu khoa học và/hoặc bác sĩ tim mạch quen biết) để xác nhận 5 câu hỏi ở mục 8.3 — kết quả quyết định Vinmec có khả thi làm external test set hay cần tìm bệnh viện đối tác khác.
+* **Ưu tiên trước tiên:** ký Data Use Agreement (PhysioNet Restricted Health Data License 1.5.0) để tải EchoNext-Mini — nhanh hơn nhánh MIMIC vì chỉ cần DUA cho một dataset, không phải toàn bộ hệ sinh thái MIMIC-IV.
+* Hoàn tất CITI training, ký Data Use Agreement để truy cập MIMIC-IV, MIMIC-IV-ECG, MIMIC-IV-Note trên PhysioNet (làm song song hoặc sau, phục vụ nhánh bổ sung mục 8.2).
+* Liên hệ Vinmec (qua Phòng Nghiên cứu khoa học và/hoặc bác sĩ tim mạch quen biết) để xác nhận 5 câu hỏi ở mục 8.4 — kết quả quyết định Vinmec có khả thi làm external test set hay cần tìm bệnh viện đối tác khác.
 
 ### Phase 1: Label extraction & QC
-* Xây regex/NLP pipeline trích LVEF từ notes.
-* Ghép ECG với LVEF theo cửa sổ thời gian.
-* Thẩm định thủ công tập mẫu, báo cáo độ tin cậy nhãn.
+* **Với EchoNext-Mini: bước này gần như bỏ qua** — nhãn `lvef_lte_45_flag` đã có sẵn, chỉ cần `scripts/cache_echonext_signals.py` để chuyển định dạng, không cần regex/NLP/QC thủ công.
+* Với nhánh MIMIC-IV-ECG + Notes (mục 8.2, làm sau hoặc song song để mở rộng dữ liệu và tiệm cận đúng ngưỡng 40%): xây regex/NLP pipeline trích LVEF từ notes bằng `scripts/build_lvef_label_extraction.py`, ghép ECG theo cửa sổ thời gian, thẩm định thủ công tập mẫu, báo cáo độ tin cậy nhãn (đã có sẵn, xem mục 9.3).
 
 ### Phase 2: Dataset construction
 * Thống kê coverage, phân bố LVEF, split theo patient_id (train/val/test).
 * Loại trừ cặp ghép không đáng tin cậy theo tiêu chí đã định.
 
 ### Phase 3: Baseline training
-* `python3 scripts/cache_lvef_signals.py ...` rồi `python3 src/train_signal_1d.py --cache data/lvef_signal_cache --labels lvef_binary_40 --model resnet1d` (from scratch) cho baseline raw ECG.
+* EchoNext-Mini: `python3 scripts/cache_echonext_signals.py ...` rồi `python3 src/train_signal_1d.py --cache data/echonext_signal_cache --labels lvef_binary_45 --model resnet1d` (from scratch) cho baseline raw ECG.
+* MIMIC/Vinmec (khi có): `python3 scripts/cache_lvef_signals.py ...` rồi `python3 src/train_signal_1d.py --cache data/lvef_signal_cache --labels lvef_binary_40 --model resnet1d`.
 
 ### Phase 4: Transfer learning từ VinStroke-ECG/PTB-XL
 * Lặp lại lệnh Phase 3 với `--init-from-checkpoint models/ptbxl_xresnet1d101.pt` (và các checkpoint PTB-XL khác đã có trong `models/`).
