@@ -13,8 +13,23 @@ adds those on top of a probabilities npz produced by:
     python3 src/train_signal_1d.py --cache data/lvef_signal_cache \\
         --labels lvef_binary_40 --probabilities probs_lvef.npz ...
 
+Selective prediction (--selective-prediction): Lee et al. 2022 (Digit Health,
+PMID 36532114, https://doi.org/10.1177/20552076221143249) fit a Gaussian to a
+*continuous* EF regression output and used its predicted standard deviation
+as a "degree of confidence," excluding low-confidence cases to raise AUC from
+0.9549->0.9759 (internal) / 0.9365->0.9653 (external). Our head is a plain
+binary sigmoid (no predictive variance), so `confidence_proxy` approximates
+confidence with distance from the 0.5 decision boundary instead of a fitted
+distribution's std -- weaker than the paper's calibrated uncertainty, but
+needs no architecture change. Treat --selective-prediction output as "does
+a confidence cutoff help, roughly how much" rather than a reproduction of the
+paper's numbers; a real reproduction would need train_signal_1d.py to grow a
+regression head over continuous EF with a predicted variance (out of scope
+here, no continuous EF labels wired in yet).
+
 Usage:
     python3 scripts/score_lvef_screening.py --probabilities probs_lvef.npz --label lvef_binary_40
+    python3 scripts/score_lvef_screening.py --probabilities probs_lvef.npz --label lvef_binary_40 --selective-prediction
     python3 scripts/score_lvef_screening.py --selftest
 """
 
@@ -23,7 +38,7 @@ from __future__ import annotations
 import argparse
 
 import numpy as np
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score, roc_curve
 
 
 def sensitivity_specificity(y_true: np.ndarray, y_prob: np.ndarray, threshold: float) -> dict:
@@ -83,6 +98,57 @@ def expected_calibration_error(y_true: np.ndarray, y_prob: np.ndarray, n_bins: i
     return float(ece), bins
 
 
+def confidence_proxy(y_prob: np.ndarray) -> np.ndarray:
+    """Distance from the 0.5 decision boundary, scaled to [0, 1].
+
+    Stand-in for Lee et al. 2022's fitted-Gaussian standard deviation (see
+    module docstring): our binary head has no predictive variance, so this
+    just measures how far the sigmoid output sits from the coin-flip point.
+    A prediction near 0.5 is not necessarily "uncertain" in the statistical
+    sense the paper uses -- it is a heuristic, not a calibrated quantity.
+    """
+    return np.abs(y_prob - 0.5) * 2.0
+
+
+def selective_prediction_report(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    coverages: tuple[float, ...] = (1.0, 0.9, 0.8, 0.7, 0.6, 0.5),
+) -> list[dict]:
+    """Metrics after keeping only the top `coverage` fraction most-confident
+    cases (highest confidence_proxy), ranked from most to least confident.
+
+    Mirrors the paper's "exclude low-confidence cases, does AUC/sensitivity
+    improve" analysis (Methods/Results, PMID 36532114) at a fixed 0.5
+    threshold. Report both the metric-at-full-coverage and the trend as
+    coverage drops -- a model where confidence tracks correctness should show
+    AUC/sensitivity rising and false_negative_rate falling as coverage drops;
+    a flat or noisy trend means confidence_proxy is not actually informative
+    for this model and the cutoff should not be relied on clinically.
+    """
+    confidence = confidence_proxy(y_prob)
+    order = np.argsort(-confidence)  # most confident first
+    n = len(y_true)
+    rows = []
+    for coverage in coverages:
+        k = max(int(round(n * coverage)), 1)
+        keep = order[:k]
+        y_true_kept, y_prob_kept = y_true[keep], y_prob[keep]
+        row: dict = {
+            "coverage": coverage,
+            "n_kept": k,
+            "n_excluded": n - k,
+            "confidence_cutoff": float(confidence[order[k - 1]]),
+        }
+        if len(np.unique(y_true_kept)) < 2:
+            row["auc"] = float("nan")
+        else:
+            row["auc"] = float(roc_auc_score(y_true_kept, y_prob_kept))
+        row.update(sensitivity_specificity(y_true_kept, y_prob_kept, 0.5))
+        rows.append(row)
+    return rows
+
+
 def full_report(y_true: np.ndarray, y_prob: np.ndarray) -> dict:
     youden = youden_optimal_threshold(y_true, y_prob)
     ece, bins = expected_calibration_error(y_true, y_prob)
@@ -118,6 +184,11 @@ def cmd_score(args: argparse.Namespace) -> None:
             "threshold instead, or revisit class-imbalance handling (section 10) before reporting."
         )
 
+    if args.selective_prediction:
+        print("\nselective_prediction (Lee et al. 2022, PMID 36532114 -- see module docstring for caveats):")
+        for row in selective_prediction_report(y_test, prob_test):
+            print(f"  {row}")
+
 
 def _selftest() -> None:
     rng = np.random.default_rng(0)
@@ -141,6 +212,18 @@ def _selftest() -> None:
     print(f"n={n}, brier={report['brier_score']:.4f}, ece={report['expected_calibration_error']:.4f}")
     print(f"threshold=0.5: {report['at_threshold_0.5']}")
     print(f"youden threshold={report['at_youden_optimal']['threshold']:.3f}: {report['at_youden_optimal']}")
+
+    selective = selective_prediction_report(y_true, y_prob)
+    assert selective[0]["coverage"] == 1.0 and selective[0]["n_excluded"] == 0
+    for row in selective:
+        assert 0.0 <= row["n_kept"] <= n
+        assert np.isnan(row["auc"]) or 0.0 <= row["auc"] <= 1.0
+    # this synthetic classifier's confidence is informative, so restricting to the
+    # most-confident half should not make AUC worse than using everyone
+    assert selective[-1]["auc"] >= selective[0]["auc"] - 0.05
+    print("selective_prediction (by coverage):")
+    for row in selective:
+        print(f"  {row}")
     print("all selftest assertions passed")
 
 
@@ -149,6 +232,12 @@ def main() -> None:
     parser.add_argument("--selftest", action="store_true")
     parser.add_argument("--probabilities", type=str, default=None)
     parser.add_argument("--label", type=str, default="lvef_binary_40")
+    parser.add_argument(
+        "--selective-prediction",
+        action="store_true",
+        help="Report AUC/sensitivity/specificity after excluding low-confidence cases "
+        "(proxy for Lee et al. 2022's degree-of-confidence filtering; see module docstring).",
+    )
     args = parser.parse_args()
 
     if args.selftest:
