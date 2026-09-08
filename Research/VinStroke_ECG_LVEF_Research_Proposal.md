@@ -251,6 +251,8 @@ So sánh performance khi định nghĩa low-EF ở ngưỡng 35% vs 40%, dùng c
 ### Experiment 6: Calibration
 Brier score, Expected Calibration Error, reliability diagram trước/sau calibration.
 
+Tham khảo Lee et al. 2022 (*Digital Health*, PMID 36532114, DOI [10.1177/20552076221143249](https://doi.org/10.1177/20552076221143249)): họ fit một phân phối chuẩn lên đầu ra hồi quy LVEF liên tục và dùng độ lệch chuẩn dự đoán làm "degree of confidence", loại bỏ các ca có độ tin cậy thấp giúp tăng AUROC phát hiện LVEF≤40% từ 0.9549→0.9759 (internal) và 0.9365→0.9653 (external), đồng thời tăng hazard ratio khi dùng để theo dõi nguy cơ rối loạn chức năng thất trái xuất hiện mới (4.57x→8.67x). `scripts/score_lvef_screening.py --selective-prediction` đã cài đặt một **bản xấp xỉ** ý tưởng này (dùng khoảng cách tới ngưỡng 0.5 làm proxy độ tin cậy, vì đầu ra hiện tại của MVP là phân loại nhị phân, không phải hồi quy có variance như bài báo) — tái hiện đúng phương pháp của Lee et al. sẽ cần Stage 4 (mục 9.4) có thêm một đầu hồi quy EF liên tục kèm dự đoán variance, việc này chưa nằm trong phạm vi MVP hiện tại vì cũng cần nhãn EF số chính xác thay vì chỉ nhãn nhị phân.
+
 ### Experiment 7: Explainability
 Grad-CAM / lead-wise importance cho các ca dự đoán LVEF thấp đúng và sai, đối chiếu với hiểu biết lâm sàng (QRS giãn rộng, trục lệch trái, sóng Q bệnh lý...).
 
@@ -271,6 +273,8 @@ Số ca low-EF bị bỏ sót (false negative) — quan trọng nhất về mặ
 ```text
 Brier score
 Expected Calibration Error
+Selective prediction / coverage-risk curve (AUROC, sensitivity, specificity theo từng mức "coverage"
+sau khi loại ca độ tin cậy thấp) - xem Experiment 6, đã cài đặt ở scripts/score_lvef_screening.py
 ```
 
 ### Data quality
